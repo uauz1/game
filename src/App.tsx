@@ -6,6 +6,7 @@ import { FavoritesProvider } from '@/contexts/FavoritesContext';
 import { Layout } from '@/components/layout/Layout';
 import { usePWA } from '@/hooks/usePWA';
 import { Home } from '@/pages/Home';
+import { GamesHub } from '@/pages/GamesHub';
 import { Play } from '@/pages/Play';
 import { GameScreen } from '@/pages/GameScreen';
 import { Results } from '@/pages/Results';
@@ -29,6 +30,7 @@ export default function App() {
               <Routes>
                 <Route element={<Layout />}>
                   <Route path="/" element={<Home />} />
+                  <Route path="/games" element={<GamesHub />} />
                   <Route path="/play" element={<Play />} />
                   <Route path="/game" element={<GameScreen />} />
                   <Route path="/results" element={<Results />} />
