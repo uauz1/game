@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-label="قدّها - جلسة ألعاب نيون">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#080b1e"/><stop offset=".55" stop-color="#111333"/><stop offset="1" stop-color="#07101d"/></linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#10142f"/><stop offset=".5" stop-color="#1a1335"/><stop offset="1" stop-color="#08111f"/></linearGradient>
+    <linearGradient id="sofa" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#252653"/><stop offset="1" stop-color="#11152f"/></linearGradient>
+    <linearGradient id="sign" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#12c7ff"/><stop offset=".5" stop-color="#9b4dff"/><stop offset="1" stop-color="#ff4fd8"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="soft"><feGaussianBlur stdDeviation="35"/></filter>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <circle cx="260" cy="180" r="180" fill="#752cff" opacity=".18" filter="url(#soft)"/>
+  <circle cx="850" cy="220" r="180" fill="#00c8ff" opacity=".10" filter="url(#soft)"/>
+  <rect y="480" width="1200" height="240" fill="url(#floor)"/>
+  <path d="M0 520h1200M0 610h1200M160 480l-80 240M390 480l-25 240M650 480l30 240M900 480l85 240" stroke="#8a5cff" opacity=".08"/>
+  <rect x="70" y="65" width="420" height="210" rx="28" fill="#0b1027" stroke="#7b49ff" stroke-width="3"/>
+  <rect x="92" y="87" width="376" height="166" rx="20" fill="#15152e"/>
+  <rect x="116" y="108" width="328" height="124" rx="16" fill="none" stroke="url(#sign)" stroke-width="8" filter="url(#glow)"/>
+  <path d="M205 151l26-30 25 30 27-30 24 30" fill="none" stroke="#ffd15c" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  <text x="280" y="208" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="72" font-weight="800" direction="rtl">قدّها</text>
+  <rect x="80" y="310" width="640" height="175" rx="54" fill="url(#sofa)" stroke="#4a3b78" stroke-width="2"/>
+  <rect x="118" y="285" width="270" height="100" rx="36" fill="#2a2b5b"/>
+  <rect x="410" y="290" width="272" height="95" rx="34" fill="#232550"/>
+  <rect x="120" y="435" width="575" height="64" rx="28" fill="#12162f"/>
+  <rect x="760" y="250" width="330" height="230" rx="24" fill="#10162a" stroke="#1c2a4e"/>
+  <rect x="795" y="290" width="260" height="140" rx="16" fill="#07111f"/>
+  <rect x="820" y="315" width="210" height="90" rx="12" fill="#142153"/>
+  <path d="M855 370c36-55 73-55 110 0" fill="none" stroke="#8c56ff" stroke-width="14" filter="url(#glow)"/>
+  <circle cx="880" cy="365" r="13" fill="#00cdf8"/><circle cx="940" cy="365" r="13" fill="#ff53cd"/>
+  <rect x="760" y="500" width="340" height="40" rx="20" fill="#17142e"/>
+  <rect x="270" y="525" width="390" height="78" rx="24" fill="#171128"/>
+  <rect x="325" y="495" width="280" height="55" rx="18" fill="#281e45" stroke="#7048d8"/>
+  <circle cx="385" cy="522" r="10" fill="#ff4fd8"/><circle cx="545" cy="522" r="10" fill="#26d3ff"/>
+  <rect x="800" y="80" width="22" height="110" rx="8" fill="#19152e"/>
+  <ellipse cx="811" cy="188" rx="55" ry="16" fill="#ffbd62" opacity=".75" filter="url(#glow)"/>
+  <rect x="980" y="65" width="22" height="120" rx="8" fill="#17152c"/>
+  <ellipse cx="991" cy="184" rx="56" ry="16" fill="#9d5cff" opacity=".75" filter="url(#glow)"/>
+  <g opacity=".8"><rect x="40" y="180" width="10" height="210" rx="5" fill="#ff55d6"/><rect x="52" y="180" width="5" height="210" rx="3" fill="#1fcfff"/></g>
+  <g transform="translate(710 565)"><rect x="0" y="0" width="115" height="68" rx="20" fill="#0b0f1e" stroke="#8a55ff"/><circle cx="34" cy="34" r="16" fill="#24264a"/><circle cx="81" cy="34" r="16" fill="#24264a"/><path d="M25 34h18M34 25v18" stroke="#fff" stroke-width="4" stroke-linecap="round"/><circle cx="80" cy="30" r="4" fill="#ff54d0"/><circle cx="90" cy="40" r="4" fill="#1fcfff"/></g>
+  <text x="92" y="665" fill="#b8b8d9" font-family="Arial,sans-serif" font-size="26">PLAY TOGETHER • فكر • شارك • تنافس</text>
+</svg>
