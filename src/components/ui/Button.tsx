@@ -12,38 +12,27 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-purple text-white hover:bg-purple-dark shadow-glow-purple',
-  secondary: 'bg-turquoise text-navy hover:bg-turquoise-dark shadow-glow-turquoise',
-  outline: 'border-2 border-purple text-purple hover:bg-purple hover:text-white',
-  ghost: 'text-off-white hover:bg-white/10',
+  primary: 'border border-[#ffd477] bg-[linear-gradient(180deg,#ffd477,#e9a73c)] text-[#1b160e] hover:brightness-105 shadow-glow-purple',
+  secondary: 'border border-[#f6b94f]/30 bg-[#f6b94f]/10 text-[#ffd477] hover:bg-[#f6b94f]/15',
+  outline: 'border border-[#f6b94f]/50 bg-black/20 text-[#ffd477] hover:bg-[#f6b94f]/10 hover:border-[#f6b94f]/80',
+  ghost: 'border border-transparent text-off-white/75 hover:bg-white/5 hover:text-white',
   danger: 'bg-coral text-white hover:bg-coral-dark shadow-glow-coral',
-  success: 'bg-turquoise text-navy hover:bg-turquoise-dark',
+  success: 'border border-[#f6b94f]/35 bg-[#f6b94f]/12 text-[#ffe1a0] hover:bg-[#f6b94f]/18',
 };
 
 const SIZES: Record<Size, string> = {
   sm: 'px-4 py-2 text-sm rounded-xl',
-  md: 'px-5 py-2.5 text-base rounded-xl',
+  md: 'px-5 py-2.5 text-base rounded-[14px]',
   lg: 'px-6 py-3 text-lg rounded-2xl',
-  xl: 'px-8 py-4 text-xl rounded-2xl',
+  xl: 'px-8 py-4 text-xl rounded-[20px]',
 };
 
-export function Button({
-  variant = 'primary',
-  size = 'md',
-  children,
-  fullWidth,
-  className,
-  disabled,
-  ...props
-}: ButtonProps) {
+export function Button({ variant = 'primary', size = 'md', children, fullWidth, className, disabled, ...props }: ButtonProps) {
   return (
     <button
       className={cn(
-        'btn-primary inline-flex items-center justify-center gap-2 font-cairo font-bold transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:active:scale-100 disabled:cursor-not-allowed',
-        VARIANTS[variant],
-        SIZES[size],
-        fullWidth && 'w-full',
-        className
+        'btn-primary inline-flex items-center justify-center gap-2 font-cairo font-black transition-all duration-200 active:scale-[.98] disabled:opacity-50 disabled:active:scale-100 disabled:cursor-not-allowed',
+        VARIANTS[variant], SIZES[size], fullWidth && 'w-full', className
       )}
       disabled={disabled}
       {...props}
