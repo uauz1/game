@@ -1,13 +1,13 @@
 {
-  "name": "تحدّي - لعبة الأسئلة الجماعية",
-  "short_name": "تحدّي",
-  "description": "لعبة أسئلة وأجوبة جماعية بالعربية",
+  "name": "قدّها - ألعاب جماعية عربية",
+  "short_name": "قدّها",
+  "description": "ألعاب جماعية عربية للتحدي والضحك والمنافسة",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#101735",
-  "theme_color": "#101735",
+  "background_color": "#0B1020",
+  "theme_color": "#0B1020",
   "icons": [
     {
       "src": "/icon-192.png",
