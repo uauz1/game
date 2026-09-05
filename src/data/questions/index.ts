@@ -46,6 +46,33 @@ export const QUESTIONS_BY_CATEGORY: Record<string, Question[]> = {
   truefalse: trueFalseQuestions,
 };
 
+const USED_KEY = 'qaddha_used_question_ids_v1';
+
+function readUsedIds(): Set<string> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(USED_KEY) || '[]');
+    return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function persistUsedIds(ids: Set<string>) {
+  try {
+    // Keep storage bounded while preserving a large no-repeat window.
+    localStorage.setItem(USED_KEY, JSON.stringify(Array.from(ids).slice(-1500)));
+  } catch {}
+}
+
+function shuffle<T>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 export function getQuestions(
   categories: string[],
   difficulty: Difficulty,
@@ -62,19 +89,36 @@ export function getQuestions(
     pool = [...ALL_QUESTIONS];
   } else {
     categories.forEach((cat) => {
-      if (QUESTIONS_BY_CATEGORY[cat]) {
-        pool = [...pool, ...QUESTIONS_BY_CATEGORY[cat]];
-      }
+      if (QUESTIONS_BY_CATEGORY[cat]) pool.push(...QUESTIONS_BY_CATEGORY[cat]);
     });
   }
 
+  // Protect against duplicate IDs inside merged pools.
+  pool = Array.from(new Map(pool.map((q) => [q.id, q])).values());
+
   if (difficulty !== 'mixed') {
     const filtered = pool.filter((q) => q.difficulty === difficulty);
-    if (filtered.length >= count) {
-      pool = filtered;
-    }
+    if (filtered.length >= Math.min(count, pool.length)) pool = filtered;
   }
 
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, Math.min(count, shuffled.length));
+  const usedIds = readUsedIds();
+  let fresh = pool.filter((q) => !usedIds.has(q.id));
+
+  // Only recycle old questions after the current pool is effectively exhausted.
+  if (fresh.length < count) {
+    const needed = Math.min(count, pool.length);
+    if (fresh.length < needed) {
+      const freshIds = new Set(fresh.map((q) => q.id));
+      const recycled = shuffle(pool.filter((q) => !freshIds.has(q.id)));
+      fresh = [...shuffle(fresh), ...recycled];
+    }
+  } else {
+    fresh = shuffle(fresh);
+  }
+
+  const selected = fresh.slice(0, Math.min(count, pool.length));
+  selected.forEach((q) => usedIds.add(q.id));
+  persistUsedIds(usedIds);
+
+  return selected;
 }
