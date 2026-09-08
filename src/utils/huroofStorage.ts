@@ -1,4 +1,5 @@
 import type { HuroofDifficulty } from '../data/huroofQuestions';
+import { loadSharedTeams, saveSharedTeams } from './sharedTeams';
 
 const STORAGE_KEY = 'qaddha.huroof.preferences.v1';
 const USED_QUESTIONS_KEY = 'qaddha.huroof.used-questions.v1';
@@ -23,6 +24,7 @@ export const defaultHuroofPreferences: HuroofPreferences = {
 };
 
 export function loadHuroofPreferences(): HuroofPreferences {
+  const sharedTeams = loadSharedTeams();
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultHuroofPreferences;
@@ -34,8 +36,8 @@ export function loadHuroofPreferences(): HuroofPreferences {
       ? value.teamColors as [string, string]
       : defaultHuroofPreferences.teamColors;
     return {
-      teamNames: names,
-      teamColors: colors,
+      teamNames: sharedTeams ? [sharedTeams[0].name, sharedTeams[1].name] : names,
+      teamColors: sharedTeams ? [sharedTeams[0].color, sharedTeams[1].color] : colors,
       seconds: ALLOWED_SECONDS.has(Number(value.seconds)) ? Number(value.seconds) : defaultHuroofPreferences.seconds,
       difficulty: ALLOWED_DIFFICULTIES.has(value.difficulty as HuroofDifficulty) ? value.difficulty as HuroofDifficulty : defaultHuroofPreferences.difficulty,
       bestOf: ALLOWED_ROUNDS.has(Number(value.bestOf)) ? Number(value.bestOf) : defaultHuroofPreferences.bestOf,
@@ -48,6 +50,7 @@ export function loadHuroofPreferences(): HuroofPreferences {
 export function saveHuroofPreferences(preferences: HuroofPreferences) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+    saveSharedTeams(preferences.teamNames.map((name, index) => ({ name, color: preferences.teamColors[index] })));
   } catch {
     // The game remains fully usable when storage is unavailable.
   }

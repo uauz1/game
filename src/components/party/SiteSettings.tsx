@@ -85,6 +85,7 @@ export default function SiteSettings({ open, onClose }: { open: boolean; onClose
       localStorage.removeItem('qaddha_used_question_ids_v1');
       localStorage.removeItem('qaddha.huroof.used-questions.v1');
       localStorage.removeItem('qaddha.who-am-i.used-cards.v1');
+      localStorage.removeItem('qaddha.new-games.used.v1');
       setNotice('تم تصفير سجل الأسئلة؛ الجولات القادمة تبدأ ببنك جديد');
     } catch { setNotice('تعذّر تصفير السجل في هذا المتصفح'); }
   };

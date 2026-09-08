@@ -3,6 +3,8 @@ import { ArrowLeft, Check, Eye, FastForward, Flag, Image, Lightbulb, RotateCcw, 
 import { loadHuroofPreferences } from '../../utils/huroofStorage';
 import { characterCards, feudRounds, photoCards, riddles, speedQuestions, wordCards } from '../../data/newPartyGames';
 import { drawWithoutRepeats } from '../../utils/newGameRotation';
+import { useNewGameNumber } from '../../utils/newGameSettings';
+import { loadSharedTeams, saveSharedTeams } from '../../utils/sharedTeams';
 import Countdown from './Countdown';
 
 type Team = { name: string; color: string; score: number };
@@ -10,11 +12,19 @@ type GameProps = { onHome: () => void };
 const colors = ['#45b6ff', '#ff70b5', '#a77bff', '#ffd45a'];
 
 function initialTeams(): Team[] {
+  const shared = loadSharedTeams();
+  if (shared) return shared.map(team => ({ ...team, score: 0 }));
   const saved = loadHuroofPreferences();
   return [
     { name: saved.teamNames[0], color: saved.teamColors[0], score: 0 },
     { name: saved.teamNames[1], color: saved.teamColors[1], score: 0 },
   ];
+}
+
+function prepareTeams(teams: Team[]) {
+  const prepared = teams.map(team => ({ ...team, name: team.name.trim(), score: 0 }));
+  saveSharedTeams(prepared);
+  return prepared;
 }
 
 function GameHeader({ eyebrow, title, onHome }: { eyebrow: string; title: string; onHome: () => void }) {
@@ -35,32 +45,32 @@ function Scorebar({ teams, turn, round, total }: { teams: Team[]; turn: number; 
 }
 
 export function CharacterGuessGame({ onHome }: GameProps) {
-  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useState(30); const [rounds,setRounds]=useState(6);
+  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useNewGameNumber('character','seconds',30); const [rounds,setRounds]=useNewGameNumber('character','rounds',6);
   const [deck,setDeck]=useState(characterCards); const [round,setRound]=useState(0); const [hint,setHint]=useState(1); const [choice,setChoice]=useState(''); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
-  const card=deck[round]; const turn=round%2; const start=()=>{setDeck(drawWithoutRepeats('characters',characterCards,rounds,item=>item.id));setTeams(teams.map(team=>({...team,name:team.name.trim(),score:0})));setRound(0);setHint(1);setChoice('');setPhase('play');};
+  const card=deck[round]; const turn=round%2; const start=()=>{setDeck(drawWithoutRepeats('characters',characterCards,rounds,item=>item.id));setTeams(prepareTeams(teams));setRound(0);setHint(1);setChoice('');setPhase('play');};
   const choose=(answer:string)=>{if(choice)return;setChoice(answer);if(answer===card.answer)setTeams(value=>value.map((team,index)=>index===turn?{...team,score:team.score+(4-hint)*100}:team));};
   const next=()=>{if(round+1>=deck.length){setPhase('result');return;}setRound(round+1);setHint(1);setChoice('');};
   return <section className="arena new-game character-game"><GameHeader eyebrow="خمن الشخصية" title={phase==='setup'?'التلميح الذكي يكسب.':phase==='result'?'انكشفت الشخصيات!':`شخصية ${round+1} من ${deck.length}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}/>:phase==='result'?<GameResult title="أبطال التخمين" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={turn} round={round} total={deck.length}/><div className="new-stage"><span className="game-chip">{card.category}</span><div className="character-silhouette">?</div><div className="progressive-hints">{card.hints.slice(0,hint).map((text,index)=><p key={text}><b>{index+1}</b>{text}</p>)}</div><Countdown key={card.answer} seconds={seconds} stopped={Boolean(choice)}/>{!choice?<><div className="choice-grid">{card.options.map(option=><button key={option} onClick={()=>choose(option)}>{option}</button>)}</div><button className="quiet centered" disabled={hint===card.hints.length} onClick={()=>setHint(Math.min(card.hints.length,hint+1))}><Lightbulb size={17}/> تلميح إضافي · نقاط أقل</button></>:<div className={`answer-feedback ${choice===card.answer?'correct':'wrong'}`}><h2>{choice===card.answer?'إجابة صحيحة!':'مو هي…'}</h2><p>الإجابة: <b>{card.answer}</b></p><button className="primary" onClick={next}>{round+1===deck.length?'عرض النتيجة':'الشخصية التالية'}</button></div>}</div></>}</section>;
 }
 
 export function RiddlesGame({ onHome }: GameProps) {
-  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useState(30); const [rounds,setRounds]=useState(6); const [deck,setDeck]=useState(riddles); const [round,setRound]=useState(0); const [revealed,setRevealed]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
-  const start=()=>{setDeck(drawWithoutRepeats('riddles',riddles,rounds,item=>item[0]));setTeams(teams.map(team=>({...team,score:0})));setRound(0);setRevealed(false);setPhase('play');};
+  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useNewGameNumber('riddles','seconds',30); const [rounds,setRounds]=useNewGameNumber('riddles','rounds',6); const [deck,setDeck]=useState(riddles); const [round,setRound]=useState(0); const [revealed,setRevealed]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
+  const start=()=>{setDeck(drawWithoutRepeats('riddles',riddles,rounds,item=>item[0]));setTeams(prepareTeams(teams));setRound(0);setRevealed(false);setPhase('play');};
   const award=(team:number|null)=>{if(team!==null)setTeams(value=>value.map((item,index)=>index===team?{...item,score:item.score+100}:item));if(round+1>=deck.length)setPhase('result');else{setRound(round+1);setRevealed(false);}};
   return <section className="arena new-game riddle-game"><GameHeader eyebrow="فوازير" title={phase==='setup'?'فكّوها قبل ما يفوت الوقت.':phase==='result'?'العقول حسمتها!':`الفزورة ${round+1} من ${deck.length}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}/>:phase==='result'?<GameResult title="أذكى فريق" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={round%2} round={round} total={deck.length}/><div className="new-stage riddle-stage"><span className="riddle-mark">؟</span><h2>{deck[round][0]}</h2><Countdown key={deck[round][0]} seconds={seconds} stopped={revealed}/>{!revealed?<button className="primary" onClick={()=>setRevealed(true)}><Eye/> كشف الحل</button>:<div className="answer-feedback correct"><small>الحل</small><h2>{deck[round][1]}</h2><div className="judge-row">{teams.map((team,index)=><button key={team.name} style={{'--team':team.color} as CSSProperties} onClick={()=>award(index)}>+100 · {team.name}</button>)}<button onClick={()=>award(null)}>لا أحد</button></div></div>}</div></>}</section>;
 }
 
 export function PhotoChallengeGame({ onHome }: GameProps) {
-  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useState(30); const [rounds,setRounds]=useState(6); const [deck,setDeck]=useState(photoCards); const [round,setRound]=useState(0); const [level,setLevel]=useState(0); const [revealed,setRevealed]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
-  const start=()=>{setDeck(drawWithoutRepeats('photos',photoCards,rounds,item=>item.id));setTeams(teams.map(team=>({...team,score:0})));setRound(0);setLevel(0);setRevealed(false);setPhase('play');};
+  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useNewGameNumber('photo','seconds',30); const [rounds,setRounds]=useNewGameNumber('photo','rounds',6); const [deck,setDeck]=useState(photoCards); const [round,setRound]=useState(0); const [level,setLevel]=useState(0); const [revealed,setRevealed]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
+  const start=()=>{setDeck(drawWithoutRepeats('photos',photoCards,rounds,item=>item.id));setTeams(prepareTeams(teams));setRound(0);setLevel(0);setRevealed(false);setPhase('play');};
   const award=(team:number|null)=>{if(team!==null)setTeams(value=>value.map((item,index)=>index===team?{...item,score:item.score+(3-level)*100}:item));if(round+1>=deck.length)setPhase('result');else{setRound(round+1);setLevel(0);setRevealed(false);}};
   const card=deck[round];
   return <section className="arena new-game photo-game"><GameHeader eyebrow="تحدي الصورة" title={phase==='setup'?'التفاصيل الصغيرة تفضحها.':phase==='result'?'وضحت الصورة!':`الصورة ${round+1} من ${deck.length}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}/>:phase==='result'?<GameResult title="أقوى ملاحظة" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={round%2} round={round} total={deck.length}/><div className="new-stage photo-stage"><span className="game-chip">{card.category}</span><div className={`photo-visual reveal-${revealed?2:level}`} style={{'--photo-tone':card.tone,'--photo-position':card.position} as CSSProperties}><span role="img" aria-label={`صورة ${card.category}`}/></div><p className="photo-points">قيمة الإجابة: <b>{(3-level)*100}</b> نقطة</p><Countdown key={card.answer} seconds={seconds} stopped={revealed}/>{!revealed?<div className="photo-actions"><button className="secondary" disabled={level===2} onClick={()=>setLevel(Math.min(2,level+1))}><Image/> وضّح أكثر</button><button className="primary" onClick={()=>setRevealed(true)}><Eye/> كشف الصورة</button></div>:<div className="answer-feedback correct"><h2>{card.answer}</h2><div className="judge-row">{teams.map((team,index)=><button key={team.name} style={{'--team':team.color} as CSSProperties} onClick={()=>award(index)}>{team.name} · +{(3-level)*100}</button>)}<button onClick={()=>award(null)}>لا أحد</button></div></div>}</div></>}</section>;
 }
 
 export function FastestGame({ onHome }: GameProps) {
-  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useState(20); const [rounds,setRounds]=useState(6); const [deck,setDeck]=useState(speedQuestions); const [round,setRound]=useState(0); const [buzz,setBuzz]=useState<number|null>(null); const [revealed,setRevealed]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
-  const start=()=>{setDeck(drawWithoutRepeats('speed',speedQuestions,rounds,item=>item[0]));setTeams(teams.map(team=>({...team,score:0})));setRound(0);setBuzz(null);setRevealed(false);setPhase('play');};
+  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useNewGameNumber('fast','seconds',20); const [rounds,setRounds]=useNewGameNumber('fast','rounds',6); const [deck,setDeck]=useState(speedQuestions); const [round,setRound]=useState(0); const [buzz,setBuzz]=useState<number|null>(null); const [revealed,setRevealed]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
+  const start=()=>{setDeck(drawWithoutRepeats('speed',speedQuestions,rounds,item=>item[0]));setTeams(prepareTeams(teams));setRound(0);setBuzz(null);setRevealed(false);setPhase('play');};
   const buzzer=(index:number)=>{if(buzz!==null)return;setBuzz(index);try{navigator.vibrate?.(35);}catch{/* Haptics are optional. */}};
   const judge=(correct:boolean)=>{if(buzz===null)return;if(correct){setTeams(value=>value.map((team,index)=>index===buzz?{...team,score:team.score+100}:team));next();}else{setBuzz(1-buzz);setRevealed(false);}};
   const next=()=>{if(round+1>=deck.length)setPhase('result');else{setRound(round+1);setBuzz(null);setRevealed(false);}};
@@ -68,17 +78,17 @@ export function FastestGame({ onHome }: GameProps) {
 }
 
 export function WordBankGame({ onHome }: GameProps) {
-  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useState(45); const [rounds,setRounds]=useState(8); const [deck,setDeck]=useState(wordCards); const [round,setRound]=useState(0); const [showWord,setShowWord]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
-  const start=()=>{setDeck(drawWithoutRepeats('words',wordCards,rounds,item=>item.id));setTeams(teams.map(team=>({...team,score:0})));setRound(0);setShowWord(false);setPhase('play');};
+  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useNewGameNumber('words','seconds',45); const [rounds,setRounds]=useNewGameNumber('words','rounds',8); const [deck,setDeck]=useState(wordCards); const [round,setRound]=useState(0); const [showWord,setShowWord]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
+  const start=()=>{setDeck(drawWithoutRepeats('words',wordCards,rounds,item=>item.id));setTeams(prepareTeams(teams));setRound(0);setShowWord(false);setPhase('play');};
   const next=(correct:boolean)=>{if(correct)setTeams(value=>value.map((team,index)=>index===round%2?{...team,score:team.score+100}:team));if(round+1>=deck.length)setPhase('result');else{setRound(round+1);setShowWord(false);}};
   const card=deck[round];
   return <section className="arena new-game word-game"><GameHeader eyebrow="بنك الكلمات" title={phase==='setup'?'وصف ذكي… بلا الكلمات الممنوعة.':phase==='result'?'خلص رصيد الكلمات!':`دور ${teams[round%2].name}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}/>:phase==='result'?<GameResult title="أبطال الوصف" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={round%2} round={round} total={deck.length}/><div className="new-stage word-stage">{!showWord?<><div className="word-vault">◆</div><h2>المُوصّف من {teams[round%2].name} جاهز؟</h2><p>خلّ الباقين يبعدون نظرهم، ثم اعرض الكلمة وابدأ الوصف.</p><button className="primary" onClick={()=>setShowWord(true)}>اعرض الكلمة وابدأ</button></>:<><span className="game-chip">{card.category}</span><h2 className="target-word">{card.word}</h2><p>ممنوع تقول:</p><div className="taboo-list">{card.taboo.map(word=><b key={word}>{word}</b>)}</div><Countdown key={card.word} seconds={seconds} stopped={false}/><div className="word-actions"><button className="correct" onClick={()=>next(true)}><Check/> صح · +100</button><button className="wrong" onClick={()=>next(false)}><FastForward/> تخطّي</button></div></>}</div></>}</section>;
 }
 
 export function FamilyFeudGame({ onHome }: GameProps) {
-  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useState(60); const [rounds,setRounds]=useState(4); const [deck,setDeck]=useState(feudRounds); const [round,setRound]=useState(0); const [active,setActive]=useState(0); const [revealed,setRevealed]=useState<number[]>([]); const [strikes,setStrikes]=useState(0); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
+  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useNewGameNumber('family','seconds',60); const [rounds,setRounds]=useNewGameNumber('family','rounds',4); const [deck,setDeck]=useState(feudRounds); const [round,setRound]=useState(0); const [active,setActive]=useState(0); const [revealed,setRevealed]=useState<number[]>([]); const [strikes,setStrikes]=useState(0); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
   const availableRounds=deck.length; const current=deck[round]; const roundScore=revealed.reduce((total,index)=>total+Number(current.answers[index][1]),0);
-  const start=()=>{setDeck(drawWithoutRepeats('feud',feudRounds,rounds,item=>item.id));setTeams(teams.map(team=>({...team,score:0})));setRound(0);setActive(0);setRevealed([]);setStrikes(0);setPhase('play');};
+  const start=()=>{setDeck(drawWithoutRepeats('feud',feudRounds,rounds,item=>item.id));setTeams(prepareTeams(teams));setRound(0);setActive(0);setRevealed([]);setStrikes(0);setPhase('play');};
   const reveal=(index:number)=>{if(!revealed.includes(index))setRevealed([...revealed,index]);};
   const awardRound=()=>{setTeams(value=>value.map((team,index)=>index===active?{...team,score:team.score+roundScore}:team));if(round+1>=availableRounds)setPhase('result');else{setRound(round+1);setActive((round+1)%2);setRevealed([]);setStrikes(0);}};
   return <section className="arena new-game feud-game"><GameHeader eyebrow="تحدي العائلة" title={phase==='setup'?'الإجابة الأشهر تكسب.':phase==='result'?'لوحة الجمهور اكتملت!':`الجولة ${round+1} · ${teams[active].name}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}><small className="auto-save-note">بنك متجدد من ثماني جولات بإجابات الجمهور.</small></TeamSetup>:phase==='result'?<GameResult title="أبطال تحدي العائلة" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={active} round={round} total={availableRounds}/><div className="new-stage feud-stage"><h2>{current.question}</h2><div className="strike-row">{[0,1,2].map(index=><span key={index} className={index<strikes?'on':''}>✕</span>)}</div><div className="feud-board">{current.answers.map(([answer,points],index)=><button key={answer} className={revealed.includes(index)?'revealed':''} onClick={()=>reveal(index)}><span>{index+1}</span><b>{revealed.includes(index)?answer:'••••••'}</b><strong>{revealed.includes(index)?points:'?'}</strong></button>)}</div><div className="feud-controls"><button className="wrong" disabled={strikes===3} onClick={()=>{const next=Math.min(3,strikes+1);setStrikes(next);if(next===3)setActive(1-active);}}><X/> خطأ / ضربة</button><button className="secondary" onClick={()=>setActive(1-active)}>تحويل الدور إلى {teams[1-active].name}</button><button className="primary" disabled={!revealed.length} onClick={awardRound}>منح {roundScore} نقطة وإنهاء الجولة</button></div></div></>}</section>;

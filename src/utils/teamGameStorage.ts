@@ -1,3 +1,5 @@
+import { loadSharedTeams, saveSharedTeams } from './sharedTeams';
+
 const STORAGE_KEY = 'qaddha.teams.preferences.v1';
 
 export type TeamGamePreferences = {
@@ -17,6 +19,7 @@ export const defaultTeamGamePreferences: TeamGamePreferences = {
 };
 
 export function loadTeamGamePreferences(availableCategories: string[]): TeamGamePreferences {
+  const sharedTeams = loadSharedTeams();
   const fallback = {
     ...defaultTeamGamePreferences,
     categories: availableCategories.slice(0, 6),
@@ -33,8 +36,8 @@ export function loadTeamGamePreferences(availableCategories: string[]): TeamGame
       ? value.teamColors as [string, string]
       : fallback.teamColors;
     return {
-      teamNames: names,
-      teamColors: colors,
+      teamNames: sharedTeams ? [sharedTeams[0].name, sharedTeams[1].name] : names,
+      teamColors: sharedTeams ? [sharedTeams[0].color, sharedTeams[1].color] : colors,
       categories: categories.length >= 3 ? categories : fallback.categories,
       limit: [6, 12, 18, 24, 30].includes(Number(value.limit)) ? Number(value.limit) : fallback.limit,
       seconds: [20, 30, 45, 60].includes(Number(value.seconds)) ? Number(value.seconds) : fallback.seconds,
@@ -47,6 +50,7 @@ export function loadTeamGamePreferences(availableCategories: string[]): TeamGame
 export function saveTeamGamePreferences(preferences: TeamGamePreferences) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+    saveSharedTeams(preferences.teamNames.map((name, index) => ({ name, color: preferences.teamColors[index] })));
   } catch {
     // The game stays playable when browser storage is unavailable.
   }

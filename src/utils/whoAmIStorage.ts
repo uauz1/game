@@ -1,6 +1,7 @@
 import type { WhoAmIDifficulty } from '../data/whoAmIQuestions';
 import type { WhoAmICard } from '../data/whoAmIQuestions';
 import { loadHuroofPreferences } from './huroofStorage';
+import { saveSharedTeams } from './sharedTeams';
 
 const STORAGE_KEY = 'qaddha-who-am-i-preferences-v1';
 const USED_CARDS_KEY = 'qaddha.who-am-i.used-cards.v1';
@@ -39,6 +40,7 @@ export function loadWhoAmIPreferences(): WhoAmIPreferences {
 export function saveWhoAmIPreferences(preferences: WhoAmIPreferences) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+    saveSharedTeams(preferences.teamNames.map((name, index) => ({ name, color: preferences.teamColors[index] })));
   } catch {
     // The game remains fully playable when storage is blocked or unavailable.
   }
