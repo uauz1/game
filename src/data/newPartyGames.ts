@@ -1,5 +1,53 @@
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
+export type ConnectionCard = {
+  id: string;
+  category: string;
+  answer: string;
+  aliases: string[];
+  clues: [string, string, string, string];
+  explanation: string;
+};
+
+export const connectionCards: ConnectionCard[] = [
+  {id:'connection-01',category:'أماكن',answer:'الكعبة',aliases:['كعبة','الكعبه','كعبه'],clues:['سواد','اتجاه','طواف','مكة'],explanation:'كسوتها سوداء، وهي قبلة المسلمين ويُطاف حولها في مكة.'},
+  {id:'connection-02',category:'مشروبات',answer:'القهوة',aliases:['قهوة','القهوه','قهوه'],clues:['مزاج','تحميص','فنجان','بن'],explanation:'يُحمّص البن وتُقدّم القهوة في الفنجان لتعديل المزاج.'},
+  {id:'connection-03',category:'طبيعة',answer:'البحر',aliases:['بحر'],clues:['أفق','ملح','موج','شاطئ'],explanation:'يلتقي البحر بالأفق، وماؤه مالح وله أمواج وشاطئ.'},
+  {id:'connection-04',category:'أشياء',answer:'الساعة',aliases:['ساعة','ساعه'],clues:['دائرة','عقارب','دقيقة','وقت'],explanation:'للساعة وجه دائري وعقارب، وتقيس الدقائق والوقت.'},
+  {id:'connection-05',category:'طقس',answer:'المطر',aliases:['مطر'],clues:['رائحة','مظلة','سحاب','قطرات'],explanation:'رائحة الأرض والمظلة والسحاب والقطرات كلها ترتبط بالمطر.'},
+  {id:'connection-06',category:'ثقافة',answer:'الكتاب',aliases:['كتاب'],clues:['عالم','غلاف','مؤلف','صفحات'],explanation:'يفتح الكتاب عالمًا، وله غلاف ومؤلف وصفحات.'},
+  {id:'connection-07',category:'رياضة',answer:'كرة القدم',aliases:['كوره القدم','كرة قدم','الكوره','الكرة'],clues:['تسلل','حكم','هدف','ملعب'],explanation:'التسلل والحكم والهدف والملعب من أساسيات كرة القدم.'},
+  {id:'connection-08',category:'تقنية',answer:'الإنترنت',aliases:['انترنت','الانترنت','نت','الشبكة'],clues:['عنكبوت','رابط','متصفح','واي فاي'],explanation:'شبكة الإنترنت تضم الروابط والمتصفحات وتصلنا عبر الواي فاي.'},
+  {id:'connection-09',category:'سفر',answer:'المطار',aliases:['مطار'],clues:['انتظار','بوابة','جواز','طائرة'],explanation:'في المطار تنتظر عند البوابة ومعك الجواز قبل ركوب الطائرة.'},
+  {id:'connection-10',category:'مناسبات',answer:'رمضان',aliases:['شهر رمضان'],clues:['هلال','فجر','إفطار','تراويح'],explanation:'هلال رمضان وبداية الصيام من الفجر ثم الإفطار وصلاة التراويح.'},
+  {id:'connection-11',category:'طبيعة',answer:'العسل',aliases:['عسل'],clues:['ذهبي','خلية','شمع','نحل'],explanation:'العسل ذهبي اللون وينتجه النحل في خلايا من الشمع.'},
+  {id:'connection-12',category:'ترفيه',answer:'السينما',aliases:['سينما'],clues:['ظلام','فشار','تذكرة','فيلم'],explanation:'تُطفأ الأنوار في السينما ويشاهد الجمهور فيلمًا مع الفشار.'},
+  {id:'connection-13',category:'ألعاب',answer:'الشطرنج',aliases:['شطرنج'],clues:['أسود وأبيض','حصان','قلعة','كش مات'],explanation:'رقعة الشطرنج سوداء وبيضاء وقطعها تشمل الحصان والقلعة.'},
+  {id:'connection-14',category:'أماكن',answer:'المدرسة',aliases:['مدرسة','مدرسه'],clues:['طابور','جرس','سبورة','طلاب'],explanation:'الطابور والجرس والسبورة والطلاب مشاهد يومية في المدرسة.'},
+  {id:'connection-15',category:'طبيعة',answer:'الصحراء',aliases:['صحراء'],clues:['هدوء','سراب','كثبان','رمل'],explanation:'الصحراء هادئة وتظهر فيها السرابات والكثبان الرملية.'},
+  {id:'connection-16',category:'أماكن',answer:'المستشفى',aliases:['مستشفى'],clues:['أبيض','سماعة','إسعاف','طبيب'],explanation:'اللون الأبيض وسماعة الطبيب والإسعاف كلها ترتبط بالمستشفى.'},
+  {id:'connection-17',category:'تقنية',answer:'الهاتف',aliases:['هاتف','الجوال','جوال','الموبايل','موبايل'],clues:['جيب','إشعار','بطارية','اتصال'],explanation:'الهاتف في الجيب وتصل إليه الإشعارات ويعمل ببطارية للاتصال.'},
+  {id:'connection-18',category:'طبيعة',answer:'الجبل',aliases:['جبل'],clues:['ظل','صخر','تسلق','قمة'],explanation:'الجبل كتلة صخرية تُتسلق للوصول إلى القمة.'},
+  {id:'connection-19',category:'فضاء',answer:'القمر',aliases:['قمر'],clues:['مد وجزر','مدار','هلال','ليل'],explanation:'القمر يدور في مدار ويؤثر في المد والجزر ويظهر هلالًا ليلًا.'},
+  {id:'connection-20',category:'أماكن',answer:'المطعم',aliases:['مطعم'],clues:['حجز','قائمة','نادل','وجبة'],explanation:'في المطعم تحجز طاولة وتختار من القائمة ويخدمك النادل.'},
+  {id:'connection-21',category:'مواصلات',answer:'السيارة',aliases:['سيارة','سياره','العربية'],clues:['مرآة','وقود','مقود','عجلات'],explanation:'للسيارة مرايا وتحتاج وقودًا ولها مقود وعجلات.'},
+  {id:'connection-22',category:'أماكن',answer:'الحديقة',aliases:['حديقة','حديقه','منتزه'],clues:['نزهة','مقعد','عشب','أشجار'],explanation:'الحديقة مكان للنزهة وفيها مقاعد وعشب وأشجار.'},
+  {id:'connection-23',category:'مناسبات',answer:'الزواج',aliases:['زواج','العرس','عرس'],clues:['دعوة','خاتم','زفة','عروسان'],explanation:'الدعوة والخاتم والزفة والعروسان كلها من أجواء الزواج.'},
+  {id:'connection-24',category:'رياضة',answer:'كرة السلة',aliases:['كرة سلة','كوره السله','كورة السلة'],clues:['ارتداد','صافرة','رمية ثلاثية','سلة'],explanation:'الارتداد والرمية الثلاثية والتسجيل في السلة من اللعبة.'},
+  {id:'connection-25',category:'أدوات',answer:'البوصلة',aliases:['بوصلة','بوصله'],clues:['دائرة','إبرة','شمال','اتجاه'],explanation:'للبوصلة إبرة تشير إلى الشمال وتساعد على معرفة الاتجاه.'},
+  {id:'connection-26',category:'منزل',answer:'الثلاجة',aliases:['ثلاجة','ثلاجه'],clues:['باب','رفوف','تجميد','بارد'],explanation:'للثلاجة باب ورفوف وتحفظ الطعام باردًا أو مجمدًا.'},
+  {id:'connection-27',category:'السعودية',answer:'النخلة',aliases:['نخلة','نخله','النخل','نخل'],clues:['ظل','سعف','تمر','واحة'],explanation:'للنخلة سعف وتعطي التمر وتكثر في الواحات.'},
+  {id:'connection-28',category:'تقنية',answer:'الحاسوب',aliases:['حاسوب','الكمبيوتر','كمبيوتر'],clues:['سطح مكتب','فأرة','ملفات','لوحة مفاتيح'],explanation:'الحاسوب فيه سطح مكتب وملفات ويُستخدم بالفأرة ولوحة المفاتيح.'},
+  {id:'connection-29',category:'أماكن',answer:'المكتبة',aliases:['مكتبة','مكتبه'],clues:['صمت','استعارة','رفوف','كتب'],explanation:'المكتبة مكان هادئ لاستعارة الكتب من الرفوف.'},
+  {id:'connection-30',category:'طبيعة',answer:'الشمس',aliases:['شمس'],clues:['شرق','ظل','حرارة','نهار'],explanation:'تشرق الشمس وتصنع الظلال وتمنح الحرارة والضوء نهارًا.'},
+  {id:'connection-31',category:'فنون',answer:'المسرح',aliases:['مسرح'],clues:['تصفيق','ستارة','خشبة','ممثل'],explanation:'على خشبة المسرح يمثل الفنانون خلف الستارة أمام جمهور يصفق.'},
+  {id:'connection-32',category:'تقنية',answer:'الكاميرا',aliases:['كاميرا','كميرا'],clues:['ذكرى','فلاش','عدسة','تصوير'],explanation:'تحفظ الكاميرا الذكريات بالتصوير عبر العدسة والفلاش.'},
+  {id:'connection-33',category:'أماكن',answer:'البنك',aliases:['بنك','المصرف','مصرف'],clues:['رقم','حساب','صراف','مال'],explanation:'في البنك أرقام انتظار وحسابات وصرافات وأموال.'},
+  {id:'connection-34',category:'مواصلات',answer:'القطار',aliases:['قطار'],clues:['موعد','محطة','عربة','سكة'],explanation:'يصل القطار في موعد إلى المحطة وتسير عرباته على السكة.'},
+  {id:'connection-35',category:'رياضة',answer:'كرة الطائرة',aliases:['كرة طائرة','كوره الطائره','الطائرة'],clues:['دوران','إرسال','صد','شبكة'],explanation:'الدوران والإرسال والصد أمام الشبكة من قوانين كرة الطائرة.'},
+  {id:'connection-36',category:'أماكن',answer:'المخبز',aliases:['مخبز','الفرن','فرن'],clues:['صباح','دقيق','عجين','خبز'],explanation:'يبدأ المخبز صباحًا بتحويل الدقيق والعجين إلى خبز.'},
+];
+
 export type CharacterCard = { id:string; answer:string; category:string; difficulty:Difficulty; hints:[string,string,string]; options:[string,string,string] };
 export const characterCards: CharacterCard[] = [
   {id:'character-01',answer:'شرلوك هولمز',category:'أدب',difficulty:'easy',hints:['شخصية خيالية بريطانية','أحل الجرائم بالملاحظة','صديقي الدكتور واطسون'],options:['شرلوك هولمز','هرقل بوارو','روبن هود']},

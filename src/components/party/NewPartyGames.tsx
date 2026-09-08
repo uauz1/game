@@ -1,7 +1,7 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
-import { ArrowLeft, Check, Eye, FastForward, Flag, Image, Lightbulb, RotateCcw, Sparkles, Trophy, Users, X, Zap } from 'lucide-react';
+import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
+import { ArrowLeft, Check, Eye, FastForward, Flag, Image, Lightbulb, Link2, RotateCcw, Send, Sparkles, Trophy, Users, X, Zap } from 'lucide-react';
 import { loadHuroofPreferences } from '../../utils/huroofStorage';
-import { characterCards, feudRounds, photoCards, riddles, speedQuestions, wordCards } from '../../data/newPartyGames';
+import { characterCards, connectionCards, feudRounds, photoCards, riddles, speedQuestions, wordCards } from '../../data/newPartyGames';
 import { drawWithoutRepeats } from '../../utils/newGameRotation';
 import { useNewGameNumber } from '../../utils/newGameSettings';
 import { loadSharedTeams, saveSharedTeams } from '../../utils/sharedTeams';
@@ -36,13 +36,13 @@ function GameHeader({ eyebrow, title, onHome }: { eyebrow: string; title: string
   return <div className="arena-heading"><div><span className="eyebrow"><Sparkles size={15}/> {eyebrow}</span><h1>{title}</h1></div><button className="quiet" onClick={onHome}>الألعاب <ArrowLeft size={17}/></button></div>;
 }
 
-function TeamSetup({ teams, setTeams, seconds, setSeconds, rounds, setRounds, onStart, children }: {
+function TeamSetup({ teams, setTeams, seconds, setSeconds, rounds, setRounds, onStart, children, description }: {
   teams: Team[]; setTeams: (teams: Team[]) => void; seconds: number; setSeconds: (value: number) => void;
-  rounds: number; setRounds: (value: number) => void; onStart: () => void; children?: ReactNode;
+  rounds: number; setRounds: (value: number) => void; onStart: () => void; children?: ReactNode; description?: string;
 }) {
   const valid = teams.every(team => team.name.trim()) && teams[0].name.trim() !== teams[1].name.trim();
   const update = (index: number, patch: Partial<Team>) => setTeams(teams.map((team, teamIndex) => teamIndex === index ? { ...team, ...patch } : team));
-  return <div className="new-game-setup"><div className="section-heading"><h2>جهّزوا الفريقين</h2><p>اختاروا الأسماء والإعدادات، والمقدم يتولى التحكيم على شاشة واحدة.</p></div><div className="team-setup">{teams.map((team,index)=><div className="team-editor compact-team" key={index} style={{'--team':team.color} as CSSProperties}><div className="team-emblem"><Users/><span>0{index+1}</span></div><label htmlFor={`new-team-${index}`}>اسم الفريق {index===0?'الأول':'الثاني'}</label><input id={`new-team-${index}`} maxLength={22} value={team.name} onChange={event=>update(index,{name:event.target.value})}/><div className="color-choices">{colors.map(color=><button key={color} aria-label={`اختيار لون ${color}`} aria-pressed={team.color===color} disabled={teams[1-index].color===color} style={{background:color}} onClick={()=>update(index,{color})}>{team.color===color?<Check size={16}/>:null}</button>)}</div></div>)}</div><div className="match-settings new-game-settings"><div><Flag/><b>إعدادات الجولة</b></div><label>مدة الجولة<select value={seconds} onChange={event=>setSeconds(Number(event.target.value))}><option value={20}>20 ثانية</option><option value={30}>30 ثانية</option><option value={45}>45 ثانية</option><option value={60}>60 ثانية</option></select></label><label>عدد الجولات<select value={rounds} onChange={event=>setRounds(Number(event.target.value))}><option value={4}>4 جولات</option><option value={6}>6 جولات</option><option value={8}>8 جولات</option></select></label>{children}</div>{!valid?<p className="validation">اكتبوا اسمين مختلفين وغير فارغين.</p>:null}<div className="arena-actions"><span>كل لعبة تحفظ روح قدّها: سريعة، واضحة، وتنافسية.</span><button className="primary" disabled={!valid} onClick={onStart}>ابدأوا التحدّي <Flag size={18}/></button></div></div>;
+  return <div className="new-game-setup"><div className="section-heading"><h2>جهّزوا الفريقين</h2><p>{description ?? 'اختاروا الأسماء والإعدادات، والمقدم يتولى التحكيم على شاشة واحدة.'}</p></div><div className="team-setup">{teams.map((team,index)=><div className="team-editor compact-team" key={index} style={{'--team':team.color} as CSSProperties}><div className="team-emblem"><Users/><span>0{index+1}</span></div><label htmlFor={`new-team-${index}`}>اسم الفريق {index===0?'الأول':'الثاني'}</label><input id={`new-team-${index}`} maxLength={22} value={team.name} onChange={event=>update(index,{name:event.target.value})}/><div className="color-choices">{colors.map(color=><button key={color} aria-label={`اختيار لون ${color}`} aria-pressed={team.color===color} disabled={teams[1-index].color===color} style={{background:color}} onClick={()=>update(index,{color})}>{team.color===color?<Check size={16}/>:null}</button>)}</div></div>)}</div><div className="match-settings new-game-settings"><div><Flag/><b>إعدادات الجولة</b></div><label>مدة الجولة<select value={seconds} onChange={event=>setSeconds(Number(event.target.value))}><option value={20}>20 ثانية</option><option value={30}>30 ثانية</option><option value={45}>45 ثانية</option><option value={60}>60 ثانية</option></select></label><label>عدد الجولات<select value={rounds} onChange={event=>setRounds(Number(event.target.value))}><option value={4}>4 جولات</option><option value={6}>6 جولات</option><option value={8}>8 جولات</option></select></label>{children}</div>{!valid?<p className="validation">اكتبوا اسمين مختلفين وغير فارغين.</p>:null}<div className="arena-actions"><span>كل لعبة تحفظ روح قدّها: سريعة، واضحة، وتنافسية.</span><button className="primary" disabled={!valid} onClick={onStart}>ابدأوا التحدّي <Flag size={18}/></button></div></div>;
 }
 
 function Scorebar({ teams, turn, round, total }: { teams: Team[]; turn: number; round: number; total: number }) {
@@ -88,6 +88,64 @@ export function WordBankGame({ onHome }: GameProps) {
   const next=(correct:boolean)=>{if(correct&&!timedOut)setTeams(value=>value.map((team,index)=>index===round%2?{...team,score:team.score+100}:team));if(round+1>=deck.length)setPhase('result');else{setRound(round+1);setShowWord(false);setTimedOut(false);}};
   const card=deck[round];
   return <section className="arena new-game word-game"><GameHeader eyebrow="بنك الكلمات" title={phase==='setup'?'وصف ذكي… بلا الكلمات الممنوعة.':phase==='result'?'خلص رصيد الكلمات!':`دور ${teams[round%2].name}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}/>:phase==='result'?<GameResult title="أبطال الوصف" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={round%2} round={round} total={deck.length}/><div className="new-stage word-stage">{!showWord?<><div className="word-vault">◆</div><h2>المُوصّف من {teams[round%2].name} جاهز؟</h2><p>خلّ الباقين يبعدون نظرهم، ثم اعرض الكلمة وابدأ الوصف.</p><button className="primary" onClick={()=>setShowWord(true)}>اعرض الكلمة وابدأ</button></>:<><span className="game-chip">{card.category}</span><h2 className="target-word">{card.word}</h2><p>ممنوع تقول:</p><div className="taboo-list">{card.taboo.map(word=><b key={word}>{word}</b>)}</div><Countdown key={card.word} seconds={seconds} stopped={timedOut} onExpire={()=>setTimedOut(true)}/>{timedOut?<div className="answer-feedback wrong" role="status"><b>انتهى الوقت · بلا نقاط</b><button className="primary" onClick={()=>next(false)}>{round+1===deck.length?'عرض النتيجة':'الكلمة التالية'}</button></div>:<div className="word-actions"><button className="correct" onClick={()=>next(true)}><Check/> صح · +100</button><button className="wrong" onClick={()=>next(false)}><FastForward/> تخطّي</button></div>}</>}</div></>}</section>;
+}
+
+export function ConnectionGame({ onHome }: GameProps) {
+  const [teams,setTeams]=useState(initialTeams);
+  const [seconds,setSeconds]=useNewGameNumber('connection','seconds',45);
+  const [rounds,setRounds]=useNewGameNumber('connection','rounds',6);
+  const [deck,setDeck]=useState(connectionCards);
+  const [round,setRound]=useState(0);
+  const [active,setActive]=useState(0);
+  const [clueCount,setClueCount]=useState(1);
+  const [answer,setAnswer]=useState('');
+  const [revealed,setRevealed]=useState(false);
+  const [timedOut,setTimedOut]=useState(false);
+  const [notice,setNotice]=useState('');
+  const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
+  const card=deck[round];
+  const points=[400,300,200,100][clueCount-1];
+
+  const resetRound=(nextRound:number)=>{
+    setRound(nextRound);
+    setActive(nextRound%2);
+    setClueCount(1);
+    setAnswer('');
+    setRevealed(false);
+    setTimedOut(false);
+    setNotice('');
+  };
+  const start=()=>{
+    setDeck(drawWithoutRepeats('connection',connectionCards,rounds,item=>item.id));
+    setTeams(prepareTeams(teams));
+    resetRound(0);
+    setPhase('play');
+  };
+  const next=()=>{
+    if(round+1>=deck.length)setPhase('result');
+    else resetRound(round+1);
+  };
+  const submit=(event:FormEvent)=>{
+    event.preventDefault();
+    const submitted=normalizeFamilyAnswer(answer);
+    if(!submitted){setNotice('اكتبوا الرابط أولًا.');return;}
+    const accepted=[card.answer,...card.aliases].map(normalizeFamilyAnswer);
+    const correct=accepted.some(expected=>expected===submitted||(Math.min(expected.length,submitted.length)>=5&&(expected.includes(submitted)||submitted.includes(expected))));
+    if(correct){
+      setTeams(value=>value.map((team,index)=>index===active?{...team,score:team.score+points}:team));
+      setNotice(`إجابة صحيحة · +${points} نقطة`);
+      setRevealed(true);
+      return;
+    }
+    if(clueCount===4){setNotice('انتهت المحاولات · بلا نقاط');setRevealed(true);return;}
+    setClueCount(value=>value+1);
+    setActive(value=>1-value);
+    setAnswer('');
+    setNotice('مو الرابط… انفتح تلميح جديد وانتقل الدور.');
+  };
+  const giveUp=()=>{setNotice('تم كشف الرابط · بلا نقاط');setRevealed(true);};
+
+  return <section className="arena new-game connection-game"><GameHeader eyebrow="وش الرابط؟" title={phase==='setup'?'أربع إشارات… رابط واحد.':phase==='result'?'انربطت الخيوط!':`الرابط ${round+1} من ${deck.length}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} description="اختاروا الأسماء، والنظام يتحقق من الرابط ويحسب النقاط تلقائيًا." onStart={start}><small className="auto-save-note">36 رابطًا متنوعًا؛ التلميح الأول يساوي 400 نقطة وتنخفض القيمة مع كل تلميح.</small></TeamSetup>:phase==='result'?<GameResult title="أسرع من ربطها" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={active} round={round} total={deck.length}/><div className="new-stage connection-stage"><span className="game-chip"><Link2/> {card.category}</span><div className="connection-value"><small>قيمة الرابط الآن</small><strong>{timedOut?0:points}</strong><span>نقطة</span></div><div className="connection-clues" aria-label={`ظهر ${clueCount} من 4 تلميحات`}>{card.clues.map((clue,index)=><div key={clue} className={index<clueCount?'visible':'locked'}><b>{index+1}</b><span>{index<clueCount?clue:'؟'}</span></div>)}</div><Countdown key={card.id} seconds={seconds} stopped={revealed} onExpire={()=>{setTimedOut(true);setNotice('انتهى الوقت · بلا نقاط');setRevealed(true);}}/>{!revealed?<form className="connection-answer" onSubmit={submit}><label htmlFor="connection-answer">دور {teams[active].name} · ما الرابط؟</label><div><input id="connection-answer" value={answer} onChange={event=>setAnswer(event.target.value)} maxLength={40} autoComplete="off" placeholder="اكتبوا الرابط هنا…"/><button className="primary" type="submit"><Send/> تأكيد</button></div>{notice?<p className="connection-notice" role="status">{notice}</p>:<p className="connection-notice" aria-hidden="true"/>}<button className="quiet connection-give-up" type="button" onClick={giveUp}><Eye/> ما عرفنا · اكشف الرابط</button></form>:<div className={`connection-reveal ${notice.includes('صحيحة')?'correct':'wrong'}`} role="status"><Lightbulb/><small>{notice}</small><h2>{card.answer}</h2><p>{card.explanation}</p><button className="primary" onClick={next}>{round+1===deck.length?'عرض النتيجة':'الرابط التالي'}</button></div>}</div></>}</section>;
 }
 
 export function FamilyFeudGame({ onHome }: GameProps) {

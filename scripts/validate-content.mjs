@@ -61,6 +61,12 @@ newGames.feudRounds.forEach((item, index) => {
   if (!item.question?.trim() || !Array.isArray(item.answers) || item.answers.length < 4) errors.push(`تحدي العائلة #${index + 1}: السؤال أو الإجابات ناقصة`);
   if (item.answers.some(([answer, points]) => !answer?.trim() || !Number.isFinite(points) || points <= 0)) errors.push(`تحدي العائلة #${index + 1}: إجابة أو نقاط غير صالحة`);
 });
+newGames.connectionCards.forEach((card, index) => {
+  register(`connection:${card.id}`, `وش الرابط #${index + 1}`);
+  if (!card.answer?.trim() || !card.category?.trim() || !card.explanation?.trim()) errors.push(`وش الرابط #${index + 1}: بيانات أساسية ناقصة`);
+  if (!Array.isArray(card.clues) || card.clues.length !== 4 || card.clues.some(clue => !clue.trim())) errors.push(`وش الرابط #${index + 1}: يجب توفير أربعة تلميحات`);
+  if (!Array.isArray(card.aliases)) errors.push(`وش الرابط #${index + 1}: قائمة البدائل مفقودة`);
+});
 [...newGames.riddles, ...newGames.speedQuestions].forEach((item, index) => {
   if (!Array.isArray(item) || item.length !== 2 || item.some(value => !String(value).trim())) errors.push(`سؤال سريع/فزورة #${index + 1}: سؤال أو إجابة مفقودة`);
 });
@@ -78,5 +84,5 @@ if (errors.length) {
   process.exit(1);
 }
 
-const newCount = newGames.characterCards.length + newGames.riddles.length + newGames.photoCards.length + newGames.speedQuestions.length + newGames.wordCards.length + newGames.feudRounds.length;
+const newCount = newGames.characterCards.length + newGames.riddles.length + newGames.photoCards.length + newGames.speedQuestions.length + newGames.wordCards.length + newGames.feudRounds.length + newGames.connectionCards.length;
 console.log(`فحص المحتوى ناجح: ${party.questions.length} سؤال فرق، ${huroof.huroofQuestions.length} سؤال حروف، ${who.WHO_AM_I_CARDS.length} بطاقة من أنا، و${newCount} بطاقة في الألعاب الجديدة.`);
