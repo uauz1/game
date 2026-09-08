@@ -8,8 +8,10 @@ import { moviesQuestions, gamesQuestions } from './movies_games';
 import { puzzlesQuestions, animalsQuestions, famousQuestions } from './puzzles_animals_famous';
 import { saudiQuestions, worldQuestions, trueFalseQuestions } from './saudi_world_truefalse';
 import { extraQuestions } from './extra';
+import { themedQuestions } from './themed';
 
 const extrasFor = (category: string) => extraQuestions.filter((q) => q.category === category);
+const themedFor = (category: string) => themedQuestions.filter((q) => q.category === category);
 const trueFalsePool = [...trueFalseQuestions, ...extraQuestions.filter((q) => q.type === 'truefalse')];
 
 export const ALL_QUESTIONS: Question[] = [
@@ -30,6 +32,7 @@ export const ALL_QUESTIONS: Question[] = [
   ...worldQuestions,
   ...trueFalseQuestions,
   ...extraQuestions,
+  ...themedQuestions,
 ];
 
 export const QUESTIONS_BY_CATEGORY: Record<string, Question[]> = {
@@ -49,6 +52,18 @@ export const QUESTIONS_BY_CATEGORY: Record<string, Question[]> = {
   saudi: [...saudiQuestions, ...extrasFor('saudi')],
   world: [...worldQuestions, ...extrasFor('world')],
   truefalse: trueFalsePool,
+  food: themedFor('food'),
+  cars: themedFor('cars'),
+  space: themedFor('space'),
+  medicine: themedFor('medicine'),
+  languages: themedFor('languages'),
+  books: themedFor('books'),
+  music: themedFor('music'),
+  nature: themedFor('nature'),
+  inventions: themedFor('inventions'),
+  economy: themedFor('economy'),
+  architecture: themedFor('architecture'),
+  flags: themedFor('flags'),
 };
 
 const USED_KEY = 'qaddha_used_question_ids_v1';
