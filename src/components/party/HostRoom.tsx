@@ -26,6 +26,7 @@ export type FamilyHostState = {
 
 type RoomStatus = 'starting' | 'ready' | 'connecting' | 'connected' | 'disconnected' | 'error';
 
+// eslint-disable-next-line react-refresh/only-export-components -- The transport hook and its paired UI share one lazy-loaded boundary.
 export function useFamilyHostRoom(state: FamilyHostState, onCommand: (command: FamilyHostCommand) => void) {
   const [status, setStatus] = useState<RoomStatus>('starting');
   const [hostUrl, setHostUrl] = useState('');
@@ -108,9 +109,13 @@ export function HostPairingPanel({ status, hostUrl, qrCode, compact = false }: {
   const connected = status === 'connected';
   const copy = async () => {
     if (!hostUrl) return;
-    await navigator.clipboard?.writeText(hostUrl);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    try {
+      await navigator.clipboard?.writeText(hostUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // QR scanning remains available when clipboard permission is denied.
+    }
   };
 
   if (compact) {
