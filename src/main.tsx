@@ -5,6 +5,7 @@ import './index.css';
 import './huroof.css';
 import './whoami.css';
 import './teams.css';
+import './settings.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
