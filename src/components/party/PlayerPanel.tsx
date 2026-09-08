@@ -20,6 +20,10 @@ type PlayerPanelProps = {
   recent: PlayerActivity[];
   onPlay: (gameId: string) => void;
   onToggleFavorite: (gameId: string) => void;
+  accountConfigured: boolean;
+  accountName: string;
+  onAuth: () => void;
+  onSignOut: () => void;
 };
 
 function formatRecent(timestamp: number) {
@@ -32,7 +36,7 @@ function formatRecent(timestamp: number) {
   return new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'short' }).format(timestamp);
 }
 
-export default function PlayerPanel({ open, onClose, games, favorites, recent, onPlay, onToggleFavorite }: PlayerPanelProps) {
+export default function PlayerPanel({ open, onClose, games, favorites, recent, onPlay, onToggleFavorite, accountConfigured, accountName, onAuth, onSignOut }: PlayerPanelProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -57,8 +61,8 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
 
   return <div className="player-overlay" onMouseDown={(event) => event.currentTarget === event.target && onClose()}>
     <section className="player-panel" role="dialog" aria-modal="true" aria-label="ملف اللاعب">
-      <header><div className="player-avatar"><UserRound/></div><div><span>وضع الضيف</span><h2>يا هلا باللاعب</h2><p>مفضّلتك وآخر ألعابك محفوظة على هذا الجهاز.</p></div><button ref={closeRef} className="settings-close" aria-label="إغلاق ملف اللاعب" onClick={onClose}><X/></button></header>
-      <div className="guest-account-note"><LogIn/><div><b>الحساب اختياري</b><small>تلعب الآن بلا تسجيل. ربط الحساب والمزامنة السحابية سيظهران عند تفعيل خدمة الحسابات الآمنة.</small></div></div>
+      <header><div className="player-avatar"><UserRound/></div><div><span>{accountName ? 'حساب متصل' : 'وضع الضيف'}</span><h2>{accountName || 'يا هلا باللاعب'}</h2><p>مفضّلتك وآخر ألعابك محفوظة على هذا الجهاز.</p></div><button ref={closeRef} className="settings-close" aria-label="إغلاق ملف اللاعب" onClick={onClose}><X/></button></header>
+      <div className={`guest-account-note ${accountName ? 'signed-in' : ''}`}><LogIn/><div><b>{accountName ? 'أنت مسجل الدخول' : 'الحساب اختياري'}</b><small>{accountName ? 'تقدر تكمل اللعب كالمعتاد وتسجيل الخروج وقت ما تحب.' : accountConfigured ? 'سجّل دخولك أو أنشئ حسابًا، أو كمل اللعب مباشرة كضيف.' : 'تلعب الآن بلا تسجيل. خدمة الحسابات جاهزة وتحتاج تفعيل الربط الآمن فقط.'}</small></div>{accountConfigured && <button onClick={accountName ? onSignOut : onAuth}>{accountName ? 'خروج' : 'دخول'}</button>}</div>
       <section className="player-section"><div className="player-section-title"><Heart/><h3>المفضلة</h3><span>{favoriteGames.length}</span></div>{favoriteGames.length ? <div className="player-game-list">{favoriteGames.map((game) => <article key={game.id}><img src={game.cover} alt=""/><button onClick={() => { onPlay(game.id); onClose(); }}><b>{game.title}</b><small>العب الآن</small></button><button className="favorite-remove" aria-label={`إزالة ${game.title} من المفضلة`} onClick={() => onToggleFavorite(game.id)}><Heart fill="currentColor"/></button></article>)}</div> : <div className="player-empty"><Heart/><b>مفضّلتك فاضية</b><p>اضغط القلب على أي لعبة عشان تلقاها هنا بسرعة.</p></div>}</section>
       <section className="player-section"><div className="player-section-title"><Clock3/><h3>لعبت مؤخرًا</h3><span>{recentGames.length}</span></div>{recentGames.length ? <div className="player-game-list">{recentGames.map((game) => <article key={`${game.id}-${game.playedAt}`}><img src={game.cover} alt=""/><button onClick={() => { onPlay(game.id); onClose(); }}><b>{game.title}</b><small>{formatRecent(game.playedAt)}</small></button><Gamepad2/></article>)}</div> : <div className="player-empty"><Gamepad2/><b>ما بدأت لعبة إلى الآن</b><p>اختر لعبة من المكتبة وبتظهر هنا تلقائيًا.</p></div>}</section>
     </section>
