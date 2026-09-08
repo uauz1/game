@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tahaddi-v1';
+const CACHE_NAME = 'qaddha-v3';
 const ASSETS = ['/', '/index.html', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
@@ -18,21 +18,33 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+  if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) return;
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy));
+          return response;
+        })
+        .catch(async () => (await caches.match('/index.html')) || Response.error())
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      return (
-        cached ||
-        fetch(event.request)
-          .then((response) => {
-            if (response && response.status === 200 && event.request.url.startsWith(self.location.origin)) {
-              const clone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-            }
-            return response;
-          })
-          .catch(() => cached)
-      );
+      const updated = fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => cached || Response.error());
+      return cached || updated;
     })
   );
 });
