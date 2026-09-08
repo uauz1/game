@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Copy, Expand, RefreshCcw, Settings, Share2, Type, Volume2, X, Zap } from 'lucide-react';
+import { Check, Copy, Expand, Monitor, Moon, RefreshCcw, Settings, Share2, Sun, Type, Volume2, X, Zap } from 'lucide-react';
+
+type ThemePreference = 'dark' | 'light' | 'system';
 
 type Prefs = {
+  theme: ThemePreference;
   largeText: boolean;
   reducedMotion: boolean;
   highContrast: boolean;
@@ -9,12 +12,14 @@ type Prefs = {
 };
 
 const PREFS_KEY = 'qaddha_site_prefs_v1';
-const defaults: Prefs = { largeText: false, reducedMotion: false, highContrast: false, soundEnabled: true };
+const defaults: Prefs = { theme: 'dark', largeText: false, reducedMotion: false, highContrast: false, soundEnabled: true };
+
+const isThemePreference = (value: unknown): value is ThemePreference => value === 'dark' || value === 'light' || value === 'system';
 
 function readPrefs(): Prefs {
   try {
     const value = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
-    return { ...defaults, ...value };
+    return { ...defaults, ...value, theme: isThemePreference(value.theme) ? value.theme : defaults.theme };
   } catch {
     return defaults;
   }
@@ -22,13 +27,26 @@ function readPrefs(): Prefs {
 
 function applyPrefs(prefs: Prefs) {
   const root = document.documentElement;
+  const resolvedTheme = prefs.theme === 'system'
+    ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+    : prefs.theme;
+  root.dataset.themePreference = prefs.theme;
+  root.dataset.theme = resolvedTheme;
+  root.style.colorScheme = resolvedTheme;
+  document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', resolvedTheme === 'light' ? '#F4F1E9' : '#0B1020');
   root.dataset.qaddhaText = prefs.largeText ? 'large' : 'normal';
   root.dataset.qaddhaMotion = prefs.reducedMotion ? 'reduced' : 'full';
   root.dataset.qaddhaContrast = prefs.highContrast ? 'high' : 'normal';
 }
 
 export function useQaddhaPreferences() {
-  useEffect(() => applyPrefs(readPrefs()), []);
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: light)');
+    const sync = () => applyPrefs(readPrefs());
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
 }
 
 export default function SiteSettings({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -46,6 +64,12 @@ export default function SiteSettings({ open, onClose }: { open: boolean; onClose
     applyPrefs(prefs);
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch { /* Preferences remain active for this visit. */ }
   }, [prefs]);
+
+  const themes = [
+    { value: 'dark' as const, label: 'داكن', icon: Moon },
+    { value: 'light' as const, label: 'فاتح', icon: Sun },
+    { value: 'system' as const, label: 'حسب الجهاز', icon: Monitor },
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -98,6 +122,12 @@ export default function SiteSettings({ open, onClose }: { open: boolean; onClose
   return <div className="settings-overlay" onMouseDown={(e)=>e.currentTarget===e.target&&onClose()}>
     <section className="settings-panel" role="dialog" aria-modal="true" aria-label="إعدادات قدّها">
       <div className="settings-head"><div><span><Settings size={18}/> إعدادات قدّها</span><h2>خلّ التجربة على مزاجكم</h2></div><button ref={closeButtonRef} className="settings-close" aria-label="إغلاق الإعدادات" onClick={onClose}><X/></button></div>
+      <div className="theme-setting">
+        <div><b>مظهر قدّها</b><small>اختر الجو المناسب، أو خلّه يتبع إعداد جهازك.</small></div>
+        <div className="theme-options" role="group" aria-label="اختيار مظهر الموقع">
+          {themes.map(({ value, label, icon: Icon }) => <button key={value} aria-pressed={prefs.theme === value} onClick={() => setPrefs((current) => ({ ...current, theme: value }))}><Icon/><span>{label}</span></button>)}
+        </div>
+      </div>
       <div className="settings-options">{settings.map(({key,title,desc,icon:Icon})=><button key={key} className={`settings-toggle ${prefs[key]?'on':''}`} aria-pressed={prefs[key]} onClick={()=>setPrefs((p)=>({...p,[key]:!p[key]}))}><span className="settings-icon"><Icon/></span><span><b>{title}</b><small>{desc}</small></span><i>{prefs[key]?'مفعّل':'متوقف'}</i></button>)}</div>
       <div className="settings-tools"><button onClick={share}><Share2/><span><b>مشاركة قدّها</b><small>أرسل رابط الموقع للمجموعة</small></span></button><button onClick={fullscreen}><Expand/><span><b>ملء الشاشة</b><small>أفضل للتلفزيون والشاشة الكبيرة</small></span></button><button onClick={resetQuestions}><RefreshCcw/><span><b>تصفير سجل الأسئلة</b><small>يسمح بظهور الأسئلة القديمة من جديد</small></span></button><button onClick={resetSettings}><RefreshCcw/><span><b>استعادة الإعدادات</b><small>العرض والصوت للوضع الافتراضي</small></span></button><button onClick={async()=>{try{await navigator.clipboard.writeText(location.origin);setNotice('تم نسخ الرابط')}catch{setNotice('تعذّر النسخ؛ انسخ الرابط من شريط المتصفح')}}}><Copy/><span><b>نسخ الرابط</b><small>نسخ سريع للحافظة</small></span></button></div>
       {notice&&<div className="settings-notice" role="status">{notice}</div>}

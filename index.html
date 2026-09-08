@@ -16,6 +16,24 @@
     />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      (() => {
+        try {
+          const saved = JSON.parse(localStorage.getItem('qaddha_site_prefs_v1') || '{}');
+          const preference = ['dark', 'light', 'system'].includes(saved.theme) ? saved.theme : 'dark';
+          const theme = preference === 'system'
+            ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+            : preference;
+          document.documentElement.dataset.themePreference = preference;
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+          document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#F4F1E9' : '#0B1020');
+        } catch {
+          document.documentElement.dataset.theme = 'dark';
+          document.documentElement.style.colorScheme = 'dark';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
