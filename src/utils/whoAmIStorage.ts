@@ -1,7 +1,9 @@
 import type { WhoAmIDifficulty } from '../data/whoAmIQuestions';
+import type { WhoAmICard } from '../data/whoAmIQuestions';
 import { loadHuroofPreferences } from './huroofStorage';
 
 const STORAGE_KEY = 'qaddha-who-am-i-preferences-v1';
+const USED_CARDS_KEY = 'qaddha.who-am-i.used-cards.v1';
 
 export type WhoAmIPreferences = {
   teamNames: [string, string];
@@ -40,4 +42,29 @@ export function saveWhoAmIPreferences(preferences: WhoAmIPreferences) {
   } catch {
     // The game remains fully playable when storage is blocked or unavailable.
   }
+}
+
+function shuffle<T>(items: T[]) {
+  const copy = [...items];
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+  }
+  return copy;
+}
+
+export function drawWhoAmICards(cards: WhoAmICard[], count: number, difficulty: WhoAmIDifficulty) {
+  let used: Record<string, string[]> = {};
+  try { used = JSON.parse(localStorage.getItem(USED_CARDS_KEY) ?? '{}'); } catch { /* Storage is optional. */ }
+  const usedIds = new Set(used[difficulty] ?? []);
+  const fresh = shuffle(cards.filter(card => !usedIds.has(card.id)));
+  const rollover = fresh.length < count
+    ? shuffle(cards.filter(card => !fresh.some(item => item.id === card.id))).slice(0, count - fresh.length)
+    : [];
+  const picked = [...fresh.slice(0, count), ...rollover];
+  used[difficulty] = fresh.length < count
+    ? picked.map(card => card.id)
+    : [...(used[difficulty] ?? []), ...picked.map(card => card.id)].slice(-cards.length);
+  try { localStorage.setItem(USED_CARDS_KEY, JSON.stringify(used)); } catch { /* Storage is optional. */ }
+  return picked;
 }

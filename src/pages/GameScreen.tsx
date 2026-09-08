@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  X, Clock, Scissors, Star, Volume2, VolumeX, Check, ChevronLeft,
+  X, Volume2, VolumeX, Check, ChevronLeft,
   AlertCircle, Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -11,7 +11,7 @@ import { getCategoryById } from '@/data/categories';
 import { useGame } from '@/contexts/GameContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/contexts/ToastContext';
-import { POWER_UPS, type Player } from '@/types';
+import { POWER_UPS } from '@/types';
 import { calculatePoints, cn } from '@/utils/helpers';
 import { loadFromStorage, saveToStorage } from '@/utils/storage';
 import type { GameResult, LeaderboardEntry } from '@/types';
@@ -37,7 +37,7 @@ export function GameScreen() {
   const [timeLeft, setTimeLeft] = useState(gameConfig?.timerSeconds || 0);
   const [eliminatedChoices, setEliminatedChoices] = useState<number[]>([]);
   const [doublePointsActive, setDoublePointsActive] = useState(false);
-  const [extraTimeUsed, setExtraTimeUsed] = useState(false);
+  const [, setExtraTimeUsed] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [questionKey, setQuestionKey] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -61,7 +61,7 @@ export function GameScreen() {
     setExtraTimeUsed(false);
     setTimeLeft(gameConfig?.timerSeconds || 0);
     setQuestionKey((k) => k + 1);
-  }, [gameConfig?.currentQuestionIndex]);
+  }, [gameConfig?.currentQuestionIndex, gameConfig?.timerSeconds]);
 
   // Timer
   useEffect(() => {
@@ -156,8 +156,6 @@ export function GameScreen() {
   function handleGameEnd() {
     if (!gameConfig) return;
     const sortedPlayers = [...gameConfig.players].sort((a, b) => b.score - a.score);
-    const winner = sortedPlayers[0].score > 0 ? sortedPlayers[0] : null;
-
     // Check for tie
     const topScore = sortedPlayers[0].score;
     const winners = sortedPlayers.filter((p) => p.score === topScore);
@@ -202,7 +200,7 @@ export function GameScreen() {
     navigate('/');
   }
 
-  function usePowerUp(power: 'eliminate' | 'extraTime' | 'doublePoints') {
+  function handlePowerUp(power: 'eliminate' | 'extraTime' | 'doublePoints') {
     if (!currentPlayer || !currentQuestion || isLocked) return;
     if (currentPlayer.powersUsed[power]) {
       showToast('استخدمت هذه القوة بالفعل', 'warning');
@@ -431,7 +429,7 @@ export function GameScreen() {
             return (
               <button
                 key={power.id}
-                onClick={() => usePowerUp(power.id)}
+                onClick={() => handlePowerUp(power.id)}
                 disabled={used}
                 className={cn(
                   'flex-1 flex flex-col items-center gap-1 p-3 rounded-2xl border transition-all',

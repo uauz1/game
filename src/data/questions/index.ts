@@ -80,7 +80,7 @@ function readUsedIds(): Set<string> {
 function persistUsedIds(ids: Set<string>) {
   try {
     localStorage.setItem(USED_KEY, JSON.stringify(Array.from(ids).slice(-1500)));
-  } catch {}
+  } catch { /* Storage is optional. */ }
 }
 
 function shuffle<T>(items: T[]): T[] {

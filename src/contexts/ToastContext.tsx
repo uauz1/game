@@ -26,7 +26,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ toasts, showToast, removeToast }}>
       {children}
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <ToastContainer toasts={toasts} />
     </ToastContext.Provider>
   );
 }
@@ -45,7 +45,7 @@ const TOAST_ICONS: Record<ToastType, string> = {
   warning: 'text-yellow',
 };
 
-function ToastContainer({ toasts, removeToast }: { toasts: Toast[]; removeToast: (id: string) => void }) {
+function ToastContainer({ toasts }: { toasts: Toast[] }) {
   return (
     <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 w-full max-w-sm px-4 pointer-events-none">
       {toasts.map((toast) => {

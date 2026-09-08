@@ -19,3 +19,4 @@
 @keyframes who-clue-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media(max-width:760px){.who-settings{grid-template-columns:1fr}.who-scorebar{grid-template-columns:1fr 1fr}.who-round{grid-column:1/-1;grid-row:1}.who-team-score{padding:14px}.who-team-score strong{font-size:1.55rem}.who-stage{padding:18px 12px;border-radius:23px}.mystery-avatar{width:82px;height:82px;border-radius:25px}.mystery-avatar span{font-size:3.2rem}.who-clue{padding:12px;gap:10px}.who-clue p{font-size:.95rem}.who-actions{display:grid}.who-actions button{width:100%;min-width:0}.who-judging{grid-template-columns:1fr}.who-reveal h2{font-size:1.7rem}.who-result-scores{grid-template-columns:1fr}.who-progress{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){.who-clue{animation:none}.who-judging button:hover{transform:none}}
+.who-undo{display:flex;margin:-8px auto 8px;font-size:.7rem}.who-result-undo{display:flex;margin:18px auto 0;font-size:.75rem}

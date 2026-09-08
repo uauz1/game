@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ChevronLeft, ChevronRight, Check, X, Plus, Minus, User, Users, UserPlus,
-  Zap, CheckCircle, ListChecks, Smile, Meh, Frown, Shuffle, Clock,
-  Scissors, Star, Trophy,
+  ChevronLeft, ChevronRight, Check, X, Plus, Minus, User,
+  Zap, CheckCircle, Clock, Trophy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';

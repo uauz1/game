@@ -1,13 +1,13 @@
 import {
-  Volume2, VolumeX, Moon, Sun, Clock, Music, Globe,
-  Bell, Palette, RotateCcw, Info,
+  Volume2, Moon, Sun, Clock, Music, Globe,
+  Palette, RotateCcw, Info,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/contexts/ToastContext';
-import { TIMER_OPTIONS, type Settings as SettingsType } from '@/types';
-import { loadFromStorage, saveToStorage, removeFromStorage } from '@/utils/storage';
+import { TIMER_OPTIONS } from '@/types';
+import { removeFromStorage } from '@/utils/storage';
 import { cn } from '@/utils/helpers';
 
 export function Settings() {

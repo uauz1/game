@@ -136,19 +136,25 @@ function genericFor(categoryName:string): PartyQuestion[] {
 }
 
 export function getPartyPool(categoryName:string): PartyQuestion[] {
+  const cached=poolCache.get(categoryName);
+  if(cached) return cached;
   const merged=[
     ...baseQuestions.filter((q)=>q.category===categoryName),
     ...genericFor(categoryName),
     ...supplemental.filter((q)=>q.category===categoryName),
   ];
   const seen=new Set<string>();
-  return merged.filter((q)=>{
+  const pool=merged.filter((q)=>{
     const key=q.q.trim().toLowerCase();
     if(seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+  poolCache.set(categoryName,pool);
+  return pool;
 }
+
+const poolCache=new Map<string,PartyQuestion[]>();
 
 export function getPartyQuestionCount(categoryName:string){
   return getPartyPool(categoryName).length;
@@ -159,7 +165,7 @@ function readUsed():Record<string,number[]>{
   try{return JSON.parse(localStorage.getItem(USED_KEY)||'{}')}catch{return {}}
 }
 function saveUsed(value:Record<string,number[]>){
-  try{localStorage.setItem(USED_KEY,JSON.stringify(value))}catch{}
+  try{localStorage.setItem(USED_KEY,JSON.stringify(value))}catch{/* Storage is optional. */}
 }
 function shuffle<T>(items:T[]){
   const copy=[...items];
@@ -173,14 +179,15 @@ export function buildPartyBoard(categoryNames:string[]):PartyQuestion[]{
   categoryNames.forEach((category)=>{
     const pool=getPartyPool(category);
     const usedIds=new Set(used[category]||[]);
-    let fresh=shuffle(pool.filter((q)=>!usedIds.has(q.id)));
-    if(fresh.length<5){
-      used[category]=[];
-      fresh=shuffle(pool);
-    }
-    const picked=fresh.slice(0,5).map((q,index)=>({...q,points:(index+1)*100}));
+    const fresh=shuffle(pool.filter((q)=>!usedIds.has(q.id)));
+    const rollover=fresh.length < 5
+      ? shuffle(pool.filter((q)=>!fresh.some((item)=>item.id===q.id))).slice(0,5-fresh.length)
+      : [];
+    const picked=[...fresh.slice(0,5),...rollover].map((q,index)=>({...q,points:(index+1)*100}));
     out.push(...picked);
-    used[category]=[...(used[category]||[]),...picked.map((q)=>q.id)].slice(-Math.max(pool.length,5));
+    used[category]=fresh.length < 5
+      ? picked.map((q)=>q.id)
+      : [...(used[category]||[]),...picked.map((q)=>q.id)].slice(-Math.max(pool.length,5));
   });
   saveUsed(used);
   return out;

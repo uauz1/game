@@ -1,0 +1,134 @@
+import { useState, type CSSProperties, type ReactNode } from 'react';
+import { ArrowLeft, Check, Eye, FastForward, Flag, Image, Lightbulb, RotateCcw, Sparkles, Trophy, Users, X, Zap } from 'lucide-react';
+import { loadHuroofPreferences } from '../../utils/huroofStorage';
+import Countdown from './Countdown';
+
+type Team = { name: string; color: string; score: number };
+type GameProps = { onHome: () => void };
+const colors = ['#45b6ff', '#ff70b5', '#a77bff', '#ffd45a'];
+
+function initialTeams(): Team[] {
+  const saved = loadHuroofPreferences();
+  return [
+    { name: saved.teamNames[0], color: saved.teamColors[0], score: 0 },
+    { name: saved.teamNames[1], color: saved.teamColors[1], score: 0 },
+  ];
+}
+
+function shuffle<T>(items: T[]) {
+  const copy = [...items];
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swap = Math.floor(Math.random() * (index + 1));
+    [copy[index], copy[swap]] = [copy[swap], copy[index]];
+  }
+  return copy;
+}
+
+function GameHeader({ eyebrow, title, onHome }: { eyebrow: string; title: string; onHome: () => void }) {
+  return <div className="arena-heading"><div><span className="eyebrow"><Sparkles size={15}/> {eyebrow}</span><h1>{title}</h1></div><button className="quiet" onClick={onHome}>الألعاب <ArrowLeft size={17}/></button></div>;
+}
+
+function TeamSetup({ teams, setTeams, seconds, setSeconds, rounds, setRounds, onStart, children }: {
+  teams: Team[]; setTeams: (teams: Team[]) => void; seconds: number; setSeconds: (value: number) => void;
+  rounds: number; setRounds: (value: number) => void; onStart: () => void; children?: ReactNode;
+}) {
+  const valid = teams.every(team => team.name.trim()) && teams[0].name.trim() !== teams[1].name.trim();
+  const update = (index: number, patch: Partial<Team>) => setTeams(teams.map((team, teamIndex) => teamIndex === index ? { ...team, ...patch } : team));
+  return <div className="new-game-setup"><div className="section-heading"><h2>جهّزوا الفريقين</h2><p>اختاروا الأسماء والإعدادات، والمقدم يتولى التحكيم على شاشة واحدة.</p></div><div className="team-setup">{teams.map((team,index)=><div className="team-editor compact-team" key={index} style={{'--team':team.color} as CSSProperties}><div className="team-emblem"><Users/><span>0{index+1}</span></div><label htmlFor={`new-team-${index}`}>اسم الفريق {index===0?'الأول':'الثاني'}</label><input id={`new-team-${index}`} maxLength={22} value={team.name} onChange={event=>update(index,{name:event.target.value})}/><div className="color-choices">{colors.map(color=><button key={color} aria-label={`اختيار لون ${color}`} aria-pressed={team.color===color} disabled={teams[1-index].color===color} style={{background:color}} onClick={()=>update(index,{color})}>{team.color===color?<Check size={16}/>:null}</button>)}</div></div>)}</div><div className="match-settings new-game-settings"><div><Flag/><b>إعدادات الجولة</b></div><label>مدة الجولة<select value={seconds} onChange={event=>setSeconds(Number(event.target.value))}><option value={20}>20 ثانية</option><option value={30}>30 ثانية</option><option value={45}>45 ثانية</option><option value={60}>60 ثانية</option></select></label><label>عدد الجولات<select value={rounds} onChange={event=>setRounds(Number(event.target.value))}><option value={4}>4 جولات</option><option value={6}>6 جولات</option><option value={8}>8 جولات</option></select></label>{children}</div>{!valid?<p className="validation">اكتبوا اسمين مختلفين وغير فارغين.</p>:null}<div className="arena-actions"><span>كل لعبة تحفظ روح قدّها: سريعة، واضحة، وتنافسية.</span><button className="primary" disabled={!valid} onClick={onStart}>ابدأوا التحدّي <Flag size={18}/></button></div></div>;
+}
+
+function Scorebar({ teams, turn, round, total }: { teams: Team[]; turn: number; round: number; total: number }) {
+  return <div className="new-scorebar">{teams.map((team,index)=><div key={index} className={turn===index?'active':''} style={{'--team':team.color} as CSSProperties}><span>{team.name}</span><strong>{team.score}</strong></div>)}<p>الجولة <b>{Math.min(round+1,total)}</b> / {total}</p></div>;
+}
+
+const characterCards = [
+  {answer:'شرلوك هولمز',category:'أدب',hints:['شخصية خيالية بريطانية','أحل الجرائم بالملاحظة','صديقي الدكتور واطسون'],options:['شرلوك هولمز','هرقل بوارو','روبن هود']},
+  {answer:'صلاح الدين الأيوبي',category:'تاريخ',hints:['قائد مسلم في القرن الثاني عشر','ارتبط اسمي بمعركة حطين','استعدت القدس'],options:['طارق بن زياد','صلاح الدين الأيوبي','خالد بن الوليد']},
+  {answer:'ماريو',category:'ألعاب',hints:['شخصية إيطالية خيالية','أقفز فوق العوائق','أرتدي قبعة حمراء'],options:['سونيك','لينك','ماريو']},
+  {answer:'سندباد',category:'قصص',hints:['بحّار في حكايات شهيرة','خضت سبع رحلات','قصصي ضمن ألف ليلة وليلة'],options:['علاء الدين','سندباد','علي بابا']},
+  {answer:'ليوناردو دافنشي',category:'فن',hints:['عشت في عصر النهضة','كنت فنانًا ومخترعًا','رسمت الموناليزا'],options:['بيكاسو','دافنشي','فان غوخ']},
+  {answer:'أبو بكر سالم',category:'موسيقى',hints:['فنان عربي وُلد في حضرموت','حملت الجنسية السعودية','من أعمالي سر حبي'],options:['طلال مداح','أبو بكر سالم','محمد عبده']},
+  {answer:'الرجل العنكبوت',category:'خيال',hints:['حصلت على قدراتي بعد لدغة','أعيش في نيويورك','أطلق الشباك من يدي'],options:['باتمان','الرجل العنكبوت','فلاش']},
+  {answer:'ابن بطوطة',category:'رحلات',hints:['وُلدت في طنجة','زرت بلادًا كثيرة في آسيا وإفريقيا','أُلقب بأمير الرحالة'],options:['ابن بطوطة','المسعودي','الإدريسي']},
+];
+
+export function CharacterGuessGame({ onHome }: GameProps) {
+  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useState(30); const [rounds,setRounds]=useState(6);
+  const [deck,setDeck]=useState(characterCards); const [round,setRound]=useState(0); const [hint,setHint]=useState(1); const [choice,setChoice]=useState(''); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
+  const card=deck[round]; const turn=round%2; const start=()=>{setDeck(shuffle(characterCards).slice(0,rounds));setTeams(teams.map(team=>({...team,name:team.name.trim(),score:0})));setRound(0);setHint(1);setChoice('');setPhase('play');};
+  const choose=(answer:string)=>{if(choice)return;setChoice(answer);if(answer===card.answer)setTeams(value=>value.map((team,index)=>index===turn?{...team,score:team.score+(4-hint)*100}:team));};
+  const next=()=>{if(round+1>=deck.length){setPhase('result');return;}setRound(round+1);setHint(1);setChoice('');};
+  return <section className="arena new-game character-game"><GameHeader eyebrow="خمن الشخصية" title={phase==='setup'?'التلميح الذكي يكسب.':phase==='result'?'انكشفت الشخصيات!':`شخصية ${round+1} من ${deck.length}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}/>:phase==='result'?<GameResult title="أبطال التخمين" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={turn} round={round} total={deck.length}/><div className="new-stage"><span className="game-chip">{card.category}</span><div className="character-silhouette">?</div><div className="progressive-hints">{card.hints.slice(0,hint).map((text,index)=><p key={text}><b>{index+1}</b>{text}</p>)}</div><Countdown key={card.answer} seconds={seconds} stopped={Boolean(choice)}/>{!choice?<><div className="choice-grid">{card.options.map(option=><button key={option} onClick={()=>choose(option)}>{option}</button>)}</div><button className="quiet centered" disabled={hint===card.hints.length} onClick={()=>setHint(Math.min(card.hints.length,hint+1))}><Lightbulb size={17}/> تلميح إضافي · نقاط أقل</button></>:<div className={`answer-feedback ${choice===card.answer?'correct':'wrong'}`}><h2>{choice===card.answer?'إجابة صحيحة!':'مو هي…'}</h2><p>الإجابة: <b>{card.answer}</b></p><button className="primary" onClick={next}>{round+1===deck.length?'عرض النتيجة':'الشخصية التالية'}</button></div>}</div></>}</section>;
+}
+
+const riddles = [
+  ['شيء كلما أخذت منه كبر، ما هو؟','الحفرة'],['له أسنان ولا يعض، ما هو؟','المشط'],['يمشي بلا أرجل ويبكي بلا عيون، ما هو؟','السحاب'],['ما الشيء الذي يكتب ولا يقرأ؟','القلم'],['بيت بلا أبواب ولا نوافذ، ما هو؟','بيت الشعر'],['له رقبة بلا رأس، ما هو؟','الزجاجة'],['كلما زاد نقص، ما هو؟','العمر'],['أخت خالك وليست خالتك، من تكون؟','أمك'],
+];
+
+export function RiddlesGame({ onHome }: GameProps) {
+  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useState(30); const [rounds,setRounds]=useState(6); const [deck,setDeck]=useState(riddles); const [round,setRound]=useState(0); const [revealed,setRevealed]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
+  const start=()=>{setDeck(shuffle(riddles).slice(0,rounds));setTeams(teams.map(team=>({...team,score:0})));setRound(0);setRevealed(false);setPhase('play');};
+  const award=(team:number|null)=>{if(team!==null)setTeams(value=>value.map((item,index)=>index===team?{...item,score:item.score+100}:item));if(round+1>=deck.length)setPhase('result');else{setRound(round+1);setRevealed(false);}};
+  return <section className="arena new-game riddle-game"><GameHeader eyebrow="فوازير" title={phase==='setup'?'فكّوها قبل ما يفوت الوقت.':phase==='result'?'العقول حسمتها!':`الفزورة ${round+1} من ${deck.length}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}/>:phase==='result'?<GameResult title="أذكى فريق" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={round%2} round={round} total={deck.length}/><div className="new-stage riddle-stage"><span className="riddle-mark">؟</span><h2>{deck[round][0]}</h2><Countdown key={deck[round][0]} seconds={seconds} stopped={revealed}/>{!revealed?<button className="primary" onClick={()=>setRevealed(true)}><Eye/> كشف الحل</button>:<div className="answer-feedback correct"><small>الحل</small><h2>{deck[round][1]}</h2><div className="judge-row">{teams.map((team,index)=><button key={team.name} style={{'--team':team.color} as CSSProperties} onClick={()=>award(index)}>+100 · {team.name}</button>)}<button onClick={()=>award(null)}>لا أحد</button></div></div>}</div></>}</section>;
+}
+
+const photoCards = [
+  {visual:'🧭',answer:'بوصلة',category:'أداة',tone:'#45b6ff'}, {visual:'🏛️',answer:'متحف',category:'مكان',tone:'#ffd45a'},
+  {visual:'🎧',answer:'سماعة رأس',category:'تقنية',tone:'#ff70b5'}, {visual:'🚲',answer:'دراجة',category:'مواصلات',tone:'#62d8a6'},
+  {visual:'🦉',answer:'بومة',category:'حيوان',tone:'#a77bff'}, {visual:'⏳',answer:'ساعة رملية',category:'شيء',tone:'#ff9b55'},
+  {visual:'🎸',answer:'غيتار',category:'موسيقى',tone:'#e4c45a'}, {visual:'🚀',answer:'صاروخ',category:'فضاء',tone:'#75a7ff'},
+];
+
+export function PhotoChallengeGame({ onHome }: GameProps) {
+  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useState(30); const [rounds,setRounds]=useState(6); const [deck,setDeck]=useState(photoCards); const [round,setRound]=useState(0); const [level,setLevel]=useState(0); const [revealed,setRevealed]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
+  const start=()=>{setDeck(shuffle(photoCards).slice(0,rounds));setTeams(teams.map(team=>({...team,score:0})));setRound(0);setLevel(0);setRevealed(false);setPhase('play');};
+  const award=(team:number|null)=>{if(team!==null)setTeams(value=>value.map((item,index)=>index===team?{...item,score:item.score+(3-level)*100}:item));if(round+1>=deck.length)setPhase('result');else{setRound(round+1);setLevel(0);setRevealed(false);}};
+  const card=deck[round];
+  return <section className="arena new-game photo-game"><GameHeader eyebrow="تحدي الصورة" title={phase==='setup'?'التفاصيل الصغيرة تفضحها.':phase==='result'?'وضحت الصورة!':`الصورة ${round+1} من ${deck.length}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}/>:phase==='result'?<GameResult title="أقوى ملاحظة" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={round%2} round={round} total={deck.length}/><div className="new-stage photo-stage"><span className="game-chip">{card.category}</span><div className={`photo-visual reveal-${level}`} style={{'--photo-tone':card.tone} as CSSProperties}><span>{card.visual}</span></div><p className="photo-points">قيمة الإجابة: <b>{(3-level)*100}</b> نقطة</p><Countdown key={card.answer} seconds={seconds} stopped={revealed}/>{!revealed?<div className="photo-actions"><button className="secondary" disabled={level===2} onClick={()=>setLevel(Math.min(2,level+1))}><Image/> وضّح أكثر</button><button className="primary" onClick={()=>setRevealed(true)}><Eye/> كشف الصورة</button></div>:<div className="answer-feedback correct"><h2>{card.answer}</h2><div className="judge-row">{teams.map((team,index)=><button key={team.name} style={{'--team':team.color} as CSSProperties} onClick={()=>award(index)}>{team.name} · +{(3-level)*100}</button>)}<button onClick={()=>award(null)}>لا أحد</button></div></div>}</div></>}</section>;
+}
+
+const speedQuestions = [
+  ['كم عدد أيام السنة العادية؟','365'],['ما عاصمة اليابان؟','طوكيو'],['ما أسرع حيوان بري؟','الفهد'],['كم ضلعًا للمثلث؟','3'],['ما أكبر كوكب؟','المشتري'],['ما لون الزمرد؟','أخضر'],['كم دقيقة في ساعتين؟','120'],['أي محيط هو الأكبر؟','الهادئ'],
+];
+
+export function FastestGame({ onHome }: GameProps) {
+  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useState(20); const [rounds,setRounds]=useState(6); const [deck,setDeck]=useState(speedQuestions); const [round,setRound]=useState(0); const [buzz,setBuzz]=useState<number|null>(null); const [revealed,setRevealed]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
+  const start=()=>{setDeck(shuffle(speedQuestions).slice(0,rounds));setTeams(teams.map(team=>({...team,score:0})));setRound(0);setBuzz(null);setRevealed(false);setPhase('play');};
+  const buzzer=(index:number)=>{if(buzz!==null)return;setBuzz(index);try{navigator.vibrate?.(35);}catch{/* Haptics are optional. */}};
+  const judge=(correct:boolean)=>{if(buzz===null)return;if(correct){setTeams(value=>value.map((team,index)=>index===buzz?{...team,score:team.score+100}:team));next();}else{setBuzz(1-buzz);setRevealed(false);}};
+  const next=()=>{if(round+1>=deck.length)setPhase('result');else{setRound(round+1);setBuzz(null);setRevealed(false);}};
+  return <section className="arena new-game fastest-game"><GameHeader eyebrow="مين أسرع؟" title={phase==='setup'?'الزر يحسم أول محاولة.':phase==='result'?'السرعة تكلمت!':`سؤال السرعة ${round+1}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}/>:phase==='result'?<GameResult title="أسرع فريق" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={buzz??round%2} round={round} total={deck.length}/><div className="new-stage speed-stage"><Zap className="speed-icon"/><h2>{deck[round][0]}</h2><Countdown key={deck[round][0]} seconds={seconds} stopped={buzz!==null}/>{buzz===null?<div className="buzzers">{teams.map((team,index)=><button key={team.name} style={{'--team':team.color} as CSSProperties} onClick={()=>buzzer(index)}><Zap/> زر {team.name}<small>{index===0?'يمين':'يسار'}</small></button>)}</div>:<div className="buzz-lock" style={{'--team':teams[buzz].color} as CSSProperties}><h3>{teams[buzz].name} ضغطوا أول!</h3>{!revealed?<button className="primary" onClick={()=>setRevealed(true)}><Eye/> كشف الإجابة</button>:<><p>الإجابة: <b>{deck[round][1]}</b></p><div className="judge-row"><button onClick={()=>judge(true)}><Check/> صحيحة +100</button><button onClick={()=>judge(false)}><X/> خطأ · فرصة للخصم</button><button onClick={next}>لا أحد</button></div></>}</div>}</div></>}</section>;
+}
+
+const wordCards = [
+  {word:'مطار',category:'أماكن',taboo:['طائرة','سفر','جواز']},{word:'قهوة',category:'أكل',taboo:['فنجان','مشروب','بن']},{word:'طبيب',category:'مهن',taboo:['مستشفى','مريض','علاج']},{word:'كرة القدم',category:'رياضة',taboo:['ملعب','هدف','لاعب']},{word:'هاتف',category:'تقنية',taboo:['اتصال','شاشة','جوال']},{word:'أسد',category:'حيوانات',taboo:['ملك','غابة','زئير']},{word:'الرياض',category:'مدن',taboo:['السعودية','عاصمة','نجد']},{word:'مظلة',category:'أشياء',taboo:['مطر','شمس','نفتح']},{word:'طبّاخ',category:'مهن',taboo:['مطبخ','طعام','مطعم']},{word:'سباحة',category:'رياضة',taboo:['ماء','مسبح','بحر']},{word:'حاسوب',category:'تقنية',taboo:['شاشة','لوحة مفاتيح','جهاز']},{word:'بيتزا',category:'أكل',taboo:['إيطاليا','جبن','عجينة']},
+];
+
+export function WordBankGame({ onHome }: GameProps) {
+  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useState(45); const [rounds,setRounds]=useState(8); const [deck,setDeck]=useState(wordCards); const [round,setRound]=useState(0); const [showWord,setShowWord]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
+  const start=()=>{setDeck(shuffle(wordCards).slice(0,rounds));setTeams(teams.map(team=>({...team,score:0})));setRound(0);setShowWord(false);setPhase('play');};
+  const next=(correct:boolean)=>{if(correct)setTeams(value=>value.map((team,index)=>index===round%2?{...team,score:team.score+100}:team));if(round+1>=deck.length)setPhase('result');else{setRound(round+1);setShowWord(false);}};
+  const card=deck[round];
+  return <section className="arena new-game word-game"><GameHeader eyebrow="بنك الكلمات" title={phase==='setup'?'وصف ذكي… بلا الكلمات الممنوعة.':phase==='result'?'خلص رصيد الكلمات!':`دور ${teams[round%2].name}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}/>:phase==='result'?<GameResult title="أبطال الوصف" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={round%2} round={round} total={deck.length}/><div className="new-stage word-stage">{!showWord?<><div className="word-vault">◆</div><h2>المُوصّف من {teams[round%2].name} جاهز؟</h2><p>خلّ الباقين يبعدون نظرهم، ثم اعرض الكلمة وابدأ الوصف.</p><button className="primary" onClick={()=>setShowWord(true)}>اعرض الكلمة وابدأ</button></>:<><span className="game-chip">{card.category}</span><h2 className="target-word">{card.word}</h2><p>ممنوع تقول:</p><div className="taboo-list">{card.taboo.map(word=><b key={word}>{word}</b>)}</div><Countdown key={card.word} seconds={seconds} stopped={false}/><div className="word-actions"><button className="correct" onClick={()=>next(true)}><Check/> صح · +100</button><button className="wrong" onClick={()=>next(false)}><FastForward/> تخطّي</button></div></>}</div></>}</section>;
+}
+
+const feudRounds = [
+  {question:'شيء تأخذه معك إلى رحلة برية',answers:[['ماء',32],['طعام',25],['خيمة',18],['حطب',14],['مصباح',11]]},
+  {question:'سبب يجعل الشخص يتأخر عن موعده',answers:[['الزحام',35],['النوم',27],['نسي الموعد',16],['تعطل السيارة',13],['الطقس',9]]},
+  {question:'شيء تجده عادةً في غرفة المعيشة',answers:[['كنبة',31],['تلفزيون',28],['طاولة',18],['سجادة',13],['مصباح',10]]},
+  {question:'نشاط يفعله الناس في عطلة نهاية الأسبوع',answers:[['زيارة الأهل',30],['الخروج',25],['النوم',20],['التسوق',15],['الرياضة',10]]},
+];
+
+export function FamilyFeudGame({ onHome }: GameProps) {
+  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useState(60); const [rounds,setRounds]=useState(4); const [round,setRound]=useState(0); const [active,setActive]=useState(0); const [revealed,setRevealed]=useState<number[]>([]); const [strikes,setStrikes]=useState(0); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
+  const availableRounds=Math.min(rounds,feudRounds.length); const current=feudRounds[round]; const roundScore=revealed.reduce((total,index)=>total+Number(current.answers[index][1]),0);
+  const start=()=>{setTeams(teams.map(team=>({...team,score:0})));setRound(0);setActive(0);setRevealed([]);setStrikes(0);setPhase('play');};
+  const reveal=(index:number)=>{if(!revealed.includes(index))setRevealed([...revealed,index]);};
+  const awardRound=()=>{setTeams(value=>value.map((team,index)=>index===active?{...team,score:team.score+roundScore}:team));if(round+1>=availableRounds)setPhase('result');else{setRound(round+1);setActive((round+1)%2);setRevealed([]);setStrikes(0);}};
+  return <section className="arena new-game feud-game"><GameHeader eyebrow="تحدي العائلة" title={phase==='setup'?'الإجابة الأشهر تكسب.':phase==='result'?'لوحة الجمهور اكتملت!':`الجولة ${round+1} · ${teams[active].name}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}><small className="auto-save-note">أربع جولات أصلية بنظام إجابات الجمهور.</small></TeamSetup>:phase==='result'?<GameResult title="أبطال تحدي العائلة" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={active} round={round} total={availableRounds}/><div className="new-stage feud-stage"><h2>{current.question}</h2><div className="strike-row">{[0,1,2].map(index=><span key={index} className={index<strikes?'on':''}>✕</span>)}</div><div className="feud-board">{current.answers.map(([answer,points],index)=><button key={answer} className={revealed.includes(index)?'revealed':''} onClick={()=>reveal(index)}><span>{index+1}</span><b>{revealed.includes(index)?answer:'••••••'}</b><strong>{revealed.includes(index)?points:'?'}</strong></button>)}</div><div className="feud-controls"><button className="wrong" disabled={strikes===3} onClick={()=>{const next=Math.min(3,strikes+1);setStrikes(next);if(next===3)setActive(1-active);}}><X/> خطأ / ضربة</button><button className="secondary" onClick={()=>setActive(1-active)}>تحويل الدور إلى {teams[1-active].name}</button><button className="primary" disabled={!revealed.length} onClick={awardRound}>منح {roundScore} نقطة وإنهاء الجولة</button></div></div></>}</section>;
+}
+
+function GameResult({ title, teams, onReplay, onSetup }: { title: string; teams: Team[]; onReplay: () => void; onSetup: () => void }) {
+  const winner = teams[0].score===teams[1].score ? null : teams[0].score>teams[1].score ? 0 : 1;
+  return <div className="new-result"><Trophy/><span className="eyebrow">{title}</span><h2>{winner===null?'تعادل… كلكم قدّها!':`${teams[winner].name}… قدّها!`}</h2><div className="new-result-scores">{teams.map(team=><span key={team.name} style={{'--team':team.color} as CSSProperties}><b>{team.name}</b><strong>{team.score}</strong></span>)}</div><div className="result-actions"><button className="primary" onClick={onReplay}><RotateCcw/> إعادة بنفس الإعدادات</button><button className="secondary" onClick={onSetup}>تعديل الإعدادات</button></div></div>;
+}

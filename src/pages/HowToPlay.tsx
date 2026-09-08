@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import {
   Gamepad2, Users, LayoutGrid, Clock, Trophy, Zap, Scissors, Star,
-  HelpCircle, ChevronLeft, CheckCircle, ListChecks,
+  HelpCircle, CheckCircle, ListChecks,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';

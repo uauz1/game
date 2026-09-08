@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Heart, Play } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { CategoryIcon } from '@/components/ui/CategoryIcon';

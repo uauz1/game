@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { ArrowLeft, Check, CircleHelp, Eye, Flag, RotateCcw, Sparkles, Trophy, Undo2, Users, X } from 'lucide-react';
 import { HUROOF_LETTERS, questionsForLetter, type HuroofDifficulty, type HuroofQuestion } from '../../data/huroofQuestions';
 import { findWinningPath, type CellOwner } from '../../utils/huroofPath';
-import { loadHuroofPreferences, saveHuroofPreferences } from '../../utils/huroofStorage';
+import { loadHuroofPreferences, loadUsedHuroofQuestions, saveHuroofPreferences, saveUsedHuroofQuestions } from '../../utils/huroofStorage';
 import Countdown from './Countdown';
 
 const BOARD_SIZE = 5;
@@ -53,7 +53,7 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
   const [revealed, setRevealed] = useState(false);
   const [noAnswer, setNoAnswer] = useState(false);
   const [attemptKey, setAttemptKey] = useState(0);
-  const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>([]);
+  const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>(loadUsedHuroofQuestions);
   const [winningPath, setWinningPath] = useState<number[]>([]);
   const [roundWinner, setRoundWinner] = useState<0 | 1 | null>(null);
   const [lastDecision, setLastDecision] = useState<LastDecision | null>(null);
@@ -80,6 +80,8 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
     });
   }, [bestOf, difficulty, seconds, teams]);
 
+  useEffect(() => saveUsedHuroofQuestions(usedQuestionIds), [usedQuestionIds]);
+
   const updateTeam = (index: number, patch: Partial<Team>) => {
     setTeams(currentTeams => currentTeams.map((team, teamIndex) => teamIndex === index ? { ...team, ...patch } : team));
   };
@@ -102,7 +104,6 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
   const startMatch = () => {
     if (!validNames) return;
     setTeams(currentTeams => currentTeams.map(team => ({ ...team, name: team.name.trim(), rounds: 0 })));
-    setUsedQuestionIds([]);
     setStats(emptyStats());
     resetBoard(1, 0);
   };

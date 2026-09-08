@@ -1,21 +1,26 @@
-import { useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { ArrowLeft, Check, ChevronLeft, Eye, Grid2X2, Sparkles, Trophy, Users, RotateCcw, Flag } from 'lucide-react';
+import { ArrowLeft, Check, ChevronLeft, Eye, Grid2X2, Search, Shuffle, Sparkles, Trophy, Users, RotateCcw, Flag, X } from 'lucide-react';
 import { categories, type Question } from '../../data/party';
 import { buildPartyBoard, getPartyQuestionCount } from '../../data/partyBank';
+import { loadTeamGamePreferences, saveTeamGamePreferences } from '../../utils/teamGameStorage';
 import Countdown from './Countdown';
 
 type Team = { name: string; color: string; score: number };
 type Award = { question: Question; team: number | null };
 type State = { stage: 'teams' | 'categories' | 'board' | 'question' | 'results'; teams: Team[]; cats: string[]; limit: number; seconds: number; turn: number; current: Question | null; revealed: boolean; awards: Award[]; boardQuestions: Question[] };
-type Action = { type: 'team'; index: number; patch: Partial<Team> } | { type: 'category'; name: string } | { type: 'settings'; limit?: number; seconds?: number } | { type: 'stage'; stage: State['stage'] } | { type: 'start'; boardQuestions: Question[] } | { type: 'pick'; question: Question } | { type: 'reveal' } | { type: 'award'; team: number | null } | { type: 'undo' };
-const initial: State = { stage: 'teams', teams: [{name:'الصقور', color:'#45b6ff', score:0}, {name:'الذيبان', color:'#ff70b5', score:0}], cats:categories.slice(0,6).map(c=>c.name), limit:12, seconds:30, turn:0, current:null, revealed:false, awards:[], boardQuestions:[] };
+type Action = { type: 'team'; index: number; patch: Partial<Team> } | { type: 'category'; name: string } | { type: 'categories'; names: string[] } | { type: 'settings'; limit?: number; seconds?: number } | { type: 'stage'; stage: State['stage'] } | { type: 'start'; boardQuestions: Question[] } | { type: 'pick'; question: Question } | { type: 'reveal' } | { type: 'award'; team: number | null } | { type: 'undo' };
+function createInitial(): State {
+  const preferences=loadTeamGamePreferences(categories.map(category=>category.name));
+  return { stage:'teams', teams:[{name:preferences.teamNames[0],color:preferences.teamColors[0],score:0},{name:preferences.teamNames[1],color:preferences.teamColors[1],score:0}],cats:preferences.categories,limit:preferences.limit,seconds:preferences.seconds,turn:0,current:null,revealed:false,awards:[],boardQuestions:[] };
+}
 const colors = [{name:'أزرق',value:'#45b6ff'},{name:'وردي',value:'#ff70b5'},{name:'ذهبي',value:'#ffd45a'},{name:'بنفسجي',value:'#b997ff'}];
 
 export function teamReducer(s: State, a: Action): State {
   switch(a.type) {
     case 'team': return {...s, teams:s.teams.map((t,i)=>i===a.index?{...t,...a.patch}:t)};
     case 'category': return {...s,cats:s.cats.includes(a.name)?s.cats.filter(c=>c!==a.name):s.cats.length<6?[...s.cats,a.name]:s.cats};
+    case 'categories': return {...s,cats:a.names.slice(0,6)};
     case 'settings': return {...s,limit:a.limit??s.limit,seconds:a.seconds??s.seconds};
     case 'stage': return {...s,stage:a.stage};
     case 'start': return {...s,stage:'board',teams:s.teams.map(t=>({...t,name:t.name.trim(),score:0})),turn:0,current:null,revealed:false,awards:[],boardQuestions:a.boardQuestions,limit:Math.min(s.limit,s.cats.length*5)};
@@ -34,13 +39,36 @@ export function teamReducer(s: State, a: Action): State {
 }
 
 export default function TeamGame({ onHome }: { onHome: () => void }) {
-  const [s, dispatch] = useReducer(teamReducer, initial);
+  const [s, dispatch] = useReducer(teamReducer, undefined, createInitial);
   const [exit, setExit] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<'all'|'selected'|'large'>('all');
+  const [setupNotice, setSetupNotice] = useState('');
   const setup=s.stage==='teams'||s.stage==='categories';
   const winner=s.teams[0].score===s.teams[1].score?null:s.teams[s.teams[0].score>s.teams[1].score?0:1];
   const validNames=s.teams.every(t=>t.name.trim())&&s.teams[0].name.trim()!==s.teams[1].name.trim();
   const tone=(color:string)=>({'--team':color} as CSSProperties);
-  const startRound=()=>dispatch({type:'start',boardQuestions:buildPartyBoard(s.cats)});
+  const categoryCounts=useMemo(()=>new Map(categories.map(category=>[category.name,getPartyQuestionCount(category.name)])),[]);
+  const visibleCategories=useMemo(()=>categories
+    .filter(category=>category.name.includes(categorySearch.trim()))
+    .filter(category=>categoryFilter==='selected'?s.cats.includes(category.name):categoryFilter==='large'?(categoryCounts.get(category.name)??0)>=20:true)
+    .sort((a,b)=>Number(s.cats.includes(b.name))-Number(s.cats.includes(a.name)) || (categoryCounts.get(b.name)??0)-(categoryCounts.get(a.name)??0)),[categoryCounts,categoryFilter,categorySearch,s.cats]);
+
+  useEffect(()=>{
+    saveTeamGamePreferences({teamNames:[s.teams[0].name,s.teams[1].name],teamColors:[s.teams[0].color,s.teams[1].color],categories:s.cats,limit:s.limit,seconds:s.seconds});
+  },[s.cats,s.limit,s.seconds,s.teams]);
+
+  const selectRandomCategories=()=>{
+    const shuffled=[...categories].sort(()=>Math.random()-.5).slice(0,6).map(category=>category.name);
+    dispatch({type:'categories',names:shuffled});
+    setSetupNotice('اخترنا لكم 6 فئات متنوعة عشوائيًا');
+  };
+  const startRound=()=>{
+    const boardQuestions=buildPartyBoard(s.cats);
+    if(boardQuestions.length<s.cats.length*5){setSetupNotice('بعض الفئات لا تحتوي أسئلة كافية الآن. جرّبوا فئات أخرى.');return;}
+    setSetupNotice('');
+    dispatch({type:'start',boardQuestions});
+  };
   return <section className="arena" aria-label="قدّها فرق">
     <div className="arena-heading"><div><span className="eyebrow"><Users size={15}/> قدّها فرق</span><h1>{setup?'جمعتكم… ملعبكم.':s.stage==='results'?'ختامها حماس!':'ساحة التحدّي'}</h1></div><button className="quiet" onClick={()=>setup||s.stage==='results'?onHome():setExit(true)}>الألعاب <ArrowLeft size={17}/></button></div>
     {setup ? <>
@@ -48,12 +76,14 @@ export default function TeamGame({ onHome }: { onHome: () => void }) {
       {s.stage==='teams' ? <>
         <div className="section-heading"><h2>كل فريق له اسم… وله هيبة.</h2><p>فريقان ومقدم، على شاشة واحدة. اختاروا اسمكم ولونكم.</p></div>
         <div className="team-setup">{s.teams.map((team,i)=><div className="team-editor" key={i} style={tone(team.color)}><div className="team-emblem"><Users size={38}/><span>0{i+1}</span></div><label htmlFor={`team-${i}`}>اسم الفريق {i===0?'الأول':'الثاني'}</label><input id={`team-${i}`} maxLength={22} value={team.name} onChange={e=>dispatch({type:'team',index:i,patch:{name:e.target.value}})}/><div className="color-choices" aria-label={`لون الفريق ${i+1}`}>{colors.map(c=><button key={c.value} aria-label={`الفريق ${i+1}: ${c.name}`} aria-pressed={team.color===c.value} disabled={s.teams[1-i].color===c.value} style={{background:c.value}} onClick={()=>dispatch({type:'team',index:i,patch:{color:c.value}})}>{team.color===c.value&&<Check size={18}/>}</button>)}</div><small>لونكم يرافقكم حتى منصة الفوز</small></div>)}</div>
-        <div className="match-settings"><div><Sparkles/><b>على مزاج جمعتكم</b></div><label>عدد الأسئلة<select value={s.limit} onChange={e=>dispatch({type:'settings',limit:+e.target.value})}><option value={6}>6 · جولة سريعة</option><option value={12}>12 · التحدي الكامل</option><option value={18}>18 · جولة طويلة</option><option value={24}>24 · منافسة قوية</option><option value={30}>30 · الماراثون</option></select></label><label>وقت السؤال<select value={s.seconds} onChange={e=>dispatch({type:'settings',seconds:+e.target.value})}><option value={20}>20 ثانية</option><option value={30}>30 ثانية</option><option value={45}>45 ثانية</option><option value={60}>60 ثانية</option></select></label></div>
+        <div className="match-settings"><div><Sparkles/><b>على مزاج جمعتكم</b></div><label>عدد الأسئلة<select value={s.limit} onChange={e=>dispatch({type:'settings',limit:+e.target.value})}><option value={6}>6 · جولة سريعة</option><option value={12}>12 · التحدي الكامل</option><option value={18}>18 · جولة طويلة</option><option value={24}>24 · منافسة قوية</option><option value={30}>30 · الماراثون</option></select></label><label>وقت السؤال<select value={s.seconds} onChange={e=>dispatch({type:'settings',seconds:+e.target.value})}><option value={20}>20 ثانية</option><option value={30}>30 ثانية</option><option value={45}>45 ثانية</option><option value={60}>60 ثانية</option></select></label><small className="auto-save-note">تُحفظ اختياراتكم تلقائيًا على هذا الجهاز.</small></div>
         {!validNames&&<p className="validation" role="status">اكتبوا اسمين مختلفين وغير فارغين للفريقين.</p>}
         <div className="arena-actions"><span>كل سؤال فرصة تقلب النتيجة.</span><button className="primary" disabled={!validNames} onClick={()=>dispatch({type:'stage',stage:'categories'})}>اختاروا الفئات <ChevronLeft size={18}/></button></div>
       </> : <>
-        <div className="section-heading"><h2>في إيش أنتم قدّها؟</h2><p>اختاروا من 3 إلى 6 فئات. كل فئة عندها بنك كبير، وفي كل جولة نسحب 5 أسئلة مختلفة بقيم من 100 إلى 500 نقطة.</p><span className="selection-count">{s.cats.length} / 6 فئات</span></div>
-        <div className="category-picker">{categories.map((cat,i)=><button className={s.cats.includes(cat.name)?'chosen':''} key={cat.name} aria-pressed={s.cats.includes(cat.name)} disabled={s.cats.length===6&&!s.cats.includes(cat.name)} onClick={()=>dispatch({type:'category',name:cat.name})}><span className={`category-art art-${i%4}`}>{cat.icon}</span><b>{cat.name}</b><small>{getPartyQuestionCount(cat.name)} سؤال في البنك</small><span className="check-box">{s.cats.includes(cat.name)&&<Check size={15}/>}</span></button>)}</div>
+        <div className="section-heading category-heading"><div><h2>في إيش أنتم قدّها؟</h2><p>اختاروا من 3 إلى 6 فئات. كل جولة تسحب 5 أسئلة مختلفة من كل بنك.</p></div><span className="selection-count">{s.cats.length} / 6 فئات</span></div>
+        <div className="category-toolbar"><label className="category-search"><Search size={18}/><input value={categorySearch} onChange={event=>setCategorySearch(event.target.value)} placeholder="ابحث عن فئة…" aria-label="البحث في الفئات"/>{categorySearch&&<button aria-label="مسح البحث" onClick={()=>setCategorySearch('')}><X size={15}/></button>}</label><div className="category-filters" aria-label="فلترة الفئات"><button className={categoryFilter==='all'?'active':''} onClick={()=>setCategoryFilter('all')}>الكل</button><button className={categoryFilter==='selected'?'active':''} onClick={()=>setCategoryFilter('selected')}>المختارة</button><button className={categoryFilter==='large'?'active':''} onClick={()=>setCategoryFilter('large')}>بنك كبير</button></div><div className="category-quick-actions"><button onClick={selectRandomCategories}><Shuffle size={16}/> اختيار عشوائي</button><button disabled={!s.cats.length} onClick={()=>dispatch({type:'categories',names:[]})}>مسح الاختيار</button></div></div>
+        {visibleCategories.length?<div className="category-picker">{visibleCategories.map((cat,i)=><button className={s.cats.includes(cat.name)?'chosen':''} key={cat.name} aria-pressed={s.cats.includes(cat.name)} disabled={s.cats.length===6&&!s.cats.includes(cat.name)} onClick={()=>{dispatch({type:'category',name:cat.name});setSetupNotice('');}}><span className={`category-art art-${i%4}`}>{cat.icon}</span><b>{cat.name}</b><small>{categoryCounts.get(cat.name)} سؤال في البنك</small><span className="check-box">{s.cats.includes(cat.name)&&<Check size={15}/>}</span></button>)}</div>:<div className="category-empty"><Search/><h3>ما لقينا فئة بهذا الاسم</h3><p>جرّب كلمة أقصر أو اعرض كل الفئات.</p><button className="quiet" onClick={()=>{setCategorySearch('');setCategoryFilter('all');}}>عرض كل الفئات</button></div>}
+        {setupNotice&&<p className="category-notice" role="status">{setupNotice}</p>}
         <div className="arena-actions"><button className="quiet" onClick={()=>dispatch({type:'stage',stage:'teams'})}>تعديل الفرق</button><button className="primary" disabled={s.cats.length<3} onClick={startRound}>يلا… قدّها! <Flag size={18}/></button></div>
       </>}
       <div className="host-note"><span>✦</span><p><b>المقدم يدير الحماس.</b> اختاروا فئة وقيمة، جاوبوا بصوت عالٍ، ثم يكشف المقدم الإجابة ويمنح النقاط للفريق المستحق.</p></div>

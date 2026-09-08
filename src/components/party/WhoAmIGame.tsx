@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { ArrowLeft, Brain, Check, ChevronLeft, Eye, Flag, Lightbulb, RotateCcw, Sparkles, Trophy, Users, X } from 'lucide-react';
 import { cardsForDifficulty, type WhoAmICard, type WhoAmIDifficulty } from '../../data/whoAmIQuestions';
-import { loadWhoAmIPreferences, saveWhoAmIPreferences } from '../../utils/whoAmIStorage';
+import { drawWhoAmICards, loadWhoAmIPreferences, saveWhoAmIPreferences } from '../../utils/whoAmIStorage';
 import Countdown from './Countdown';
 
 type Phase = 'setup' | 'playing' | 'result';
 type Team = { name: string; color: string; score: number; answers: number };
+type LastDecision = { round: number; team: 0 | 1 | null; points: number; clueCount: number };
 
 const TEAM_COLORS = [
   { value: '#45b6ff', name: 'أزرق' },
@@ -13,12 +14,6 @@ const TEAM_COLORS = [
   { value: '#a77bff', name: 'بنفسجي' },
   { value: '#ffd45a', name: 'ذهبي' },
 ];
-
-function orderedCards(difficulty: WhoAmIDifficulty) {
-  const cards = cardsForDifficulty(difficulty);
-  const offset = new Date().getDate() % cards.length;
-  return [...cards.slice(offset), ...cards.slice(0, offset)];
-}
 
 export default function WhoAmIGame({ onHome }: { onHome: () => void }) {
   const [preferences] = useState(loadWhoAmIPreferences);
@@ -34,6 +29,7 @@ export default function WhoAmIGame({ onHome }: { onHome: () => void }) {
   const [deck, setDeck] = useState<WhoAmICard[]>([]);
   const [clueCount, setClueCount] = useState(1);
   const [answerRevealed, setAnswerRevealed] = useState(false);
+  const [lastDecision, setLastDecision] = useState<LastDecision | null>(null);
   const [exit, setExit] = useState(false);
 
   const currentCard = deck[round];
@@ -61,17 +57,20 @@ export default function WhoAmIGame({ onHome }: { onHome: () => void }) {
 
   const startGame = () => {
     if (!validNames) return;
-    const nextDeck = orderedCards(difficulty).slice(0, roundCount);
+    const nextDeck = drawWhoAmICards(cardsForDifficulty(difficulty), roundCount, difficulty);
+    if (!nextDeck.length) return;
     setTeams(current => current.map(team => ({ ...team, name: team.name.trim(), score: 0, answers: 0 })));
     setDeck(nextDeck);
     setRound(0);
     setClueCount(1);
     setAnswerRevealed(false);
+    setLastDecision(null);
     setPhase('playing');
   };
 
   const judge = (teamIndex: 0 | 1 | null) => {
     if (!answerRevealed) return;
+    setLastDecision({ round, team: teamIndex, points: availablePoints, clueCount });
     if (teamIndex !== null) {
       setTeams(current => current.map((team, index) => index === teamIndex
         ? { ...team, score: team.score + availablePoints, answers: team.answers + 1 }
@@ -87,11 +86,28 @@ export default function WhoAmIGame({ onHome }: { onHome: () => void }) {
   };
 
   const restart = () => {
-    setDeck(current => [...current.slice(1), current[0]]);
+    const nextDeck = drawWhoAmICards(cardsForDifficulty(difficulty), roundCount, difficulty);
+    if (!nextDeck.length) return;
+    setDeck(nextDeck);
     setTeams(current => current.map(team => ({ ...team, score: 0, answers: 0 })));
     setRound(0);
     setClueCount(1);
     setAnswerRevealed(false);
+    setLastDecision(null);
+    setPhase('playing');
+  };
+
+  const undoJudge = () => {
+    if (!lastDecision) return;
+    if (lastDecision.team !== null) {
+      setTeams(current => current.map((team, index) => index === lastDecision.team
+        ? { ...team, score: Math.max(0, team.score - lastDecision.points), answers: Math.max(0, team.answers - 1) }
+        : team));
+    }
+    setRound(lastDecision.round);
+    setClueCount(lastDecision.clueCount);
+    setAnswerRevealed(true);
+    setLastDecision(null);
     setPhase('playing');
   };
 
@@ -130,7 +146,7 @@ export default function WhoAmIGame({ onHome }: { onHome: () => void }) {
     {phase === 'playing' && currentCard ? <>
       <div className="who-scorebar">{teams.map((team, index) => <div key={index} className={`who-team-score ${turn === index ? 'is-turn' : ''}`} style={{ '--team': team.color } as CSSProperties}><span>{team.name}</span><strong>{team.score}</strong><small>{team.answers} إجابات صحيحة</small></div>)}<div className="who-round"><small>الدور الأساسي</small><b>{teams[turn].name}</b><span>{currentCard.category}</span></div></div>
       <div className="who-stage">
-        <div className="who-progress" aria-label="تقدم الجولة">{deck.map((card, index) => <span key={card.id} className={index < round ? 'done' : index === round ? 'current' : ''}>{index + 1}</span>)}</div>
+        <div className="who-progress" aria-label="تقدم الجولة">{deck.map((card, index) => <span key={card.id} className={index < round ? 'done' : index === round ? 'current' : ''}>{index + 1}</span>)}</div>{lastDecision?<button className="quiet who-undo" onClick={undoJudge}><RotateCcw size={15}/> تصحيح آخر تحكيم</button>:null}
         <div className="mystery-avatar" aria-hidden="true"><span>؟</span><Sparkles/></div>
         <div className="who-value"><small>قيمة الإجابة الآن</small><strong>{availablePoints}</strong><span>نقطة</span></div>
         <div className="who-clues" aria-live="polite">{currentCard.clues.slice(0, clueCount).map((clue, index) => <div className="who-clue" key={clue}><span>{index + 1}</span><p>{clue}</p></div>)}</div>
@@ -139,7 +155,7 @@ export default function WhoAmIGame({ onHome }: { onHome: () => void }) {
       </div>
     </> : null}
 
-    {phase === 'result' ? <div className="who-result"><Trophy size={70}/><span className="eyebrow">نهاية التحدّي</span>{winner === null ? <><h2>تعادل يستاهل جولة ثانية!</h2><p>الفريقان جمعا {teams[0].score} نقطة.</p></> : <><h2>{teams[winner].name}… عرفوها!</h2><p>حسموا التحدّي بفارق {Math.abs(teams[0].score - teams[1].score)} نقطة.</p></>}<div className="who-result-scores">{teams.map(team => <span key={team.name} style={{ '--team': team.color } as CSSProperties}><small>{team.name}</small><strong>{team.score}</strong><em>{team.answers} صحيحة</em></span>)}</div><div className="result-actions"><button className="primary" onClick={restart}><RotateCcw size={18}/> إعادة بنفس الإعدادات</button><button className="secondary" onClick={() => setPhase('setup')}>تعديل الإعدادات</button></div></div> : null}
+    {phase === 'result' ? <div className="who-result"><Trophy size={70}/><span className="eyebrow">نهاية التحدّي</span>{winner === null ? <><h2>تعادل يستاهل جولة ثانية!</h2><p>الفريقان جمعا {teams[0].score} نقطة.</p></> : <><h2>{teams[winner].name}… عرفوها!</h2><p>حسموا التحدّي بفارق {Math.abs(teams[0].score - teams[1].score)} نقطة.</p></>}<div className="who-result-scores">{teams.map(team => <span key={team.name} style={{ '--team': team.color } as CSSProperties}><small>{team.name}</small><strong>{team.score}</strong><em>{team.answers} صحيحة</em></span>)}</div><div className="result-actions"><button className="primary" onClick={restart}><RotateCcw size={18}/> إعادة بنفس الإعدادات</button><button className="secondary" onClick={() => setPhase('setup')}>تعديل الإعدادات</button></div>{lastDecision?<button className="quiet who-result-undo" onClick={undoJudge}><RotateCcw size={15}/> تصحيح آخر تحكيم</button>:null}</div> : null}
 
     {exit ? <div className="exit-overlay"><div role="dialog" aria-modal="true" aria-labelledby="who-exit"><h2 id="who-exit">نوقف لعبة من أنا؟</h2><p>العودة للألعاب تنهي الجولة الحالية ونقاطها.</p><button autoFocus className="primary" onClick={() => setExit(false)}>نكمل اللعب</button><button className="quiet" onClick={onHome}>إنهاء والعودة للألعاب</button></div></div> : null}
   </section>;

@@ -1,6 +1,7 @@
 import type { HuroofDifficulty } from '../data/huroofQuestions';
 
 const STORAGE_KEY = 'qaddha.huroof.preferences.v1';
+const USED_QUESTIONS_KEY = 'qaddha.huroof.used-questions.v1';
 const ALLOWED_SECONDS = new Set([20, 30, 45, 60]);
 const ALLOWED_ROUNDS = new Set([1, 3, 5]);
 const ALLOWED_DIFFICULTIES = new Set<HuroofDifficulty>(['easy', 'medium', 'hard']);
@@ -49,5 +50,22 @@ export function saveHuroofPreferences(preferences: HuroofPreferences) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
   } catch {
     // The game remains fully usable when storage is unavailable.
+  }
+}
+
+export function loadUsedHuroofQuestions() {
+  try {
+    const value = JSON.parse(localStorage.getItem(USED_QUESTIONS_KEY) ?? '[]');
+    return Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveUsedHuroofQuestions(ids: string[]) {
+  try {
+    localStorage.setItem(USED_QUESTIONS_KEY, JSON.stringify(ids.slice(-600)));
+  } catch {
+    // Question rotation still works during the current match.
   }
 }

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Trophy, RotateCcw, Home, Share2, Gamepad2, Star, Target,
-  TrendingUp, Award, Medal,
+  TrendingUp, Award,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';

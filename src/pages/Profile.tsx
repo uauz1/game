@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  User, Gamepad2, Star, Target, TrendingUp, Award, Trophy,
-  Calendar, Zap, Brain,
+  User, Gamepad2, Star, Target, TrendingUp, Award,
+  Calendar,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -10,7 +10,7 @@ import { loadFromStorage } from '@/utils/storage';
 import { CATEGORIES } from '@/data/categories';
 import { GAME_MODES } from '@/types';
 import { formatDate, cn, getBestCategory } from '@/utils/helpers';
-import type { GameResult, Player } from '@/types';
+import type { GameResult } from '@/types';
 
 interface Achievement {
   id: string;

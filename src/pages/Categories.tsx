@@ -1,11 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Heart, Check } from 'lucide-react';
+import { Search, Heart } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { CategoryIcon } from '@/components/ui/CategoryIcon';
 import { CATEGORIES } from '@/data/categories';
-import { DIFFICULTIES, type Difficulty } from '@/types';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { cn } from '@/utils/helpers';
@@ -15,7 +13,6 @@ export function Categories() {
   const { playSound } = useSettings();
   const { toggleFavorite, isFavorite } = useFavorites();
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<Difficulty | 'all'>('all');
 
   const filtered = useMemo(() => {
     return CATEGORIES.filter((cat) => {
@@ -49,7 +46,7 @@ export function Categories() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
-          {filtered.map((cat, i) => {
+          {filtered.map((cat) => {
             const fav = isFavorite(cat.id);
             return (
               <Card
