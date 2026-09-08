@@ -1,0 +1,226 @@
+/* Display profiles: keep the same identity while adapting every game surface. */
+.display-setting {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #ffffff12;
+}
+
+.display-setting > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.display-setting b { font-size: 15px; }
+.display-setting small { color: #9492a7; font-size: 11px; line-height: 1.6; }
+
+.display-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.display-options button {
+  min-height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #ffffff14;
+  border-radius: 13px;
+  background: #10111c;
+  color: #a6a1b2;
+  font-weight: 800;
+}
+
+.display-options button[aria-pressed="true"] {
+  border-color: #d7a93b88;
+  background: #d7a93b12;
+  color: #f2d987;
+  box-shadow: inset 0 0 0 1px #d7a93b22;
+}
+
+.display-options svg { width: 19px; height: 19px; }
+.tv-orientation-hint { display: none; }
+
+html[data-theme="light"] .display-setting { border-color: #4033211c; }
+html[data-theme="light"] .display-setting small { color: #71695f; }
+html[data-theme="light"] .display-options button {
+  border-color: #40332120;
+  background: #fffaf2;
+  color: #675f55;
+}
+html[data-theme="light"] .display-options button[aria-pressed="true"] {
+  border-color: #9b762c66;
+  background: #fff3d2;
+  color: #6a4a0d;
+}
+
+/* A manual mobile preview also keeps the experience comfortable on tablets. */
+html[data-qaddha-display="mobile"] .party-app {
+  max-width: 560px;
+  margin-inline: auto;
+  border-inline: 1px solid var(--line, #ffffff16);
+}
+
+html[data-qaddha-display="mobile"] .party-app .topbar,
+html[data-qaddha-display="mobile"] .party-app main,
+html[data-qaddha-display="mobile"] .party-app footer { width: 100%; }
+
+html[data-qaddha-display="mobile"] .lobby-hero,
+html[data-qaddha-display="mobile"] .lobby-grid,
+html[data-qaddha-display="mobile"] .team-grid,
+html[data-qaddha-display="mobile"] .who-settings { grid-template-columns: 1fr; }
+
+html[data-qaddha-display="mobile"] .party-app main { padding-inline: 15px; }
+html[data-qaddha-display="mobile"] .team-setup { grid-template-columns: 1fr; gap: 12px; }
+html[data-qaddha-display="mobile"] .team-editor { padding-inline: 16px; }
+html[data-qaddha-display="mobile"] .match-settings { flex-wrap: wrap; gap: 14px; }
+html[data-qaddha-display="mobile"] .match-settings > div { width: 100%; margin: 0; }
+html[data-qaddha-display="mobile"] .match-settings label { width: 100%; min-width: 100%; justify-content: space-between; }
+html[data-qaddha-display="mobile"] .category-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+html[data-qaddha-display="mobile"] .category-picker button { grid-template-columns: 40px 1fr; padding: 14px 10px; }
+html[data-qaddha-display="mobile"] .category-art { width: 40px; height: 48px; }
+html[data-qaddha-display="mobile"] .question-stage { grid-template-columns: 1fr; }
+html[data-qaddha-display="mobile"] .question-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html[data-qaddha-display="mobile"] .arena-scores { grid-template-columns: 1fr 1fr; }
+html[data-qaddha-display="mobile"] .arena-scores .match-progress { grid-column: 1 / -1; grid-row: 2; }
+html[data-qaddha-display="mobile"] .new-scorebar,
+html[data-qaddha-display="mobile"] .who-scorebar,
+html[data-qaddha-display="mobile"] .huroof-scorebar { grid-template-columns: 1fr 1fr; }
+html[data-qaddha-display="mobile"] .new-scorebar > div:nth-child(2) { grid-column: 2; }
+html[data-qaddha-display="mobile"] .new-scorebar > p,
+html[data-qaddha-display="mobile"] .who-round,
+html[data-qaddha-display="mobile"] .huroof-round { grid-column: 1 / -1; grid-row: 2; }
+html[data-qaddha-display="mobile"] .choice-grid { grid-template-columns: 1fr; }
+html[data-qaddha-display="mobile"] .new-stage { min-height: 440px; padding-inline: 14px; }
+html[data-qaddha-display="mobile"] .huroof-board-shell { padding: 36px 30px 34px; }
+html[data-qaddha-display="mobile"] .huroof-cell { width: 54px; height: 49px; font-size: 20px; }
+html[data-qaddha-display="mobile"] .huroof-row { gap: 2px; }
+html[data-qaddha-display="mobile"] .huroof-row:nth-child(2) { transform: translateX(-15px); }
+html[data-qaddha-display="mobile"] .huroof-row:nth-child(3) { transform: translateX(-30px); }
+html[data-qaddha-display="mobile"] .huroof-row:nth-child(4) { transform: translateX(-45px); }
+html[data-qaddha-display="mobile"] .huroof-row:nth-child(5) { transform: translateX(-60px); }
+
+html[data-qaddha-display="mobile"] .arena-illustration,
+html[data-qaddha-display="mobile"] .topbar-caption,
+html[data-qaddha-display="mobile"] .local-play { display: none; }
+
+html[data-qaddha-display="mobile"] .lobby-game.available { grid-column: auto; }
+html[data-qaddha-display="mobile"] .lobby-copy h1 { font-size: clamp(37px, 11vw, 54px); }
+
+/* Large television mode works both on real wide screens and a mirrored phone. */
+html[data-qaddha-display="tv"] .party-app main {
+  width: min(100%, 1680px);
+  max-width: 1680px;
+}
+
+html[data-qaddha-display="tv"] .party-app .topbar { max-width: 1620px; }
+html[data-qaddha-display="tv"] .party-app { --muted: #c0bdca; --line: #ffffff24; }
+html[data-qaddha-display="tv"] .question-card h2,
+html[data-qaddha-display="tv"] .new-stage > h2,
+html[data-qaddha-display="tv"] .huroof-question h2 { text-wrap: balance; }
+html[data-qaddha-display="tv"] button { touch-action: manipulation; }
+
+@media (orientation: portrait) {
+  html[data-qaddha-display="tv"] .tv-orientation-hint {
+    position: sticky;
+    top: 8px;
+    z-index: 900;
+    width: min(92%, 540px);
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 8px auto 0;
+    padding: 10px 16px;
+    border: 1px solid #d7a93b80;
+    border-radius: 15px;
+    background: #17140ff2;
+    color: #f5dda0;
+    box-shadow: 0 14px 40px #0009;
+    text-align: right;
+    font-size: 12px;
+    backdrop-filter: blur(12px);
+  }
+
+  html[data-qaddha-display="tv"] .tv-orientation-hint svg { flex: 0 0 auto; color: #ffd45a; }
+  html[data-qaddha-display="tv"] .tv-orientation-hint span { display: grid; gap: 2px; }
+}
+
+/* Phone mirrored in landscape: spend the limited height on the game itself. */
+@media (orientation: landscape) and (max-height: 650px) {
+  .party-app .topbar { height: 64px; padding-inline: 12px; }
+  .party-app .brand { min-width: 145px !important; gap: 8px !important; }
+  .party-app .brand > span:first-child { width: 43px !important; height: 43px !important; border-radius: 13px !important; }
+  .party-app .brand > span:first-child svg { width: 27px; }
+  .party-app .brand > span:last-child > span:first-child { font-size: 24px !important; }
+  .party-app .brand > span:last-child > span:last-child,
+  .party-app .topbar-caption,
+  .party-app .local-play { display: none; }
+  .party-app main { padding: 14px 18px 32px; }
+  .party-app footer { padding-block: 16px; }
+  .party-app footer p { display: none; }
+  .lobby-hero { min-height: 360px; padding-block: 14px 28px; }
+  .lobby-copy h1 { margin: 12px 0 8px; font-size: clamp(34px, 7vw, 54px); }
+  .lobby-copy p { font-size: 14px; line-height: 1.6; }
+  .hero-details { margin-top: 12px; }
+  .arena-illustration { height: 300px; transform: scale(.88); }
+  .flow-head { margin-bottom: 12px; }
+  .new-scorebar, .who-scorebar, .huroof-scorebar { margin-bottom: 10px; }
+  .new-stage { min-height: 330px; padding: 16px; }
+  .new-stage > h2 { margin: 8px auto; line-height: 1.35; }
+  .photo-visual { height: 175px; margin: 8px auto; }
+  .photo-visual span { font-size: 95px; }
+  .buzzers { margin-top: 10px; }
+  .buzzers button { min-height: 90px; }
+  .who-stage { padding: 14px; }
+  .who-progress { margin-bottom: 8px; }
+  .mystery-avatar { width: 72px; height: 72px; }
+  .who-clue { padding-block: 8px; }
+  .huroof-board-shell { padding-block: 31px; }
+  .settings-panel, .help-center, .auth-modal { max-height: 96svh; }
+}
+
+@media (orientation: landscape) and (max-height: 650px) and (min-width: 700px) {
+  html[data-qaddha-display="tv"] .lobby-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  html[data-qaddha-display="tv"] .lobby-game.available { grid-column: span 2; }
+  html[data-qaddha-display="tv"] .game-art,
+  html[data-qaddha-display="tv"] .game-teams .game-art,
+  html[data-qaddha-display="tv"] .game-letters .game-art { height: 145px; }
+  html[data-qaddha-display="tv"] .game-copy { padding-block: 14px 16px; }
+  html[data-qaddha-display="tv"] .game-copy p { display: none; }
+  html[data-qaddha-display="tv"] .new-game,
+  html[data-qaddha-display="tv"] .who-arena,
+  html[data-qaddha-display="tv"] .huroof-arena { max-width: 1500px; }
+  html[data-qaddha-display="tv"] .new-stage { min-height: calc(100svh - 150px); }
+}
+
+@media (min-width: 1600px) and (min-height: 800px) {
+  .party-app main { max-width: 1580px; }
+  .party-app .topbar { max-width: 1520px; }
+  .lobby-grid { gap: 26px; }
+  .lobby-game.available { min-height: 400px; }
+  .game-art, .game-teams .game-art, .game-letters .game-art { height: 230px; }
+  .game-copy h3 { font-size: 26px; }
+  .game-copy p { font-size: 15px; }
+  .new-game, .who-arena, .huroof-arena, .game-flow { max-width: 1480px; }
+  .new-stage, .who-stage { min-height: 620px; }
+  .question-card h2, .new-stage > h2, .huroof-question h2 { font-size: clamp(34px, 3vw, 52px); }
+}
+
+@media (max-width: 620px) {
+  .display-options button { min-height: 58px; flex-direction: column; gap: 4px; font-size: 10px; }
+  .display-setting small { font-size: 10px; }
+}
+
+@media (max-width: 380px) {
+  .party-app main { padding-inline: 10px; }
+  .topbar-actions { gap: 5px; }
+  .header-settings-button, .header-profile-button { width: 40px; min-height: 40px; }
+  .settings-panel { padding-inline: 13px; }
+  .display-options { gap: 5px; }
+}

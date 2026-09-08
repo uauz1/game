@@ -21,15 +21,18 @@
         try {
           const saved = JSON.parse(localStorage.getItem('qaddha_site_prefs_v1') || '{}');
           const preference = ['dark', 'light', 'system'].includes(saved.theme) ? saved.theme : 'dark';
+          const display = ['auto', 'mobile', 'tv'].includes(saved.display) ? saved.display : 'auto';
           const theme = preference === 'system'
             ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
             : preference;
           document.documentElement.dataset.themePreference = preference;
+          document.documentElement.dataset.qaddhaDisplay = display;
           document.documentElement.dataset.theme = theme;
           document.documentElement.style.colorScheme = theme;
           document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#F4F1E9' : '#0B1020');
         } catch {
           document.documentElement.dataset.theme = 'dark';
+          document.documentElement.dataset.qaddhaDisplay = 'auto';
           document.documentElement.style.colorScheme = 'dark';
         }
       })();

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Copy, Expand, Monitor, Moon, RefreshCcw, Settings, Share2, Sun, Type, Volume2, X, Zap } from 'lucide-react';
+import { Cast, Check, Copy, Expand, Monitor, Moon, RefreshCcw, Settings, Share2, Smartphone, Sun, Type, Volume2, X, Zap } from 'lucide-react';
 
 type ThemePreference = 'dark' | 'light' | 'system';
+type DisplayPreference = 'auto' | 'mobile' | 'tv';
 
 type Prefs = {
   theme: ThemePreference;
+  display: DisplayPreference;
   largeText: boolean;
   reducedMotion: boolean;
   highContrast: boolean;
@@ -12,14 +14,20 @@ type Prefs = {
 };
 
 const PREFS_KEY = 'qaddha_site_prefs_v1';
-const defaults: Prefs = { theme: 'dark', largeText: false, reducedMotion: false, highContrast: false, soundEnabled: true };
+const defaults: Prefs = { theme: 'dark', display: 'auto', largeText: false, reducedMotion: false, highContrast: false, soundEnabled: true };
 
 const isThemePreference = (value: unknown): value is ThemePreference => value === 'dark' || value === 'light' || value === 'system';
+const isDisplayPreference = (value: unknown): value is DisplayPreference => value === 'auto' || value === 'mobile' || value === 'tv';
 
 function readPrefs(): Prefs {
   try {
     const value = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
-    return { ...defaults, ...value, theme: isThemePreference(value.theme) ? value.theme : defaults.theme };
+    return {
+      ...defaults,
+      ...value,
+      theme: isThemePreference(value.theme) ? value.theme : defaults.theme,
+      display: isDisplayPreference(value.display) ? value.display : defaults.display,
+    };
   } catch {
     return defaults;
   }
@@ -32,6 +40,7 @@ function applyPrefs(prefs: Prefs) {
     : prefs.theme;
   root.dataset.themePreference = prefs.theme;
   root.dataset.theme = resolvedTheme;
+  root.dataset.qaddhaDisplay = prefs.display;
   root.style.colorScheme = resolvedTheme;
   document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', resolvedTheme === 'light' ? '#F4F1E9' : '#0B1020');
   root.dataset.qaddhaText = prefs.largeText ? 'large' : 'normal';
@@ -69,6 +78,11 @@ export default function SiteSettings({ open, onClose }: { open: boolean; onClose
     { value: 'dark' as const, label: 'داكن', icon: Moon },
     { value: 'light' as const, label: 'فاتح', icon: Sun },
     { value: 'system' as const, label: 'حسب الجهاز', icon: Monitor },
+  ];
+  const displays = [
+    { value: 'auto' as const, label: 'تلقائي', icon: Monitor },
+    { value: 'mobile' as const, label: 'جوال', icon: Smartphone },
+    { value: 'tv' as const, label: 'تلفزيون', icon: Cast },
   ];
 
   useEffect(() => {
@@ -126,6 +140,12 @@ export default function SiteSettings({ open, onClose }: { open: boolean; onClose
         <div><b>مظهر قدّها</b><small>اختر الجو المناسب، أو خلّه يتبع إعداد جهازك.</small></div>
         <div className="theme-options" role="group" aria-label="اختيار مظهر الموقع">
           {themes.map(({ value, label, icon: Icon }) => <button key={value} aria-pressed={prefs.theme === value} onClick={() => setPrefs((current) => ({ ...current, theme: value }))}><Icon/><span>{label}</span></button>)}
+        </div>
+      </div>
+      <div className="display-setting">
+        <div><b>حجم وطريقة العرض</b><small>اختر «تلفزيون» عند عكس شاشة الجوال، ثم لف الجوال بالعرض.</small></div>
+        <div className="display-options" role="group" aria-label="اختيار طريقة العرض">
+          {displays.map(({ value, label, icon: Icon }) => <button key={value} aria-pressed={prefs.display === value} onClick={() => setPrefs((current) => ({ ...current, display: value }))}><Icon/><span>{label}</span></button>)}
         </div>
       </div>
       <div className="settings-options">{settings.map(({key,title,desc,icon:Icon})=><button key={key} className={`settings-toggle ${prefs[key]?'on':''}`} aria-pressed={prefs[key]} onClick={()=>setPrefs((p)=>({...p,[key]:!p[key]}))}><span className="settings-icon"><Icon/></span><span><b>{title}</b><small>{desc}</small></span><i>{prefs[key]?'مفعّل':'متوقف'}</i></button>)}</div>
