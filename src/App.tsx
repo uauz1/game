@@ -14,6 +14,7 @@ const FastestGame = lazy(() => import('./components/party/NewPartyGames').then(m
 const CharacterGuessGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.CharacterGuessGame })));
 const RiddlesGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.RiddlesGame })));
 const FamilyFeudGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.FamilyFeudGame })));
+const FamilyHostController = lazy(() => import('./components/party/HostRoom').then(module => ({ default: module.FamilyHostController })));
 
 function GameLoading() {
   return <section className="game-loading" role="status" aria-live="polite"><Gamepad2/><span>نجهّز التحدّي…</span></section>;
@@ -59,6 +60,9 @@ export default function App() {
   },[homeConfirm]);
   const filteredGames=useMemo(()=>{const query=gameSearch.trim();return games.filter(game=>(gameFilter==='الكل'||gameGroups[game.id]===gameFilter)&&(!query||`${game.title} ${game.desc} ${game.tag}`.includes(query)));},[gameFilter,gameSearch]);
   const randomGame=(pool=games)=>{const choices=pool.length?pool:games;go(choices[Math.floor(Math.random()*choices.length)].id);};
+  const hostParams=useMemo(()=>new URLSearchParams(window.location.search),[]);
+
+  if(hostParams.get('host')==='family')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><FamilyHostController roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
 
   return <div className="app party-app" dir="rtl"><header className="topbar"><button className="brand" aria-label="قدّها الرئيسية" onClick={()=>{if(screen==='home')window.scrollTo({top:0,behavior:'smooth'});else if(isGame)setHomeConfirm(true);else go('home');}} style={{padding:0,background:'transparent',border:0,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:'12px',minWidth:'190px'}}>
     <span aria-hidden="true" style={{width:'56px',height:'56px',borderRadius:'17px',display:'grid',placeItems:'center',position:'relative',flex:'0 0 auto',background:'linear-gradient(145deg,#080808,#1a1a1a)',border:'1px solid #d7a93b',boxShadow:'inset 0 0 0 1px #f5d36a22,0 8px 22px #0008,0 0 24px #d7a93b18'}}>

@@ -6,10 +6,15 @@ import { drawWithoutRepeats } from '../../utils/newGameRotation';
 import { useNewGameNumber } from '../../utils/newGameSettings';
 import { loadSharedTeams, saveSharedTeams } from '../../utils/sharedTeams';
 import Countdown from './Countdown';
+import { HostPairingPanel, useFamilyHostRoom, type FamilyHostCommand, type FamilyHostState } from './HostRoom';
 
 type Team = { name: string; color: string; score: number };
 type GameProps = { onHome: () => void };
 const colors = ['#45b6ff', '#ff70b5', '#a77bff', '#ffd45a'];
+
+function normalizeFamilyAnswer(value: string) {
+  return value.trim().toLowerCase().normalize('NFD').replace(/[\u064b-\u065f\u0670]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي').replace(/ـ/g, '').replace(/[^\u0621-\u063a\u0641-\u064a0-9]/g, '').replace(/^ال/, '');
+}
 
 function initialTeams(): Team[] {
   const shared = loadSharedTeams();
@@ -86,12 +91,28 @@ export function WordBankGame({ onHome }: GameProps) {
 }
 
 export function FamilyFeudGame({ onHome }: GameProps) {
-  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useNewGameNumber('family','seconds',60); const [rounds,setRounds]=useNewGameNumber('family','rounds',4); const [deck,setDeck]=useState(feudRounds); const [round,setRound]=useState(0); const [active,setActive]=useState(0); const [revealed,setRevealed]=useState<number[]>([]); const [strikes,setStrikes]=useState(0); const [timedOut,setTimedOut]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
+  const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useNewGameNumber('family','seconds',60); const [rounds,setRounds]=useNewGameNumber('family','rounds',4); const [deck,setDeck]=useState(feudRounds); const [round,setRound]=useState(0); const [active,setActive]=useState(0); const [revealed,setRevealed]=useState<number[]>([]); const [strikes,setStrikes]=useState(0); const [timedOut,setTimedOut]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup'); const [hostFeedback,setHostFeedback]=useState<FamilyHostState['feedback']>(null);
   const availableRounds=deck.length; const current=deck[round]; const roundScore=revealed.reduce((total,index)=>total+Number(current.answers[index][1]),0);
-  const start=()=>{setDeck(drawWithoutRepeats('feud',feudRounds,rounds,item=>item.id));setTeams(prepareTeams(teams));setRound(0);setActive(0);setRevealed([]);setStrikes(0);setTimedOut(false);setPhase('play');};
-  const reveal=(index:number)=>{if(!timedOut&&!revealed.includes(index))setRevealed([...revealed,index]);};
-  const awardRound=()=>{setTeams(value=>value.map((team,index)=>index===active?{...team,score:team.score+roundScore}:team));if(round+1>=availableRounds)setPhase('result');else{setRound(round+1);setActive((round+1)%2);setRevealed([]);setStrikes(0);setTimedOut(false);}};
-  return <section className="arena new-game feud-game"><GameHeader eyebrow="تحدي العائلة" title={phase==='setup'?'الإجابة الأشهر تكسب.':phase==='result'?'لوحة الجمهور اكتملت!':`الجولة ${round+1} · ${teams[active].name}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}><small className="auto-save-note">بنك متجدد من ثماني جولات بإجابات الجمهور.</small></TeamSetup>:phase==='result'?<GameResult title="أبطال تحدي العائلة" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={active} round={round} total={availableRounds}/><div className="new-stage feud-stage"><h2>{current.question}</h2><Countdown key={current.id} seconds={seconds} stopped={timedOut||revealed.length===current.answers.length} onExpire={()=>setTimedOut(true)}/>{timedOut?<p className="validation" role="status">انتهى الوقت · ظهرت الإجابات المتبقية دون إضافتها للنقاط</p>:null}<div className="strike-row">{[0,1,2].map(index=><span key={index} className={index<strikes?'on':''}>✕</span>)}</div><div className="feud-board">{current.answers.map(([answer,points],index)=>{const visible=timedOut||revealed.includes(index);return <button key={answer} disabled={timedOut} className={visible?'revealed':''} onClick={()=>reveal(index)}><span>{index+1}</span><b>{visible?answer:'••••••'}</b><strong>{visible?points:'?'}</strong></button>})}</div><div className="feud-controls"><button className="wrong" disabled={timedOut||strikes===3} onClick={()=>{const next=Math.min(3,strikes+1);setStrikes(next);if(next===3)setActive(1-active);}}><X/> خطأ / ضربة</button><button className="secondary" disabled={timedOut} onClick={()=>setActive(1-active)}>تحويل الدور إلى {teams[1-active].name}</button><button className="primary" disabled={!revealed.length&&!timedOut} onClick={awardRound}>{roundScore?`منح ${roundScore} نقطة وإنهاء الجولة`:'إنهاء الجولة بلا نقاط'}</button></div></div></>}</section>;
+  const start=()=>{setDeck(drawWithoutRepeats('feud',feudRounds,rounds,item=>item.id));setTeams(prepareTeams(teams));setRound(0);setActive(0);setRevealed([]);setStrikes(0);setTimedOut(false);setHostFeedback(null);setPhase('play');};
+  const reveal=(index:number)=>{if(!timedOut)setRevealed(value=>value.includes(index)?value:[...value,index]);};
+  const addStrike=()=>{if(timedOut)return;setStrikes(value=>{const next=Math.min(3,value+1);if(next===3&&value<3)setActive(team=>1-team);return next;});};
+  const switchTeam=()=>{if(!timedOut)setActive(team=>1-team);};
+  const awardRound=()=>{setTeams(value=>value.map((team,index)=>index===active?{...team,score:team.score+roundScore}:team));setHostFeedback(null);if(round+1>=availableRounds)setPhase('result');else{setRound(round+1);setActive((round+1)%2);setRevealed([]);setStrikes(0);setTimedOut(false);}};
+  const handleHostCommand=(command:FamilyHostCommand)=>{
+    if(phase!=='play')return;
+    if(command.type==='strike'){addStrike();setHostFeedback({kind:'wrong',text:'سُجلت ضربة على الفريق'});return;}
+    if(command.type==='switch-team'){switchTeam();setHostFeedback({kind:'info',text:'تم تحويل الدور للفريق الآخر'});return;}
+    if(command.type==='award-round'){if(revealed.length||timedOut)awardRound();return;}
+    if(timedOut)return;
+    const submitted=normalizeFamilyAnswer(command.answer);
+    const match=current.answers.findIndex(([answer])=>{const expected=normalizeFamilyAnswer(answer);return expected===submitted||(Math.min(expected.length,submitted.length)>=4&&(expected.includes(submitted)||submitted.includes(expected)));});
+    if(match<0){addStrike();setHostFeedback({kind:'wrong',text:`«${command.answer.trim()}» غير موجودة في اللوحة · ضربة`});return;}
+    if(revealed.includes(match)){setHostFeedback({kind:'info',text:`«${current.answers[match][0]}» مكشوفة من قبل`});return;}
+    reveal(match);setHostFeedback({kind:'correct',text:`إجابة موجودة: ${current.answers[match][0]} · ${current.answers[match][1]} نقطة`});
+  };
+  const hostState:FamilyHostState={type:'family-state',phase,round,totalRounds:availableRounds,question:phase==='play'?current.question:'',answers:current.answers.map(([answer,points],index)=>({answer,points:Number(points),revealed:revealed.includes(index)})),teams,active,strikes,roundScore,timedOut,feedback:hostFeedback};
+  const hostRoom=useFamilyHostRoom(hostState,handleHostCommand);
+  return <section className="arena new-game feud-game"><GameHeader eyebrow="تحدي العائلة" title={phase==='setup'?'الإجابة الأشهر تكسب.':phase==='result'?'لوحة الجمهور اكتملت!':`الجولة ${round+1} · ${teams[active].name}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}><small className="auto-save-note">بنك متجدد من ثماني جولات بإجابات الجمهور.</small><HostPairingPanel status={hostRoom.status} hostUrl={hostRoom.hostUrl} qrCode={hostRoom.qrCode}/></TeamSetup>:phase==='result'?<GameResult title="أبطال تحدي العائلة" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><HostPairingPanel status={hostRoom.status} hostUrl={hostRoom.hostUrl} qrCode={hostRoom.qrCode} compact/><Scorebar teams={teams} turn={active} round={round} total={availableRounds}/><div className="new-stage feud-stage"><h2>{current.question}</h2><Countdown key={current.id} seconds={seconds} stopped={timedOut||revealed.length===current.answers.length} onExpire={()=>setTimedOut(true)}/>{timedOut?<p className="validation" role="status">انتهى الوقت · ظهرت الإجابات المتبقية دون إضافتها للنقاط</p>:null}<div className="strike-row">{[0,1,2].map(index=><span key={index} className={index<strikes?'on':''}>✕</span>)}</div><div className="feud-board">{current.answers.map(([answer,points],index)=>{const visible=timedOut||revealed.includes(index);return <button key={answer} disabled={timedOut} className={visible?'revealed':''} onClick={()=>reveal(index)}><span>{index+1}</span><b>{visible?answer:'••••••'}</b><strong>{visible?points:'?'}</strong></button>})}</div><div className="feud-controls"><button className="wrong" disabled={timedOut||strikes===3} onClick={addStrike}><X/> خطأ / ضربة</button><button className="secondary" disabled={timedOut} onClick={switchTeam}>تحويل الدور إلى {teams[1-active].name}</button><button className="primary" disabled={!revealed.length&&!timedOut} onClick={awardRound}>{roundScore?`منح ${roundScore} نقطة وإنهاء الجولة`:'إنهاء الجولة بلا نقاط'}</button></div></div></>}</section>;
 }
 
 function GameResult({ title, teams, onReplay, onSetup }: { title: string; teams: Team[]; onReplay: () => void; onSetup: () => void }) {
