@@ -7,6 +7,10 @@ import { scienceQuestions, techQuestions } from './science_tech';
 import { moviesQuestions, gamesQuestions } from './movies_games';
 import { puzzlesQuestions, animalsQuestions, famousQuestions } from './puzzles_animals_famous';
 import { saudiQuestions, worldQuestions, trueFalseQuestions } from './saudi_world_truefalse';
+import { extraQuestions } from './extra';
+
+const extrasFor = (category: string) => extraQuestions.filter((q) => q.category === category);
+const trueFalsePool = [...trueFalseQuestions, ...extraQuestions.filter((q) => q.type === 'truefalse')];
 
 export const ALL_QUESTIONS: Question[] = [
   ...generalQuestions,
@@ -25,25 +29,26 @@ export const ALL_QUESTIONS: Question[] = [
   ...saudiQuestions,
   ...worldQuestions,
   ...trueFalseQuestions,
+  ...extraQuestions,
 ];
 
 export const QUESTIONS_BY_CATEGORY: Record<string, Question[]> = {
-  general: generalQuestions,
-  islamic: islamicQuestions,
-  sports: sportsQuestions,
-  football: footballQuestions,
-  history: historyQuestions,
-  geography: geographyQuestions,
-  science: scienceQuestions,
-  tech: techQuestions,
-  movies: moviesQuestions,
-  games: gamesQuestions,
-  puzzles: puzzlesQuestions,
-  animals: animalsQuestions,
-  famous: famousQuestions,
-  saudi: saudiQuestions,
-  world: worldQuestions,
-  truefalse: trueFalseQuestions,
+  general: [...generalQuestions, ...extrasFor('general')],
+  islamic: [...islamicQuestions, ...extrasFor('islamic')],
+  sports: [...sportsQuestions, ...extrasFor('sports')],
+  football: [...footballQuestions, ...extrasFor('football')],
+  history: [...historyQuestions, ...extrasFor('history')],
+  geography: [...geographyQuestions, ...extrasFor('geography')],
+  science: [...scienceQuestions, ...extrasFor('science')],
+  tech: [...techQuestions, ...extrasFor('tech')],
+  movies: [...moviesQuestions, ...extrasFor('movies')],
+  games: [...gamesQuestions, ...extrasFor('games')],
+  puzzles: [...puzzlesQuestions, ...extrasFor('puzzles')],
+  animals: [...animalsQuestions, ...extrasFor('animals')],
+  famous: [...famousQuestions, ...extrasFor('famous')],
+  saudi: [...saudiQuestions, ...extrasFor('saudi')],
+  world: [...worldQuestions, ...extrasFor('world')],
+  truefalse: trueFalsePool,
 };
 
 const USED_KEY = 'qaddha_used_question_ids_v1';
@@ -59,7 +64,6 @@ function readUsedIds(): Set<string> {
 
 function persistUsedIds(ids: Set<string>) {
   try {
-    // Keep storage bounded while preserving a large no-repeat window.
     localStorage.setItem(USED_KEY, JSON.stringify(Array.from(ids).slice(-1500)));
   } catch {}
 }
@@ -82,7 +86,7 @@ export function getQuestions(
   let pool: Question[] = [];
 
   if (mode === 'truefalse') {
-    pool = [...trueFalseQuestions];
+    pool = [...trueFalsePool];
   } else if (mode === 'multiple') {
     pool = ALL_QUESTIONS.filter((q) => q.type === 'multiple');
   } else if (categories.length === 0) {
@@ -93,7 +97,6 @@ export function getQuestions(
     });
   }
 
-  // Protect against duplicate IDs inside merged pools.
   pool = Array.from(new Map(pool.map((q) => [q.id, q])).values());
 
   if (difficulty !== 'mixed') {
@@ -104,7 +107,6 @@ export function getQuestions(
   const usedIds = readUsedIds();
   let fresh = pool.filter((q) => !usedIds.has(q.id));
 
-  // Only recycle old questions after the current pool is effectively exhausted.
   if (fresh.length < count) {
     const needed = Math.min(count, pool.length);
     if (fresh.length < needed) {
