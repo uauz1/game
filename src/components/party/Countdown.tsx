@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { Pause, Play, Timer } from 'lucide-react';
 import { playPartySound } from '../../utils/partyAudio';
 
-export default function Countdown({ seconds, stopped }: { seconds: number; stopped: boolean }) {
+export default function Countdown({ seconds, stopped, onExpire }: { seconds: number; stopped: boolean; onExpire?: () => void }) {
   const [remaining, setRemaining] = useState(seconds);
   const [paused, setPaused] = useState(false);
   const deadline = useRef(Date.now() + seconds * 1000);
   const remainingMs = useRef(seconds * 1000);
   const previousRemaining = useRef(seconds);
+  const expirationNotified = useRef(false);
+  const onExpireRef = useRef(onExpire);
+  onExpireRef.current = onExpire;
   useEffect(() => {
     if (stopped || paused) return;
     deadline.current = Date.now() + remainingMs.current;
@@ -22,7 +25,13 @@ export default function Countdown({ seconds, stopped }: { seconds: number; stopp
     if (remaining === previousRemaining.current) return;
     previousRemaining.current = remaining;
     if (remaining > 0 && remaining <= 5) playPartySound('tick');
-    if (remaining === 0) playPartySound('wrong');
+    if (remaining === 0) {
+      playPartySound('wrong');
+      if (!expirationNotified.current) {
+        expirationNotified.current = true;
+        onExpireRef.current?.();
+      }
+    }
   }, [remaining]);
   return <div className={`countdown ${remaining <= 5 ? 'urgent' : ''}`}>
     <div className="timer-dial" style={{ '--progress': `${remaining / seconds * 100}%` } as React.CSSProperties}>

@@ -150,7 +150,7 @@ export default function WhoAmIGame({ onHome }: { onHome: () => void }) {
         <div className="mystery-avatar" aria-hidden="true"><span>؟</span><Sparkles/></div>
         <div className="who-value"><small>قيمة الإجابة الآن</small><strong>{availablePoints}</strong><span>نقطة</span></div>
         <div className="who-clues" aria-live="polite">{currentCard.clues.slice(0, clueCount).map((clue, index) => <div className="who-clue" key={clue}><span>{index + 1}</span><p>{clue}</p></div>)}</div>
-        <Countdown key={currentCard.id} seconds={seconds} stopped={answerRevealed}/>
+        <Countdown key={currentCard.id} seconds={seconds} stopped={answerRevealed} onExpire={() => setAnswerRevealed(true)}/>
         {!answerRevealed ? <div className="who-actions"><button className="secondary" disabled={clueCount === currentCard.clues.length} onClick={() => setClueCount(value => Math.min(currentCard.clues.length, value + 1))}><Lightbulb size={18}/> تلميح إضافي {clueCount < 4 ? `− 100` : ''}</button><button className="primary" onClick={() => setAnswerRevealed(true)}><Eye size={18}/> كشف الإجابة</button></div> : <div className="who-reveal" role="status"><small>أنا…</small><h2>{currentCard.answer}</h2><p>من عرفها؟ سجّل النقاط أو مرّر الشخصية بلا نقاط.</p><div className="who-judging"><button style={{ '--team': teams[0].color } as CSSProperties} onClick={() => judge(0)}><Check/> {teams[0].name} · +{availablePoints}</button><button style={{ '--team': teams[1].color } as CSSProperties} onClick={() => judge(1)}><Check/> {teams[1].name} · +{availablePoints}</button><button className="no-winner" onClick={() => judge(null)}><X/> لا أحد</button></div></div>}
       </div>
     </> : null}
