@@ -51,6 +51,8 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
   const [owners, setOwners] = useState<CellOwner[]>(() => Array(CELL_COUNT).fill(null));
   const [current, setCurrent] = useState<CurrentQuestion | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const [noAnswer, setNoAnswer] = useState(false);
+  const [attemptKey, setAttemptKey] = useState(0);
   const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>([]);
   const [winningPath, setWinningPath] = useState<number[]>([]);
   const [roundWinner, setRoundWinner] = useState<0 | 1 | null>(null);
@@ -89,6 +91,8 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
     setOwners(Array(CELL_COUNT).fill(null));
     setCurrent(null);
     setRevealed(false);
+    setNoAnswer(false);
+    setAttemptKey(0);
     setWinningPath([]);
     setRoundWinner(null);
     setLastDecision(null);
@@ -121,6 +125,8 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
     setUsedQuestionIds(ids => available.length ? [...ids, question.id] : ids.filter(id => !poolIds.has(id)).concat(question.id));
     setCurrent({ cell, question });
     setRevealed(false);
+    setNoAnswer(false);
+    setAttemptKey(value => value + 1);
     setPhase('question');
   };
 
@@ -128,37 +134,30 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
     if (current) setUsedQuestionIds(ids => ids.filter(id => id !== current.question.id));
     setCurrent(null);
     setRevealed(false);
+    setNoAnswer(false);
     setPhase('board');
   };
 
-  const judge = (correct: boolean) => {
+  const awardCell = (judgingTeam: 0 | 1) => {
     if (!current || !revealed || phase !== 'question') return;
     const judgedQuestion = current;
-    const judgingTeam = turn;
+
     setStats(value => ({
       asked: value.asked + 1,
-      correct: correct ? value.correct.map((score, index) => index === judgingTeam ? score + 1 : score) as [number, number] : value.correct,
-      misses: value.misses + (correct ? 0 : 1),
+      correct: value.correct.map((score, index) => index === judgingTeam ? score + 1 : score) as [number, number],
+      misses: value.misses,
     }));
-
-    if (!correct) {
-      setLastDecision({ current: judgedQuestion, team: judgingTeam, correct: false, wonRound: false });
-      setCurrent(null);
-      setRevealed(false);
-      setTurn(value => value === 0 ? 1 : 0);
-      setPhase('board');
-      return;
-    }
 
     const nextOwners = [...owners];
     nextOwners[judgedQuestion.cell] = judgingTeam;
     const path = findWinningPath(nextOwners, BOARD_SIZE, judgingTeam);
     setOwners(nextOwners);
+    setTurn(judgingTeam);
     setCurrent(null);
     setRevealed(false);
+    setNoAnswer(false);
     setLastDecision({ current: judgedQuestion, team: judgingTeam, correct: true, wonRound: Boolean(path.length) });
     if (!path.length) {
-      setTurn(value => value === 0 ? 1 : 0);
       setPhase('board');
       return;
     }
@@ -168,6 +167,30 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
     setWinningPath(path);
     setRoundWinner(judgingTeam);
     setPhase(nextTeams[judgingTeam].rounds >= targetWins ? 'match-end' : 'round-end');
+  };
+
+  const chooseAnotherQuestion = () => {
+    if (!current) return;
+    const letter = letters[current.cell];
+    const pool = questionsForLetter(letter, difficulty);
+    const available = pool.filter(question => question.id !== current.question.id && !usedQuestionIds.includes(question.id));
+    const fallback = pool.filter(question => question.id !== current.question.id);
+    const candidates = available.length ? available : fallback;
+    if (!candidates.length) return;
+    const question = candidates[(round + current.cell + usedQuestionIds.length + 1) % candidates.length];
+    setUsedQuestionIds(ids => ids.includes(question.id) ? ids : [...ids, question.id]);
+    setCurrent({ cell: current.cell, question });
+    setRevealed(false);
+    setNoAnswer(false);
+    setAttemptKey(value => value + 1);
+  };
+
+  const chooseAnotherLetter = () => {
+    setStats(value => ({ ...value, asked: value.asked + 1, misses: value.misses + 1 }));
+    setCurrent(null);
+    setRevealed(false);
+    setNoAnswer(false);
+    setPhase('board');
   };
 
   const undoDecision = () => {
@@ -187,6 +210,7 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
     setRoundWinner(null);
     setTurn(lastDecision.team);
     setCurrent(lastDecision.current);
+    setNoAnswer(false);
     setRevealed(true);
     setLastDecision(null);
     setPhase('question');
@@ -206,6 +230,7 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
         if (current) setUsedQuestionIds(ids => ids.filter(id => id !== current.question.id));
         setCurrent(null);
         setRevealed(false);
+        setNoAnswer(false);
         setPhase('board');
       }
     };
@@ -222,7 +247,7 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
       <div className="team-setup">{teams.map((team, index) => <div className="team-editor" key={index} style={teamStyle(team)}><div className="team-emblem"><Users size={36}/><span>0{index + 1}</span></div><label htmlFor={`huroof-team-${index}`}>اسم الفريق {index === 0 ? 'الأول' : 'الثاني'}</label><input id={`huroof-team-${index}`} aria-label={`اسم الفريق ${index + 1}`} maxLength={22} value={team.name} onChange={event => updateTeam(index, { name: event.target.value })}/><div className="color-choices" aria-label={`لون الفريق ${index + 1}`}>{TEAM_COLORS.map(color => <button type="button" key={color.value} aria-label={`${color.name} للفريق ${index + 1}`} aria-pressed={team.color === color.value} disabled={teams[1 - index].color === color.value} style={{ background: color.value }} onClick={() => updateTeam(index, { color: color.value })}>{team.color === color.value ? <Check size={17}/> : null}</button>)}</div><small>{index === 0 ? 'مساركم من اليمين إلى اليسار' : 'مساركم من الأعلى إلى الأسفل'}</small></div>)}</div>
       <div className="match-settings huroof-settings"><div><Flag/><b>إعدادات المباراة</b></div><label>مدة السؤال<select aria-label="مدة السؤال" value={seconds} onChange={event => setSeconds(Number(event.target.value))}><option value={20}>20 ثانية</option><option value={30}>30 ثانية</option><option value={45}>45 ثانية</option><option value={60}>60 ثانية</option></select></label><label>مستوى الأسئلة<select aria-label="مستوى الصعوبة" value={difficulty} onChange={event => setDifficulty(event.target.value as HuroofDifficulty)}><option value="easy">خفيف ومتنوع</option><option value="medium">متوازن</option><option value="hard">متقدم</option></select></label><label>نظام المباراة<select aria-label="عدد الجولات" value={bestOf} onChange={event => setBestOf(Number(event.target.value))}><option value={1}>جولة واحدة</option><option value={3}>الأفضل من 3</option><option value={5}>الأفضل من 5</option></select></label><small className="auto-save-note">تُحفظ اختياراتكم تلقائيًا على هذا الجهاز.</small></div>
       {!validNames ? <p className="validation" role="status">اكتبوا اسمين مختلفين وغير فارغين.</p> : null}
-      <div className="arena-actions"><span>الإجابة الصحيحة تملك الخلية، ثم ينتقل الدور للفريق الآخر.</span><button className="primary" disabled={!validNames} onClick={startMatch}>ابدأوا المباراة <Flag size={18}/></button></div>
+      <div className="arena-actions"><span>بعد كشف الإجابة، المقدم يحدد الفريق الذي جاوب صح. الفريق الفائز يملك الخلية ويستمر دوره.</span><button className="primary" disabled={!validNames} onClick={startMatch}>ابدأوا المباراة <Flag size={18}/></button></div>
       <div className="host-note"><span>✦</span><p><b>المقدم يحكم الإجابات.</b> اختاروا خلية، جاوبوا بصوت عالٍ، اكشفوا الحل، ثم سجّلوا النتيجة. السؤال لا يتكرر حتى تنتهي مجموعة الحرف.</p></div>
     </div> : <>
       <div className="huroof-scorebar">{teams.map((team, index) => <div key={index} className={`huroof-team-score ${turn === index && phase === 'board' ? 'is-turn' : ''}`} style={teamStyle(team)}><span>{team.name}</span><strong>{team.rounds}<small> / {targetWins}</small></strong><small>{index === 0 ? 'يمين ↔ يسار' : 'أعلى ↕ أسفل'} · {stats.correct[index]} إجابات</small></div>)}<div className="huroof-round"><small>المباراة</small><b>الجولة {round}</b><span>{bestOf === 1 ? 'جولة حاسمة' : `الأفضل من ${bestOf}`}</span></div></div>
@@ -235,14 +260,14 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
 
       {phase === 'board' ? <div className="huroof-turn" role="status"><span style={{ background: teams[turn].color }}/><p><b>الدور على {teams[turn].name}</b> — اختاروا خلية تساعدكم تكملون المسار أو تقطعون طريق الخصم.</p>{lastDecision ? <button className="quiet undo-decision" onClick={undoDecision}><Undo2 size={16}/> تصحيح آخر تحكيم</button> : null}</div> : null}
 
-      {phase === 'question' && current ? <div className="huroof-question-overlay"><div className="huroof-question" role="dialog" aria-modal="true" aria-labelledby="huroof-question-title"><div className="huroof-question-head"><span className="letter-big">{letters[current.cell]}</span><div><small>سؤال {difficulty === 'easy' ? 'خفيف' : difficulty === 'medium' ? 'متوازن' : 'متقدم'}</small><b>{teams[turn].name}</b></div><button className="quiet" aria-label="إلغاء اختيار الخلية" onClick={cancelQuestion}><X/></button></div><h2 id="huroof-question-title">{current.question.prompt}</h2><Countdown key={current.question.id} seconds={seconds} stopped={revealed}/>{revealed ? <><div className="huroof-answer" role="status"><small>الإجابة المعتمدة</small><strong>{current.question.answer}</strong><p>يقبل المقدم أي إجابة صحيحة مرتبطة بالحرف حتى لو اختلفت عن المثال.</p></div><div className="huroof-judging"><button className="correct" onClick={() => judge(true)}><Check size={19}/> إجابة صحيحة · امتلكوا الخلية</button><button className="wrong" onClick={() => judge(false)}><X size={19}/> غير صحيحة · تنتقل الفرصة</button></div></> : <button className="primary reveal-answer" onClick={() => setRevealed(true)}><Eye size={19}/> كشف الإجابة والتحكيم</button>}</div></div> : null}
+      {phase === 'question' && current ? <div className="huroof-question-overlay"><div className="huroof-question" role="dialog" aria-modal="true" aria-labelledby="huroof-question-title"><div className="huroof-question-head"><span className="letter-big">{letters[current.cell]}</span><div><small>{`سؤال ${difficulty === 'easy' ? 'خفيف' : difficulty === 'medium' ? 'متوازن' : 'متقدم'}`}</small><b>الدور بدأ مع {teams[turn].name}</b></div><button className="quiet" aria-label="إلغاء اختيار الخلية" onClick={cancelQuestion}><X/></button></div><h2 id="huroof-question-title">{current.question.prompt}</h2><Countdown key={`${current.question.id}-${attemptKey}`} seconds={seconds} stopped={revealed}/>{revealed ? <><div className="huroof-answer" role="status"><small>الإجابة المعتمدة</small><strong>{current.question.answer}</strong><p>يقبل المقدم أي إجابة صحيحة مرتبطة بالحرف حتى لو اختلفت عن المثال.</p></div><div className="huroof-judging">{!noAnswer ? <><button className="correct" onClick={() => awardCell(0)}><Check size={19}/> {teams[0].name} جاوبوا صح</button><button className="correct" onClick={() => awardCell(1)}><Check size={19}/> {teams[1].name} جاوبوا صح</button><button className="wrong" onClick={() => setNoAnswer(true)}><X size={19}/> ولا فريق جاوب صح</button></> : <><button className="correct" onClick={chooseAnotherQuestion}><RotateCcw size={18}/> سؤال جديد لنفس الحرف</button><button className="wrong" onClick={chooseAnotherLetter}><X size={18}/> اختيار حرف آخر</button></>}</div></> : <button className="primary reveal-answer" onClick={() => setRevealed(true)}><Eye size={19}/> كشف الإجابة والتحكيم</button>}</div></div> : null}
 
       {phase === 'round-end' && roundWinner !== null ? <div className="huroof-result"><Trophy size={58}/><span className="eyebrow">اكتمل المسار</span><h2>{teams[roundWinner].name} حسموا الجولة!</h2><p>كوّنوا خطًا متصلًا بين جهتيهم. الجولة التالية تبدأ بالفريق الآخر.</p><div className="result-actions"><button className="primary" onClick={nextRound}>ابدأ الجولة التالية</button><button className="secondary" onClick={undoDecision}><Undo2 size={17}/> تصحيح التحكيم</button></div></div> : null}
 
       {phase === 'match-end' && matchWinner !== -1 ? <div className="huroof-result match-winner"><Trophy size={72}/><span className="eyebrow">بطل مسار الحروف</span><h2>{teams[matchWinner].name}… قدّها!</h2><p>فازوا بـ {teams[matchWinner].rounds} {teams[matchWinner].rounds === 1 ? 'جولة' : 'جولات'} ووصلوا جهتي اللوحة قبل خصمهم.</p><div className="result-summary"><span>{teams[0].rounds}<small>{teams[0].name}</small></span><span>{stats.asked}<small>سؤالًا لُعب</small></span><span>{teams[1].rounds}<small>{teams[1].name}</small></span></div><div className="result-actions"><button className="primary" onClick={restartMatch}><RotateCcw size={18}/> إعادة بنفس الإعدادات</button><button className="secondary" onClick={() => setPhase('setup')}>تعديل الإعدادات</button></div><button className="quiet undo-result" onClick={undoDecision}><Undo2 size={16}/> تصحيح آخر تحكيم</button></div> : null}
     </>}
 
-    {rules ? <div className="exit-overlay"><div className="huroof-rules" role="dialog" aria-modal="true" aria-labelledby="huroof-rules-title"><button autoFocus className="quiet rules-close" aria-label="إغلاق طريقة اللعب" onClick={() => setRules(false)}><X/></button><span className="eyebrow"><CircleHelp size={15}/> طريقة اللعب</span><h2 id="huroof-rules-title">المسار قبل العدد</h2><ol><li><b>اختاروا خلية.</b><span>الفريق صاحب الدور يختار حرفًا يخدم مساره.</span></li><li><b>جاوبوا قبل انتهاء الوقت.</b><span>الإجابة تبدأ بالحرف أو ترتبط به كما يوضح السؤال.</span></li><li><b>المقدم يحكم.</b><span>الصحيح يملك الخلية، والخطأ يتركها متاحة وينقل الدور.</span></li><li><b>صلوا الجهتين.</b><span>الفريق الأول يمين–يسار، والثاني أعلى–أسفل، والاتصال يشمل الجهات الست للخلية.</span></li></ol><button className="primary" onClick={() => setRules(false)}>واضحة… يلا!</button></div></div> : null}
+    {rules ? <div className="exit-overlay"><div className="huroof-rules" role="dialog" aria-modal="true" aria-labelledby="huroof-rules-title"><button autoFocus className="quiet rules-close" aria-label="إغلاق طريقة اللعب" onClick={() => setRules(false)}><X/></button><span className="eyebrow"><CircleHelp size={15}/> طريقة اللعب</span><h2 id="huroof-rules-title">المسار قبل العدد</h2><ol><li><b>اختاروا خلية.</b><span>الفريق صاحب الدور يختار حرفًا يخدم مساره.</span></li><li><b>جاوبوا قبل انتهاء الوقت.</b><span>الإجابة تبدأ بالحرف أو ترتبط به كما يوضح السؤال.</span></li><li><b>المقدم يحكم.</b><span>بعد كشف الإجابة، المقدم يحدد أي فريق جاوب صح. الفائز يملك الخلية ويستمر دوره، وإذا ما جاوب أحد تختارون سؤالًا جديدًا أو حرفًا آخر.</span></li><li><b>صلوا الجهتين.</b><span>الفريق الأول يمين–يسار، والثاني أعلى–أسفل، والاتصال يشمل الجهات الست للخلية.</span></li></ol><button className="primary" onClick={() => setRules(false)}>واضحة… يلا!</button></div></div> : null}
     {exit ? <div className="exit-overlay"><div role="dialog" aria-modal="true" aria-labelledby="huroof-exit"><h2 id="huroof-exit">نوقف مباراة الحروف؟</h2><p>العودة للألعاب تنهي المباراة الحالية ونتائج جولاتها.</p><button autoFocus className="primary" onClick={() => setExit(false)}>نكمل اللعب</button><button className="quiet" onClick={onHome}>إنهاء والعودة للألعاب</button></div></div> : null}
   </section>;
 }
