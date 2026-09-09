@@ -9,6 +9,7 @@ import './whoami.css';
 import './teams.css';
 import './settings.css';
 import './responsive.css';
+import './home-fix.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
