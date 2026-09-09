@@ -1,0 +1,78 @@
+/* Qaddha homepage polish — keeps the approved dark/gold identity while fixing desktop balance. */
+.party-app main{width:min(100%,1440px);margin-inline:auto;padding-inline:clamp(18px,3vw,42px)}
+.party-app .topbar{width:min(calc(100% - 40px),1360px);margin-inline:auto}
+
+.lobby-hero{grid-template-columns:minmax(0,1.02fr) minmax(420px,.98fr);min-height:560px;gap:clamp(28px,5vw,72px);padding:42px 0 58px;align-items:center}
+.lobby-copy{max-width:650px;justify-self:start}
+.lobby-copy h1{font-size:clamp(44px,5vw,72px);line-height:1.18;margin:18px 0 18px;text-wrap:balance}
+.lobby-copy p{max-width:610px;font-size:17px;line-height:1.9}
+.lobby-copy .hero-actions{display:flex;flex-wrap:wrap;gap:10px 12px;margin-top:28px;align-items:center}
+.lobby-copy .hero-actions .primary{font-size:14px;padding-inline:22px}
+.hero-details{margin-top:24px;flex-wrap:wrap;row-gap:8px}
+
+.arena-illustration{height:430px;width:100%;max-width:560px;justify-self:end;margin:0;transform:none;border-radius:36px;background:radial-gradient(circle at 50% 48%,#6b3b9829 0,transparent 58%),radial-gradient(circle at 74% 22%,#d7a93b12 0,transparent 30%)}
+.illustrated-trophy{inset:72px 27% 78px;border-radius:34px}
+.illustrated-card{width:142px}
+
+.lobby-games{padding-top:14px}
+.section-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:18px}
+.section-head h2{font-size:clamp(28px,3vw,38px);margin:4px 0 0}
+.section-head>span{white-space:nowrap}
+
+.game-library-tools{display:grid;grid-template-columns:minmax(260px,1.15fr) minmax(420px,1.85fr) auto;align-items:center;gap:12px;margin:0 0 26px;padding:14px;border:1px solid #ffffff12;border-radius:18px;background:#11121db8}
+.game-library-tools>label{min-height:48px;display:flex;align-items:center;gap:10px;padding:0 14px;border:1px solid #ffffff17;border-radius:13px;background:#0a0b14}
+.game-library-tools>label svg{width:18px;flex:none;color:#8e89a1}
+.game-library-tools>label input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#fff;font:700 14px 'Tajawal',sans-serif}
+.game-library-tools>div{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
+.game-library-tools>div button,.game-library-tools .random-game{min-height:42px;border:1px solid #ffffff14;border-radius:11px;background:#171823;color:#bbb7ca;padding:9px 12px;font:700 11px 'Tajawal',sans-serif;white-space:nowrap}
+.game-library-tools>div button.active{background:#ffd45a;color:#251d0b;border-color:#ffd45a}
+.game-library-tools .random-game{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-color:#ffd45a42;color:#ffe08b}
+.game-library-tools .random-game svg{width:16px}
+
+.lobby-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.game-card-shell{min-width:0}
+.lobby-game.available{grid-column:auto;width:100%;height:100%}
+.game-art,.game-teams .game-art,.game-letters .game-art{height:220px}
+.game-copy{min-height:150px}
+.game-copy p{max-width:78%}
+
+@media (min-width:1500px){
+  .party-app main{width:min(100%,1540px)}
+  .party-app .topbar{width:min(calc(100% - 48px),1460px)}
+  .lobby-hero{grid-template-columns:minmax(0,1fr) minmax(500px,.95fr);gap:84px}
+  .arena-illustration{max-width:620px}
+  .lobby-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .game-art,.game-teams .game-art,.game-letters .game-art{height:205px}
+}
+
+@media (max-width:1100px){
+  .lobby-hero{grid-template-columns:minmax(0,1fr) minmax(350px,.9fr);gap:24px;min-height:500px}
+  .arena-illustration{height:370px;transform:scale(.94);transform-origin:center}
+  .game-library-tools{grid-template-columns:1fr auto}
+  .game-library-tools>div{grid-column:1/-1;justify-content:flex-start}
+}
+
+@media (max-width:820px){
+  .party-app .topbar{width:calc(100% - 28px)}
+  .lobby-hero{grid-template-columns:1fr;min-height:auto;padding:24px 0 34px;gap:16px}
+  .lobby-copy{max-width:none}
+  .lobby-copy h1{font-size:clamp(38px,10vw,54px)}
+  .arena-illustration{justify-self:center;width:min(100%,500px);height:330px;order:2}
+  .game-library-tools{grid-template-columns:1fr;padding:11px}
+  .game-library-tools>div{grid-column:auto;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
+  .game-library-tools .random-game{width:100%}
+  .lobby-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .game-art,.game-teams .game-art,.game-letters .game-art{height:165px}
+}
+
+@media (max-width:520px){
+  .party-app main{padding-inline:12px}
+  .lobby-copy .hero-actions{gap:8px}
+  .lobby-copy .hero-actions>*{min-height:42px}
+  .hero-details{font-size:10px}
+  .arena-illustration{height:285px;transform:scale(.88)}
+  .lobby-grid{grid-template-columns:1fr}
+  .game-art,.game-teams .game-art,.game-letters .game-art{height:190px}
+  .game-copy{min-height:unset}
+  .game-copy p{max-width:88%}
+}
