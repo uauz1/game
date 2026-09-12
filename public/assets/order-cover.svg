@@ -1,1 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700"><defs><linearGradient id="b" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#10131c"/><stop offset="1" stop-color="#142f2a"/></linearGradient></defs><rect width="1200" height="700" fill="url(#b)"/><g transform="translate(220 110)"><rect x="70" y="30" width="620" height="120" rx="28" fill="#1d2631" stroke="#69d8b5" stroke-width="7"/><rect x="130" y="190" width="620" height="120" rx="28" fill="#182129" stroke="#a8e8d3" stroke-width="7"/><rect x="10" y="350" width="620" height="120" rx="28" fill="#121a22" stroke="#48a98c" stroke-width="7"/><g fill="#dff9ef" font-family="Arial" font-size="52" font-weight="700"><text x="115" y="105">01</text><text x="175" y="265">02</text><text x="55" y="425">03</text></g><g fill="#69d8b5"><path d="M755 75h150l-42-42 28-28 92 92-92 92-28-28 42-42H755z"/><path d="M805 375H655l42-42-28-28-92 92 92 92 28-28-42-42h150z"/></g></g><text x="72" y="105" fill="#eafff7" font-family="Arial" font-size="48" font-weight="700">QADDHA</text><text x="72" y="160" fill="#8dcdb8" font-family="Arial" font-size="28">ORDER IT RIGHT</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#090909"/><stop offset=".52" stop-color="#15120d"/><stop offset="1" stop-color="#21170a"/></linearGradient>
+  <radialGradient id="glow"><stop stop-color="#f1bd49" stop-opacity=".30"/><stop offset="1" stop-color="#f1bd49" stop-opacity="0"/></radialGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff1a7"/><stop offset=".42" stop-color="#e8b746"/><stop offset="1" stop-color="#9d6512"/></linearGradient>
+  <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1b1b1b"/><stop offset="1" stop-color="#0d0d0d"/></linearGradient>
+  <filter id="shadow"><feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000" flood-opacity=".58"/><feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#d7a93b" flood-opacity=".17"/></filter>
+</defs>
+<rect width="1200" height="700" fill="url(#bg)"/>
+<rect x="18" y="18" width="1164" height="664" rx="34" fill="none" stroke="#c99428" stroke-opacity=".28" stroke-width="2"/>
+<circle cx="690" cy="335" r="320" fill="url(#glow)"/>
+<g transform="translate(275 115)" filter="url(#shadow)">
+  <g transform="rotate(-3 310 220)">
+    <rect x="110" y="30" width="600" height="122" rx="30" fill="url(#panel)" stroke="#d9a63a" stroke-width="6"/>
+    <rect x="55" y="188" width="600" height="122" rx="30" fill="url(#panel)" stroke="#f0c65b" stroke-width="6"/>
+    <rect x="145" y="346" width="600" height="122" rx="30" fill="url(#panel)" stroke="#b77a1c" stroke-width="6"/>
+    <g fill="url(#gold)" font-family="Arial" font-weight="700" font-size="58">
+      <text x="155" y="110">01</text><text x="100" y="268">02</text><text x="190" y="426">03</text>
+    </g>
+    <g stroke="#f0c65b" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M560 90h105m-35-35 35 35-35 35"/>
+      <path d="M500 248H395m35-35-35 35 35 35"/>
+      <path d="M595 406h105m-35-35 35 35-35 35"/>
+    </g>
+  </g>
+</g>
+<g opacity=".34" fill="#f0c65b"><circle cx="126" cy="125" r="7"/><circle cx="1050" cy="120" r="5"/><circle cx="1080" cy="560" r="8"/><circle cx="150" cy="560" r="5"/></g>
+<g transform="translate(920 118)"><path d="M0 55l22 10 13-22 13 22 22-10-4 25 24 8-18 18 14 21-26 0-3 26-22-13-22 13-3-26-26 0 14-21-18-18 24-8z" fill="#d9a63a" opacity=".54"/></g>
+</svg>
