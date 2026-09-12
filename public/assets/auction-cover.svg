@@ -1,1 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700"><defs><linearGradient id="b" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#111827"/><stop offset="1" stop-color="#3a2512"/></linearGradient><radialGradient id="g"><stop stop-color="#ffd66b" stop-opacity=".55"/><stop offset="1" stop-color="#ffd66b" stop-opacity="0"/></radialGradient></defs><rect width="1200" height="700" fill="url(#b)"/><circle cx="920" cy="120" r="260" fill="url(#g)"/><g transform="translate(235 120) rotate(-8 360 220)"><rect x="180" y="250" width="470" height="86" rx="43" fill="#f3c956"/><rect x="390" y="42" width="120" height="340" rx="48" fill="#fff1c2"/><rect x="310" y="34" width="280" height="120" rx="56" fill="#d99d31"/><rect x="305" y="50" width="290" height="88" rx="44" fill="#f5cf63"/><rect x="650" y="350" width="245" height="84" rx="22" fill="#090b10" stroke="#f5cf63" stroke-width="10"/></g><g fill="#fff5d4" font-family="Arial" font-weight="700"><text x="70" y="110" font-size="48">QADDHA</text><text x="72" y="165" font-size="28" opacity=".65">AUCTION CHALLENGE</text></g><g fill="#f5cf63" opacity=".65"><circle cx="120" cy="560" r="12"/><circle cx="165" cy="595" r="7"/><circle cx="1060" cy="520" r="10"/><path d="M1030 580l18 32 36 5-26 25 6 36-34-17-33 17 6-36-27-25 37-5z"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#090909"/><stop offset=".55" stop-color="#15120d"/><stop offset="1" stop-color="#241707"/></linearGradient>
+  <radialGradient id="glow" cx="50%" cy="45%" r="55%"><stop stop-color="#f0b942" stop-opacity=".34"/><stop offset="1" stop-color="#f0b942" stop-opacity="0"/></radialGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0a6"/><stop offset=".35" stop-color="#f2c65c"/><stop offset="1" stop-color="#a66a12"/></linearGradient>
+  <linearGradient id="darkGold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7d4b10"/><stop offset="1" stop-color="#2c1906"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000" flood-opacity=".65"/><feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#d9a63a" flood-opacity=".22"/></filter>
+</defs>
+<rect width="1200" height="700" fill="url(#bg)"/>
+<rect x="18" y="18" width="1164" height="664" rx="34" fill="none" stroke="#c99428" stroke-opacity=".28" stroke-width="2"/>
+<circle cx="650" cy="335" r="330" fill="url(#glow)"/>
+<g opacity=".18" fill="#f3c85d"><circle cx="120" cy="120" r="5"/><circle cx="1060" cy="150" r="4"/><circle cx="1120" cy="530" r="6"/><circle cx="150" cy="570" r="4"/></g>
+<g transform="translate(465 90)" filter="url(#shadow)">
+  <path d="M135 0l24 42 49-9-23 44 36 34-49 7-12 49-35-34-42 25 3-50-47-20 39-31-15-48 48 13z" fill="#d9a63a" opacity=".18"/>
+  <g transform="translate(38 42) rotate(-8 250 210)">
+    <rect x="90" y="312" width="500" height="62" rx="31" fill="url(#gold)"/>
+    <rect x="300" y="105" width="82" height="285" rx="28" fill="#f7dc86"/>
+    <rect x="220" y="76" width="250" height="102" rx="40" fill="url(#darkGold)" stroke="#f1c75d" stroke-width="7"/>
+    <rect x="235" y="90" width="220" height="72" rx="29" fill="url(#gold)"/>
+    <path d="M520 335h195c28 0 50 22 50 50v18H470v-18c0-28 22-50 50-50z" fill="#0b0b0b" stroke="#d7a93b" stroke-width="7"/>
+  </g>
+</g>
+<g transform="translate(165 390)" filter="url(#shadow)">
+  <circle cx="95" cy="95" r="78" fill="#111" stroke="#d7a93b" stroke-width="7"/><circle cx="95" cy="95" r="61" fill="url(#darkGold)"/>
+  <text x="95" y="113" text-anchor="middle" font-family="Arial" font-size="54" font-weight="700" fill="#fff0a6">50</text>
+  <circle cx="245" cy="70" r="67" fill="#111" stroke="#d7a93b" stroke-width="7"/><circle cx="245" cy="70" r="52" fill="url(#darkGold)"/>
+  <text x="245" y="88" text-anchor="middle" font-family="Arial" font-size="44" font-weight="700" fill="#fff0a6">100</text>
+</g>
+<path d="M920 122l14 27 30 4-22 21 5 30-27-14-27 14 5-30-22-21 30-4z" fill="#f2c65c" opacity=".7"/>
+</svg>
