@@ -1,1 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700"><defs><linearGradient id="b" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#10202a"/><stop offset="1" stop-color="#203748"/></linearGradient></defs><rect width="1200" height="700" fill="url(#b)"/><g transform="translate(255 145)"><g fill="#173342" stroke="#75c7eb" stroke-width="6"><rect x="0" y="0" width="170" height="170" rx="32"/><rect x="205" y="0" width="170" height="170" rx="32"/><rect x="410" y="0" width="170" height="170" rx="32"/><rect x="615" y="0" width="170" height="170" rx="32"/><rect x="102" y="205" width="170" height="170" rx="32"/><rect x="512" y="205" width="170" height="170" rx="32"/></g><rect x="307" y="205" width="170" height="170" rx="32" fill="#0d151b" stroke="#e8c35f" stroke-width="8" stroke-dasharray="20 16"/><g fill="#cdefff" font-family="Arial" font-size="68" font-weight="700"><text x="56" y="107">A</text><text x="261" y="107">B</text><text x="466" y="107">C</text><text x="671" y="107">D</text><text x="158" y="312">E</text><text x="568" y="312">G</text></g><text x="363" y="320" fill="#f0cf70" font-family="Arial" font-size="96" font-weight="700">?</text></g><text x="72" y="105" fill="#e8f8ff" font-family="Arial" font-size="48" font-weight="700">QADDHA</text><text x="72" y="160" fill="#8ec4dc" font-family="Arial" font-size="28">WHAT'S MISSING?</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#090909"/><stop offset=".55" stop-color="#15120d"/><stop offset="1" stop-color="#21170a"/></linearGradient>
+  <radialGradient id="glow"><stop stop-color="#efbd4b" stop-opacity=".31"/><stop offset="1" stop-color="#efbd4b" stop-opacity="0"/></radialGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0a3"/><stop offset=".45" stop-color="#e6b444"/><stop offset="1" stop-color="#9d6512"/></linearGradient>
+  <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1c1c1c"/><stop offset="1" stop-color="#0d0d0d"/></linearGradient>
+  <filter id="shadow"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity=".62"/><feDropShadow dx="0" dy="0" stdDeviation="9" flood-color="#d7a93b" flood-opacity=".18"/></filter>
+</defs>
+<rect width="1200" height="700" fill="url(#bg)"/>
+<rect x="18" y="18" width="1164" height="664" rx="34" fill="none" stroke="#c99428" stroke-opacity=".28" stroke-width="2"/>
+<circle cx="655" cy="340" r="325" fill="url(#glow)"/>
+<g transform="translate(250 120)" filter="url(#shadow)">
+  <g fill="url(#tile)" stroke="#c48b28" stroke-width="6">
+    <rect x="0" y="0" width="170" height="170" rx="30"/>
+    <rect x="205" y="0" width="170" height="170" rx="30"/>
+    <rect x="410" y="0" width="170" height="170" rx="30"/>
+    <rect x="615" y="0" width="170" height="170" rx="30"/>
+    <rect x="100" y="205" width="170" height="170" rx="30"/>
+    <rect x="510" y="205" width="170" height="170" rx="30"/>
+  </g>
+  <rect x="305" y="205" width="170" height="170" rx="30" fill="#090909" stroke="url(#gold)" stroke-width="8" stroke-dasharray="18 14"/>
+  <g fill="url(#gold)">
+    <circle cx="85" cy="85" r="32"/><path d="M250 52l52 90h-104z"/><rect x="455" y="52" width="80" height="80" rx="18"/><path d="M700 42l18 38 42 5-31 29 8 42-37-20-37 20 8-42-31-29 42-5z"/>
+    <path d="M185 246c38 0 69 31 69 69s-31 69-69 69-69-31-69-69 31-69 69-69zm0 28c-23 0-41 18-41 41s18 41 41 41 41-18 41-41-18-41-41-41z"/>
+    <path d="M555 265h80v100h-80z"/>
+  </g>
+  <text x="390" y="325" text-anchor="middle" font-family="Arial" font-size="104" font-weight="700" fill="#f2c65b">?</text>
+</g>
+<g fill="#f0c65b" opacity=".3"><circle cx="120" cy="140" r="6"/><circle cx="1080" cy="150" r="6"/><circle cx="1040" cy="545" r="8"/><circle cx="150" cy="570" r="5"/></g>
+<path d="M938 120l14 27 30 4-22 21 5 30-27-14-27 14 5-30-22-21 30-4z" fill="#f0c65b" opacity=".55"/>
+</svg>
