@@ -1,1 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700"><defs><linearGradient id="b" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#171226"/><stop offset="1" stop-color="#30204b"/></linearGradient><radialGradient id="r"><stop stop-color="#c6a4ff" stop-opacity=".55"/><stop offset="1" stop-color="#c6a4ff" stop-opacity="0"/></radialGradient></defs><rect width="1200" height="700" fill="url(#b)"/><circle cx="900" cy="190" r="300" fill="url(#r)"/><g transform="translate(250 145)"><rect x="0" y="0" width="165" height="165" rx="35" fill="#2c2140" stroke="#c4a4ff" stroke-width="6"/><rect x="195" y="65" width="165" height="165" rx="35" fill="#3b2b59" stroke="#e5d6ff" stroke-width="6"/><rect x="390" y="130" width="165" height="165" rx="35" fill="#4a3570" stroke="#c4a4ff" stroke-width="6"/><rect x="585" y="195" width="165" height="165" rx="35" fill="#5a4087" stroke="#eadfff" stroke-width="6"/><g fill="#f2ebff" font-family="Arial" font-size="62" font-weight="700"><text x="58" y="102">1</text><text x="255" y="167">2</text><text x="447" y="232">3</text><text x="644" y="297">4</text></g><path d="M78 82l24 18-9 29-30 0-9-29z" fill="#c6a4ff" opacity=".75"/><circle cx="277" cy="145" r="26" fill="#d8c2ff" opacity=".7"/><path d="M445 198h54v54h-54z" fill="#b797ef" opacity=".75"/><path d="M650 250l28 45h-56z" fill="#eadfff" opacity=".7"/></g><text x="72" y="105" fill="#f1e9ff" font-family="Arial" font-size="48" font-weight="700">QADDHA</text><text x="72" y="160" fill="#bca7de" font-family="Arial" font-size="28">FLASH MEMORY</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#090909"/><stop offset=".55" stop-color="#15120d"/><stop offset="1" stop-color="#21170a"/></linearGradient>
+  <radialGradient id="glow"><stop stop-color="#f0bd4b" stop-opacity=".32"/><stop offset="1" stop-color="#f0bd4b" stop-opacity="0"/></radialGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0a4"/><stop offset=".42" stop-color="#e7b544"/><stop offset="1" stop-color="#9e6612"/></linearGradient>
+  <linearGradient id="card" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1c1c1c"/><stop offset="1" stop-color="#0c0c0c"/></linearGradient>
+  <filter id="shadow"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity=".62"/><feDropShadow dx="0" dy="0" stdDeviation="9" flood-color="#d7a93b" flood-opacity=".18"/></filter>
+</defs>
+<rect width="1200" height="700" fill="url(#bg)"/>
+<rect x="18" y="18" width="1164" height="664" rx="34" fill="none" stroke="#c99428" stroke-opacity=".28" stroke-width="2"/>
+<circle cx="655" cy="345" r="325" fill="url(#glow)"/>
+<g transform="translate(225 145)" filter="url(#shadow)">
+  <g transform="rotate(-7 110 170)"><rect width="210" height="280" rx="34" fill="url(#card)" stroke="#b98224" stroke-width="6"/><circle cx="105" cy="122" r="45" fill="none" stroke="#f0c65b" stroke-width="10"/><path d="M105 77v90M60 122h90" stroke="#f0c65b" stroke-width="10" stroke-linecap="round"/></g>
+  <g transform="translate(190 35) rotate(-2 110 170)"><rect width="210" height="280" rx="34" fill="url(#card)" stroke="#d7a93b" stroke-width="6"/><path d="M105 72l18 38 42 5-31 29 8 42-37-20-37 20 8-42-31-29 42-5z" fill="url(#gold)"/></g>
+  <g transform="translate(390 78) rotate(3 110 170)"><rect width="210" height="280" rx="34" fill="url(#card)" stroke="#efc65d" stroke-width="6"/><rect x="62" y="82" width="86" height="86" rx="18" fill="none" stroke="#efc65d" stroke-width="10"/><circle cx="105" cy="210" r="14" fill="#efc65d"/></g>
+  <g transform="translate(590 120) rotate(8 110 170)"><rect width="210" height="280" rx="34" fill="url(#card)" stroke="#a96e18" stroke-width="6"/><path d="M105 74l55 96H50z" fill="none" stroke="#e7b544" stroke-width="11" stroke-linejoin="round"/><path d="M72 214h66" stroke="#e7b544" stroke-width="11" stroke-linecap="round"/></g>
+</g>
+<g fill="#f0c65b" opacity=".3"><circle cx="120" cy="140" r="6"/><circle cx="1080" cy="150" r="6"/><circle cx="1040" cy="545" r="8"/><circle cx="150" cy="570" r="5"/></g>
+<path d="M935 118l14 27 30 4-22 21 5 30-27-14-27 14 5-30-22-21 30-4z" fill="#f0c65b" opacity=".55"/>
+</svg>
