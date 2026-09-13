@@ -32,21 +32,23 @@ function GameLoading() {
   return <section className="game-loading" role="status" aria-live="polite"><Gamepad2/><span>نجهّز التحدّي…</span></section>;
 }
 
+const asset = (name: string) => `${import.meta.env.BASE_URL}assets/${name}`;
+
 const games = [
-  {id:'teams',title:'قدّها فرق',desc:'اختاروا الفئات. ارفعوا الرهان. وخلّوا المعرفة تحسمها.',icon:Users,tag:'فريقان + مقدم',cover:'/assets/teams-cover.jpg',ready:true},
-  {id:'letters',title:'حروف مع عزيز',desc:'حرف واحد، احتمالات كثيرة. مين يجيبها أول؟',icon:Sparkles,tag:'حروف + سرعة بديهة',cover:'/assets/letters-cover.jpg',ready:true},
-  {id:'who',title:'من أنا؟',desc:'شخصية غامضة وتلميحات تقرّبكم للحل.',icon:Brain,tag:'تخمين + خطف',cover:'/assets/who-cover.jpg',ready:true},
-  {id:'photo',title:'تحدي الصورة',desc:'التفاصيل الصغيرة تخبّي الإجابة الكبيرة.',icon:Camera,tag:'تحدّي بصري',cover:'/assets/photo-cover.jpg',ready:true},
-  {id:'words',title:'بنك الكلمات',desc:'اوصف الكلمة من غير ما تقول الكلمات الممنوعة.',icon:BookOpen,tag:'كلمات + وصف',cover:'/assets/word-bank-cover-wide.jpg',ready:true},
-  {id:'fast',title:'مين أسرع؟',desc:'لحظة واحدة تصنع الفارق.',icon:Zap,tag:'سرعة + زر',cover:'/assets/fastest-cover.jpg',ready:true},
-  {id:'character',title:'خمن الشخصية',desc:'تلميح وراء تلميح… من تكون؟',icon:UserRound,tag:'شخصيات',cover:'/assets/character-cover.jpg',ready:true},
-  {id:'riddles',title:'فوازير',desc:'فكّروا فيها سوا، الحل أقرب مما تتوقعون.',icon:Puzzle,tag:'ألغاز',cover:'/assets/riddles-cover.jpg',ready:true},
-  {id:'family',title:'تحدي العائلة',desc:'اكشفوا أشهر إجابات الجمهور واجمعوا النقاط.',icon:Trophy,tag:'إجابات جمهور',cover:'/assets/family-cover.jpg',ready:true},
-  {id:'connection',title:'وش الرابط؟',desc:'أربع إشارات تخفي رابطًا واحدًا… اكتشفوه بأقل تلميحات.',icon:Link2,tag:'ربط + سرعة بديهة',cover:'/assets/connection-cover.jpg',ready:true},
-  {id:'auction',title:'المزاد',desc:'زايدوا على عدد الإجابات… والفريق اللي يرسو عليه المزاد لازم يثبتها.',icon:Trophy,tag:'فرق + مخاطرة',cover:'/assets/auction-cover.svg',ready:true},
-  {id:'order',title:'رتّبها',desc:'أربعة عناصر مبعثرة. رتبوها صح قبل ما يضيع عليكم النقطة.',icon:Sparkles,tag:'ترتيب + معرفة',cover:'/assets/order-cover.svg',ready:true},
-  {id:'memory',title:'ذاكرة البرق',desc:'ثواني للحفظ، وبعدها رجّعوا التسلسل بنفس الترتيب.',icon:Brain,tag:'ذاكرة + تركيز',cover:'/assets/memory-cover.svg',ready:true},
-  {id:'missing',title:'وش الناقص؟',desc:'ركزوا في العناصر… نخفي واحد ومهمتكم تعرفونه بسرعة.',icon:Search,tag:'ملاحظة + ذاكرة',cover:'/assets/missing-cover.svg',ready:true},
+  {id:'teams',title:'قدّها فرق',desc:'اختاروا الفئات. ارفعوا الرهان. وخلّوا المعرفة تحسمها.',icon:Users,tag:'فريقان + مقدم',cover:asset('teams-cover.jpg'),ready:true},
+  {id:'letters',title:'حروف مع عزيز',desc:'حرف واحد، احتمالات كثيرة. مين يجيبها أول؟',icon:Sparkles,tag:'حروف + سرعة بديهة',cover:asset('letters-cover.jpg'),ready:true},
+  {id:'who',title:'من أنا؟',desc:'شخصية غامضة وتلميحات تقرّبكم للحل.',icon:Brain,tag:'تخمين + خطف',cover:asset('who-cover.jpg'),ready:true},
+  {id:'photo',title:'تحدي الصورة',desc:'التفاصيل الصغيرة تخبّي الإجابة الكبيرة.',icon:Camera,tag:'تحدّي بصري',cover:asset('photo-cover.jpg'),ready:true},
+  {id:'words',title:'بنك الكلمات',desc:'اوصف الكلمة من غير ما تقول الكلمات الممنوعة.',icon:BookOpen,tag:'كلمات + وصف',cover:asset('word-bank-cover-wide.jpg'),ready:true},
+  {id:'fast',title:'مين أسرع؟',desc:'لحظة واحدة تصنع الفارق.',icon:Zap,tag:'سرعة + زر',cover:asset('fastest-cover.jpg'),ready:true},
+  {id:'character',title:'خمن الشخصية',desc:'تلميح وراء تلميح… من تكون؟',icon:UserRound,tag:'شخصيات',cover:asset('character-cover.jpg'),ready:true},
+  {id:'riddles',title:'فوازير',desc:'فكّروا فيها سوا، الحل أقرب مما تتوقعون.',icon:Puzzle,tag:'ألغاز',cover:asset('riddles-cover.jpg'),ready:true},
+  {id:'family',title:'تحدي العائلة',desc:'اكشفوا أشهر إجابات الجمهور واجمعوا النقاط.',icon:Trophy,tag:'إجابات جمهور',cover:asset('family-cover.jpg'),ready:true},
+  {id:'connection',title:'وش الرابط؟',desc:'أربع إشارات تخفي رابطًا واحدًا… اكتشفوه بأقل تلميحات.',icon:Link2,tag:'ربط + سرعة بديهة',cover:asset('connection-cover.jpg'),ready:true},
+  {id:'auction',title:'المزاد',desc:'زايدوا على عدد الإجابات… والفريق اللي يرسو عليه المزاد لازم يثبتها.',icon:Trophy,tag:'فرق + مخاطرة',cover:asset('auction-cover.svg'),ready:true},
+  {id:'order',title:'رتّبها',desc:'أربعة عناصر مبعثرة. رتبوها صح قبل ما يضيع عليكم النقطة.',icon:Sparkles,tag:'ترتيب + معرفة',cover:asset('order-cover.svg'),ready:true},
+  {id:'memory',title:'ذاكرة البرق',desc:'ثواني للحفظ، وبعدها رجّعوا التسلسل بنفس الترتيب.',icon:Brain,tag:'ذاكرة + تركيز',cover:asset('memory-cover.svg'),ready:true},
+  {id:'missing',title:'وش الناقص؟',desc:'ركزوا في العناصر… نخفي واحد ومهمتكم تعرفونه بسرعة.',icon:Search,tag:'ملاحظة + ذاكرة',cover:asset('missing-cover.svg'),ready:true},
 ];
 const gameGroups: Record<string,string> = {teams:'جماعية',letters:'كلمات',who:'تخمين',photo:'تحديات',words:'كلمات',fast:'سريعة',character:'تخمين',riddles:'تحديات',family:'جماعية',connection:'تخمين',auction:'جماعية',order:'تحديات',memory:'سريعة',missing:'سريعة'};
 const PLAYER_KEY = 'qaddha.player.v1';
@@ -105,7 +107,7 @@ export default function App() {
       <span style={{position:'absolute',top:'6px',right:'7px',width:'6px',height:'6px',borderRadius:'50%',background:'#f4d36f',boxShadow:'-9px 2px 0 #c99428'}}/>
     </span>
     <span style={{display:'flex',flexDirection:'column',alignItems:'flex-start',lineHeight:1}}>
-      <span style={{fontFamily:'Tajawal,Cairo,sans-serif',fontSize:'30px',fontWeight:900,letterSpacing:'-.8px',background:'linear-gradient(180deg,#fff2b0 0%,#e9ba47 45%,#a87519 100%)',WebkitBackgroundClip:'text',backgroundClip:'text',color:'transparent',textShadow:'0 2px 12px #d7a93b20'}}>قدّها</span>
+      <span style={{fontFamily:'Tajawal,Cairo,sans-serif',fontSize:'30px',fontWeight:900,letterSpacing:'-.8px',background:'linear-gradient(180deg,#fff2b0 0%,#e9ba47 45%,#a87519_100%)',WebkitBackgroundClip:'text',backgroundClip:'text',color:'transparent',textShadow:'0 2px 12px #d7a93b20'}}>قدّها</span>
       <span style={{fontFamily:'Tajawal,Cairo,sans-serif',fontSize:'9px',fontWeight:700,letterSpacing:'.2px',marginTop:'6px',color:'#b99a55'}}>ألعاب تجمعنا أكثر</span>
     </span>
   </button><span className="topbar-caption">للجمعة اللي تستاهل</span><div className="topbar-actions"><span className="local-play"><Monitor size={16}/> شاشة واحدة · حماس الجميع</span><button className="header-profile-button" onClick={()=>setPlayerOpen(true)} aria-label="ملف اللاعب"><UserRound size={18}/><span>{auth.session?.user.user_metadata.display_name || auth.session?.user.email?.split('@')[0] || 'ضيف'}</span></button><button className="header-settings-button" onClick={()=>setSettingsOpen(true)} aria-label="إعدادات قدّها"><SettingsIcon size={18}/><span>الإعدادات</span></button></div></header><main><Suspense fallback={<GameLoading/>}>
