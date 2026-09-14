@@ -96,14 +96,14 @@ export interface ProfileStats {
   gamesHistory: GameResult[];
 }
 
-export interface LeaderboardEntry {
+export type LeaderboardEntry = {
   id: string;
   name: string;
   score: number;
   date: number;
   accuracy: number;
   category: string;
-}
+};
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -122,11 +122,12 @@ export const GAME_MODES: { id: GameMode; name: string; description: string; icon
   { id: 'multiple', name: 'اختير من متعدد', description: 'أسئلة اختيار من متعدد', icon: 'ListChecks', color: '#7056E8' },
 ];
 
+// Qaddha is intentionally competitive. Easy content remains supported internally
+// for legacy data, but it is no longer offered as a normal session preset.
 export const DIFFICULTIES: { id: Difficulty; name: string; icon: string; color: string }[] = [
-  { id: 'easy', name: 'سهل', icon: 'Smile', color: '#35D1C5' },
+  { id: 'mixed', name: 'متوسط إلى صعب', icon: 'Shuffle', color: '#7056E8' },
   { id: 'medium', name: 'متوسط', icon: 'Meh', color: '#FFC83D' },
   { id: 'hard', name: 'صعب', icon: 'Frown', color: '#FF625F' },
-  { id: 'mixed', name: 'مختلط', icon: 'Shuffle', color: '#7056E8' },
 ];
 
 export const QUESTION_COUNTS = [10, 15, 20, 30];
