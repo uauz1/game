@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import Peer, { type DataConnection } from 'peerjs';
-import QRCode from 'qrcode';
 import { ArrowLeft, Brain, Check, Copy, Flag, Lightbulb, RefreshCw, RotateCcw, Smartphone, Sparkles, Trophy, Users, Wifi, WifiOff, X } from 'lucide-react';
 import { cardsForDifficulty, type WhoAmICard, type WhoAmIDifficulty } from '../../data/whoAmIQuestions';
 import { drawWhoAmICards, loadWhoAmIPreferences, saveWhoAmIPreferences } from '../../utils/whoAmIStorage';
+import {
+  buildRealtimeJoinUrl,
+  createRealtimeJoinQr,
+  createRealtimeRoomChannel,
+  createRealtimeRoomId,
+  createRealtimeRoomToken,
+  isValidRealtimeRoomId,
+  isValidRealtimeRoomToken,
+  removeRealtimeChannel,
+} from '../../utils/qaddhaRealtime';
 import Countdown from './Countdown';
 
 type Phase = 'setup' | 'playing' | 'result';
@@ -33,49 +41,43 @@ function useWhoRoom(state: HostState, onCommand: (command: HostCommand) => void)
   const [status, setStatus] = useState<RoomStatus>('starting');
   const [hostUrl, setHostUrl] = useState('');
   const [qrCode, setQrCode] = useState('');
-  const connectionRef = useRef<DataConnection | null>(null);
+  const channelRef = useRef<ReturnType<typeof createRealtimeRoomChannel> | null>(null);
   const stateRef = useRef(state);
   const commandRef = useRef(onCommand);
   stateRef.current = state;
   commandRef.current = onCommand;
 
   useEffect(() => {
-    const token = crypto.randomUUID().replace(/-/g, '');
-    const peerId = `qaddha-who-${crypto.randomUUID()}`;
-    const peer = new Peer(peerId);
-    peer.on('open', () => {
-      const url = new URL(window.location.href);
-      url.search = '';
-      url.hash = '';
-      url.searchParams.set('host', 'who');
-      url.searchParams.set('room', peerId);
-      url.searchParams.set('token', token);
-      const nextUrl = url.toString();
-      setHostUrl(nextUrl);
-      setStatus('ready');
-      QRCode.toDataURL(nextUrl, { width: 320, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#080b1b', light: '#fff8df' } }).then(setQrCode).catch(() => setStatus('error'));
-    });
-    peer.on('connection', connection => {
-      const metadata = connection.metadata as { token?: string; game?: string } | undefined;
-      if (metadata?.token !== token || metadata?.game !== 'who') { connection.close(); return; }
-      connectionRef.current?.close();
-      connectionRef.current = connection;
-      setStatus('connecting');
-      connection.on('open', () => { setStatus('connected'); connection.send(stateRef.current); });
-      connection.on('data', payload => {
+    const roomId = createRealtimeRoomId('who');
+    const token = createRealtimeRoomToken();
+    const nextUrl = buildRealtimeJoinUrl('who', roomId, token);
+    setHostUrl(nextUrl);
+    void createRealtimeJoinQr(nextUrl).then(setQrCode).catch(() => setStatus('error'));
+    const channel = createRealtimeRoomChannel('who', roomId, token);
+    channelRef.current = channel;
+    channel
+      .on('broadcast', { event: 'hello' }, () => {
+        setStatus('connected');
+        void channel.send({ type: 'broadcast', event: 'state', payload: stateRef.current });
+      })
+      .on('broadcast', { event: 'command' }, ({ payload }) => {
         if (!payload || typeof payload !== 'object') return;
         const command = payload as Partial<HostCommand>;
         if (command.type === 'more-clue') commandRef.current({ type: 'more-clue' });
         if (command.type === 'judge' && (command.team === 0 || command.team === 1 || command.team === null)) commandRef.current({ type: 'judge', team: command.team });
+      })
+      .subscribe(nextStatus => {
+        if (nextStatus === 'SUBSCRIBED') setStatus(current => current === 'connected' ? current : 'ready');
+        else if (nextStatus === 'CHANNEL_ERROR' || nextStatus === 'TIMED_OUT') setStatus('error');
+        else if (nextStatus === 'CLOSED') setStatus('disconnected');
       });
-      connection.on('close', () => { if (connectionRef.current === connection) connectionRef.current = null; setStatus('disconnected'); });
-      connection.on('error', () => setStatus('error'));
-    });
-    peer.on('error', () => setStatus('error'));
-    return () => { connectionRef.current?.close(); peer.destroy(); };
+    return () => { channelRef.current = null; void removeRealtimeChannel(channel); };
   }, []);
 
-  useEffect(() => { if (connectionRef.current?.open) connectionRef.current.send(state); }, [state]);
+  useEffect(() => {
+    const channel = channelRef.current;
+    if (channel && status === 'connected') void channel.send({ type: 'broadcast', event: 'state', payload: state });
+  }, [state, status]);
   return { status, hostUrl, qrCode };
 }
 
@@ -84,7 +86,7 @@ function Pairing({ status, hostUrl, qrCode, compact = false }: { status: RoomSta
   const connected = status === 'connected';
   const copy = async () => { if (!hostUrl) return; try { await navigator.clipboard?.writeText(hostUrl); setCopied(true); window.setTimeout(() => setCopied(false), 1600); } catch { /* QR remains available. */ } };
   if (compact) return <div className={`host-link-compact ${connected ? 'connected' : ''}`}>{connected ? <Wifi/> : <WifiOff/>}<div><b>{connected ? 'جوال المقدم متصل' : 'جوال المقدم غير متصل'}</b><small>{connected ? 'الإجابة وأزرار التحكيم على الجوال' : 'ارجع للإعدادات وامسح QR'}</small></div></div>;
-  return <section className="host-pairing" aria-live="polite"><div className="host-pairing-copy"><span><Smartphone/> لوحة مقدم من أنا؟</span><h3>امسح الرمز بالجوال</h3><p>المقدم يشوف الإجابة سرّيًا ويتحكم بالتلميحات والتحكيم، بينما الشاشة الكبيرة تعرض للاعبين التلميحات فقط.</p><div className={`host-connection ${connected ? 'connected' : ''}`}>{connected ? <Wifi/> : <RefreshCw className={status === 'starting' || status === 'connecting' ? 'spin' : ''}/>}<b>{connected ? 'تم اتصال جوال المقدم' : status === 'error' ? 'تعذر إنشاء الغرفة' : status === 'disconnected' ? 'انقطع الاتصال · امسح الرمز مجددًا' : 'بانتظار اتصال الجوال'}</b></div><button className="quiet host-copy" disabled={!hostUrl} onClick={copy}>{copied ? <Check/> : <Copy/>}{copied ? 'تم نسخ الرابط' : 'نسخ رابط المقدم'}</button></div><div className="host-qr">{qrCode ? <img src={qrCode} alt="رمز QR لمقدم من أنا"/> : <div className="qr-loading"><RefreshCw className="spin"/><span>نجهز الغرفة…</span></div>}</div></section>;
+  return <section className="host-pairing" aria-live="polite"><div className="host-pairing-copy"><span><Smartphone/> لوحة مقدم من أنا؟</span><h3>امسح الرمز بالجوال</h3><p>المقدم يشوف الإجابة سرّيًا ويتحكم بالتلميحات والتحكيم. الاتصال يمر عبر خادم قدّها، حتى لو الجوال على شبكة مختلفة.</p><div className={`host-connection ${connected ? 'connected' : ''}`}>{connected ? <Wifi/> : <RefreshCw className={status === 'starting' || status === 'connecting' || status === 'ready' ? 'spin' : ''}/>}<b>{connected ? 'تم اتصال جوال المقدم' : status === 'error' ? 'تعذر الاتصال بالخادم' : status === 'disconnected' ? 'انقطع الاتصال · افتح الرمز مجددًا' : 'بانتظار اتصال الجوال'}</b></div><button className="quiet host-copy" disabled={!hostUrl} onClick={copy}>{copied ? <Check/> : <Copy/>}{copied ? 'تم نسخ الرابط' : 'نسخ رابط المقدم'}</button></div><div className="host-qr">{qrCode ? <img src={qrCode} alt="رمز QR لمقدم من أنا"/> : <div className="qr-loading"><RefreshCw className="spin"/><span>نجهز الغرفة…</span></div>}</div></section>;
 }
 
 export default function WhoAmIPrivate({ onHome }: { onHome: () => void }) {
@@ -147,14 +149,20 @@ export default function WhoAmIPrivate({ onHome }: { onHome: () => void }) {
 export function WhoAmIPhone({ roomId, token }: { roomId: string; token: string }) {
   const [status, setStatus] = useState<'connecting'|'connected'|'disconnected'|'error'>('connecting');
   const [game, setGame] = useState<HostState | null>(null);
-  const connectionRef = useRef<DataConnection | null>(null);
+  const channelRef = useRef<ReturnType<typeof createRealtimeRoomChannel> | null>(null);
   useEffect(() => {
-    if (!/^qaddha-who-[\w-]{20,}$/.test(roomId) || !/^[a-f\d]{32}$/i.test(token)) { setStatus('error'); return; }
-    const peer = new Peer(); let stopped=false; let retryTimer=0;
-    const connect=()=>{ if(stopped)return; setStatus('connecting'); const connection=peer.connect(roomId,{reliable:true,serialization:'json',metadata:{token,game:'who'}}); connectionRef.current=connection; connection.on('open',()=>setStatus('connected')); connection.on('data',payload=>{if(payload&&typeof payload==='object'&&(payload as HostState).type==='who-private-state')setGame(payload as HostState)}); connection.on('close',()=>{if(stopped)return;setStatus('disconnected');retryTimer=window.setTimeout(connect,2200)}); connection.on('error',()=>setStatus('disconnected')); };
-    peer.on('open',connect); peer.on('error',()=>setStatus('error'));
-    return()=>{stopped=true;window.clearTimeout(retryTimer);connectionRef.current?.close();peer.destroy();};
+    if (!isValidRealtimeRoomId(roomId, 'who') || !isValidRealtimeRoomToken(token)) { setStatus('error'); return; }
+    const channel = createRealtimeRoomChannel('who', roomId, token);
+    channelRef.current = channel;
+    channel.on('broadcast', { event: 'state' }, ({ payload }) => {
+      if (payload && typeof payload === 'object' && (payload as HostState).type === 'who-private-state') { setGame(payload as HostState); setStatus('connected'); }
+    }).subscribe(nextStatus => {
+      if (nextStatus === 'SUBSCRIBED') { setStatus('connected'); void channel.send({ type: 'broadcast', event: 'hello', payload: { at: Date.now() } }); }
+      else if (nextStatus === 'CHANNEL_ERROR' || nextStatus === 'TIMED_OUT') setStatus('error');
+      else if (nextStatus === 'CLOSED') setStatus('disconnected');
+    });
+    return () => { channelRef.current = null; void removeRealtimeChannel(channel); };
   },[roomId,token]);
-  const send=(command:HostCommand)=>{if(connectionRef.current?.open)connectionRef.current.send(command)};
-  return <main className="mobile-host" dir="rtl"><header><span className="host-brand"><Brain/> قدّها · من أنا؟</span><span className={`mobile-host-status ${status}`}>{status==='connected'?<Wifi/>:<WifiOff/>}{status==='connected'?'متصل بالشاشة':status==='error'?'الرابط غير صالح':'جاري الاتصال…'}</span></header>{!game?<section className="host-wait"><Smartphone/><h1>نربطك بشاشة اللعبة…</h1></section>:game.phase==='setup'?<section className="host-wait"><Check/><h1>تم الربط</h1><p>ابدأ اللعبة من الشاشة الكبيرة.</p></section>:game.phase==='result'?<section className="host-wait"><Trophy/><h1>انتهى التحدّي</h1></section>:<><section className="host-round-head"><small>الشخصية {game.round+1} من {game.totalRounds}</small><h1>{game.card?.answer}</h1><div className="host-team-turn" style={{'--team':game.teams[game.turn]?.color} as CSSProperties}><Users/><span>الدور الأساسي: <b>{game.teams[game.turn]?.name}</b></span><strong>{game.points}</strong></div></section><section className="host-secret-board"><div><span>التلميحات</span><b>{game.clueCount} / {game.card?.clues.length ?? 0}</b></div>{game.card?.clues.map((clue,index)=><article className={index<game.clueCount?'revealed':''} key={clue}><span>{index+1}</span><b>{clue}</b></article>)}</section><div className="host-mobile-actions"><button disabled={!game.card||game.clueCount>=game.card.clues.length} onClick={()=>send({type:'more-clue'})}><Lightbulb/> تلميح إضافي</button><button className="primary" onClick={()=>send({type:'judge',team:0})}><Check/> {game.teams[0]?.name}</button><button className="primary" onClick={()=>send({type:'judge',team:1})}><Check/> {game.teams[1]?.name}</button><button onClick={()=>send({type:'judge',team:null})}><X/> لا أحد</button></div></>}</main>;
+  const send=(command:HostCommand)=>{const channel=channelRef.current;if(channel&&status==='connected')void channel.send({type:'broadcast',event:'command',payload:command})};
+  return <main className="mobile-host" dir="rtl"><header><span className="host-brand"><Brain/> قدّها · من أنا؟</span><span className={`mobile-host-status ${status}`}>{status==='connected'?<Wifi/>:<WifiOff/>}{status==='connected'?'متصل بالشاشة':status==='error'?'تعذر الاتصال':'جاري الاتصال…'}</span></header>{!game?<section className="host-wait"><Smartphone/><h1>نربطك بشاشة اللعبة…</h1></section>:game.phase==='setup'?<section className="host-wait"><Check/><h1>تم الربط</h1><p>ابدأ اللعبة من الشاشة الكبيرة.</p></section>:game.phase==='result'?<section className="host-wait"><Trophy/><h1>انتهى التحدّي</h1></section>:<><section className="host-round-head"><small>الشخصية {game.round+1} من {game.totalRounds}</small><h1>{game.card?.answer}</h1><div className="host-team-turn" style={{'--team':game.teams[game.turn]?.color} as CSSProperties}><Users/><span>الدور الأساسي: <b>{game.teams[game.turn]?.name}</b></span><strong>{game.points}</strong></div></section><section className="host-secret-board"><div><span>التلميحات</span><b>{game.clueCount} / {game.card?.clues.length ?? 0}</b></div>{game.card?.clues.map((clue,index)=><article className={index<game.clueCount?'revealed':''} key={clue}><span>{index+1}</span><b>{clue}</b></article>)}</section><div className="host-mobile-actions"><button disabled={!game.card||game.clueCount>=game.card.clues.length} onClick={()=>send({type:'more-clue'})}><Lightbulb/> تلميح إضافي</button><button className="primary" onClick={()=>send({type:'judge',team:0})}><Check/> {game.teams[0]?.name}</button><button className="primary" onClick={()=>send({type:'judge',team:1})}><Check/> {game.teams[1]?.name}</button><button onClick={()=>send({type:'judge',team:null})}><X/> لا أحد</button></div></>}</main>;
 }
