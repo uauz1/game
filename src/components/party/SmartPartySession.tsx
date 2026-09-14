@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Brain, Cast, Check, Clock3, Gamepad2, Play, QrCode, RotateCcw, Shuffle, Smartphone, Sparkles, Trophy, Users, WandSparkles } from 'lucide-react';
+import { readQaddhaPreferences } from './SiteSettings';
 
 export type SessionGame = {
   id: string;
@@ -47,6 +48,12 @@ function hashId(value: string) {
   return Math.abs(hash);
 }
 
+function pulse(pattern: number | number[] = 20) {
+  try {
+    if (readQaddhaPreferences().haptics && 'vibrate' in navigator) navigator.vibrate(pattern);
+  } catch { /* Haptics are optional. */ }
+}
+
 function readRecentGameIds() {
   try {
     const raw = JSON.parse(localStorage.getItem(PLAYER_KEY) || '{}');
@@ -83,16 +90,35 @@ function pickPlan(games: SessionGame[], vibe: Vibe, duration: number, players: n
   return plan;
 }
 
+function defaultSessionState() {
+  const prefs = readQaddhaPreferences();
+  return {
+    mode: prefs.defaultSessionMode as Mode,
+    generated: false,
+    players: prefs.defaultPlayers,
+    duration: prefs.defaultDuration,
+    vibe: prefs.defaultVibe as Vibe,
+    variation: 0,
+    smartCompleted: [] as string[],
+    tournament: { teamA:'الفريق الأول', teamB:'الفريق الثاني', scores:{}, completed:[] } as TournamentState,
+  };
+}
+
 function readSaved() {
+  const defaults = defaultSessionState();
   try {
+    const prefs = readQaddhaPreferences();
+    if (!prefs.rememberProgress) return defaults;
     const source = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY) || '{}';
     const raw = JSON.parse(source);
+    const hasSavedSession = Boolean(localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY));
+    if (!hasSavedSession) return defaults;
     return {
-      mode: raw.mode === 'tournament' ? 'tournament' as Mode : 'smart' as Mode,
+      mode: raw.mode === 'tournament' ? 'tournament' as Mode : raw.mode === 'smart' ? 'smart' as Mode : defaults.mode,
       generated: Boolean(raw.generated),
-      players: typeof raw.players === 'number' ? raw.players : 8,
-      duration: [30,45,60,90].includes(raw.duration) ? raw.duration : 45,
-      vibe: (['balanced','fast','brain','family'] as Vibe[]).includes(raw.vibe) ? raw.vibe as Vibe : 'balanced' as Vibe,
+      players: typeof raw.players === 'number' ? Math.min(24, Math.max(2, raw.players)) : defaults.players,
+      duration: [30,45,60,90].includes(raw.duration) ? raw.duration : defaults.duration,
+      vibe: (['balanced','fast','brain','family'] as Vibe[]).includes(raw.vibe) ? raw.vibe as Vibe : defaults.vibe,
       variation: typeof raw.variation === 'number' ? raw.variation : 0,
       smartCompleted: Array.isArray(raw.smartCompleted) ? raw.smartCompleted.filter((id: unknown): id is string => typeof id === 'string') : [],
       tournament: {
@@ -103,7 +129,7 @@ function readSaved() {
       } as TournamentState,
     };
   } catch {
-    return { mode:'smart' as Mode, generated:false, players:8, duration:45, vibe:'balanced' as Vibe, variation:0, smartCompleted:[] as string[], tournament:{ teamA:'الفريق الأول', teamB:'الفريق الثاني', scores:{}, completed:[] } as TournamentState };
+    return defaults;
   }
 }
 
@@ -132,11 +158,17 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ mode, generated, players, duration, vibe, variation, smartCompleted, tournament }));
+      const prefs = readQaddhaPreferences();
+      if (prefs.rememberProgress) localStorage.setItem(STORAGE_KEY, JSON.stringify({ mode, generated, players, duration, vibe, variation, smartCompleted, tournament }));
+      else {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      }
     } catch {/* Session persistence is optional. */}
   }, [mode, generated, players, duration, vibe, variation, smartCompleted, tournament]);
 
   const build = () => {
+    pulse(24);
     setGenerated(true);
     setStarted(null);
     setVariation(value => value + 1);
@@ -145,6 +177,7 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
   };
 
   const remix = () => {
+    pulse([16, 30, 16]);
     setVariation(value => value + 1);
     setStarted(null);
     if (mode === 'tournament') setTournament(current => ({ ...current, scores: {}, completed: [] }));
@@ -152,6 +185,7 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
   };
 
   const score = (gameId: string, side: 'a'|'b', delta: number) => {
+    pulse(12);
     setTournament(current => {
       const previous = current.scores[gameId] || { a: 0, b: 0 };
       const next = { ...previous, [side]: Math.max(0, previous[side] + delta) };
@@ -160,6 +194,7 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
   };
 
   const toggleComplete = (gameId: string) => {
+    pulse(20);
     if (mode === 'tournament') {
       setTournament(current => ({
         ...current,
@@ -170,8 +205,8 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
     setSmartCompleted(current => current.includes(gameId) ? current.filter(id => id !== gameId) : [...current, gameId]);
   };
 
-  const resetTournament = () => setTournament(current => ({ ...current, scores: {}, completed: [] }));
-  const launch = (gameId: string) => { setStarted(gameId); onPlay(gameId); };
+  const resetTournament = () => { pulse(18); setTournament(current => ({ ...current, scores: {}, completed: [] })); };
+  const launch = (gameId: string) => { pulse(18); setStarted(gameId); onPlay(gameId); };
 
   return <section className="smart-session" dir="rtl">
     <div className="session-topline">
@@ -183,7 +218,7 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
       <div>
         <span className="eyebrow"><WandSparkles/> مدير الجلسة الذكي</span>
         <h1>قول لنا جمعتكم.<br/><em>ونرتب اللعب عليكم.</em></h1>
-        <p>اختار جلسة سريعة أو بطولة كاملة. قدّها ينوّع الألعاب حسب جوكم، يتجنب آخر ما لعبتموه، ويحفظ التقدم إذا خرجت ورجعت.</p>
+        <p>اختار جلسة سريعة أو بطولة كاملة. قدّها ينوّع الألعاب حسب جوكم، يتجنب آخر ما لعبتموه، ويحفظ التقدم إذا اخترتم ذلك من الإعدادات.</p>
       </div>
       <div className="session-orb" aria-hidden="true"><Brain/><span>AI<br/>GM</span></div>
     </div>
@@ -232,7 +267,7 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
       <article><Cast/><div><b>وضع التلفزيون جاهز</b><span>واجهة الشاشة الكبيرة موجودة أصلًا ونستخدمها هنا بدل تكرارها.</span></div><Check/></article>
       <article><QrCode/><div><b>دخول QR</b><span>متوفر حاليًا في تجربة المقدم، وبيكون أساس ربط الجلسات الجماعية.</span></div><Check/></article>
       <article><Smartphone/><div><b>الجوال كمقدم</b><span>التحكم الحي موجود في تحدي العائلة ومهيأ للتوسعة لباقي الألعاب.</span></div><Check/></article>
-      <article><Trophy/><div><b>خطة تتعلم من لعبكم</b><span>تتجنب آخر الألعاب قدر الإمكان، تحفظ التقدم، وتقترح الجولة التالية مباشرة.</span></div><Check/></article>
+      <article><Trophy/><div><b>خطة تتعلم من لعبكم</b><span>تتجنب آخر الألعاب قدر الإمكان، تستخدم إعداداتكم الافتراضية، وتحفظ التقدم حسب اختياركم.</span></div><Check/></article>
     </div>
   </section>;
 }
