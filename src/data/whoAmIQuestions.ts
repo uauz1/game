@@ -1,3 +1,5 @@
+import { WHO_AM_I_EXPANSION } from './whoAmIExpansion';
+
 export type WhoAmIDifficulty = 'easy' | 'medium' | 'hard';
 
 export type WhoAmICard = {
@@ -8,7 +10,7 @@ export type WhoAmICard = {
   clues: [string, string, string, string];
 };
 
-export const WHO_AM_I_CARDS: WhoAmICard[] = [
+const BASE_CARDS: WhoAmICard[] = [
   { id: 'easy-01', answer: 'كريستيانو رونالدو', category: 'رياضة', difficulty: 'easy', clues: ['وُلدت في جزيرة ماديرا.', 'لعبت في إنجلترا وإسبانيا وإيطاليا.', 'أرتدي الرقم 7 غالبًا.', 'احتفالي الشهير يبدأ بقفزة ودوران.'] },
   { id: 'easy-02', answer: 'محمد صلاح', category: 'رياضة', difficulty: 'easy', clues: ['بدأت مسيرتي في نادي المقاولون العرب.', 'احترفت في سويسرا ثم إنجلترا وإيطاليا.', 'أُعرف بلقب الملك المصري.', 'ألعب جناحًا وأشتهر بقميص ليفربول.'] },
   { id: 'easy-03', answer: 'ألبرت أينشتاين', category: 'علوم', difficulty: 'easy', clues: ['وُلدت في ألمانيا عام 1879.', 'غيّرت فهمنا للمكان والزمان.', 'حصلت على نوبل في الفيزياء.', 'ترتبط بي المعادلة E = mc².'] },
@@ -19,7 +21,6 @@ export const WHO_AM_I_CARDS: WhoAmICard[] = [
   { id: 'easy-08', answer: 'مستر بين', category: 'كوميديا', difficulty: 'easy', clues: ['أتحدث قليلًا وأقع في مواقف محرجة.', 'يقودني غالبًا مزاجي الغريب.', 'أملك سيارة صغيرة خضراء.', 'دميتي المفضلة اسمها تيدي.'] },
   { id: 'easy-09', answer: 'نيوتن', category: 'علوم', difficulty: 'easy', clues: ['عشت في إنجلترا في القرن السابع عشر.', 'أسهمت في تطوير حساب التفاضل والتكامل.', 'وضعت قوانين للحركة.', 'ترتبط قصتي الشائعة بسقوط تفاحة.'] },
   { id: 'easy-10', answer: 'سوبرمان', category: 'شخصيات خيالية', difficulty: 'easy', clues: ['أتيت من كوكب بعيد.', 'أعمل صحفيًا بهوية أخرى.', 'تضعفني مادة خضراء.', 'أرتدي عباءة حمراء وعلى صدري حرف S.'] },
-
   { id: 'medium-01', answer: 'ابن بطوطة', category: 'تاريخ وجغرافيا', difficulty: 'medium', clues: ['وُلدت في طنجة في القرن الرابع عشر.', 'عملت قاضيًا في بعض رحلاتي.', 'قطعت مسافات طويلة عبر إفريقيا وآسيا.', 'أُعرف بلقب أمير الرحّالة المسلمين.'] },
   { id: 'medium-02', answer: 'أحمد زويل', category: 'علوم', difficulty: 'medium', clues: ['وُلدت في دمنهور.', 'عملت أستاذًا في معهد كاليفورنيا للتقنية.', 'درست التفاعلات في أزمنة فائقة القصر.', 'فزت بنوبل للكيمياء عام 1999.'] },
   { id: 'medium-03', answer: 'عمر المختار', category: 'تاريخ', difficulty: 'medium', clues: ['وُلدت في برقة.', 'عملت معلمًا للقرآن في شبابي.', 'قاومت الاحتلال الإيطالي سنوات طويلة.', 'أُلقب بأسد الصحراء.'] },
@@ -30,7 +31,6 @@ export const WHO_AM_I_CARDS: WhoAmICard[] = [
   { id: 'medium-08', answer: 'تشارلي شابلن', category: 'سينما', difficulty: 'medium', clues: ['وُلدت في لندن في عصر السينما الصامتة.', 'كنت ممثلًا ومخرجًا وملحنًا.', 'قدمت فيلمي الأزمنة الحديثة والديكتاتور العظيم.', 'شخصيتي الأشهر ترتدي قبعة وتحمل عصًا.'] },
   { id: 'medium-09', answer: 'غاليليو غاليلي', category: 'علوم', difficulty: 'medium', clues: ['وُلدت في مدينة بيزا.', 'حسّنت استخدام المنظار لرصد السماء.', 'راقبت أقمار المشتري.', 'دافعت عن دوران الأرض حول الشمس.'] },
   { id: 'medium-10', answer: 'أم كلثوم', category: 'موسيقى', difficulty: 'medium', clues: ['وُلدت في دلتا النيل.', 'بدأت الغناء مرتدية زيًا بدويًا في صغري.', 'من أغنياتي الأطلال وأنت عمري.', 'أُلقب بكوكب الشرق.'] },
-
   { id: 'hard-01', answer: 'الخوارزمي', category: 'علوم', difficulty: 'hard', clues: ['عملت في بيت الحكمة ببغداد.', 'كتبت عن الحساب الهندي والفلك والجغرافيا.', 'اشتُقت من اسمي كلمة Algorithm.', 'أسست علم الجبر بكتاب المختصر.'] },
   { id: 'hard-02', answer: 'ابن الهيثم', category: 'علوم', difficulty: 'hard', clues: ['وُلدت في البصرة وعشت في القاهرة.', 'اعتمدت التجربة والملاحظة في أبحاثي.', 'شرحت كيف تدخل أشعة الضوء إلى العين.', 'أشهر كتبي كتاب المناظر.'] },
   { id: 'hard-03', answer: 'المتنبي', category: 'أدب', difficulty: 'hard', clues: ['وُلدت في الكوفة في العصر العباسي.', 'مدحت سيف الدولة الحمداني.', 'جمع شعري الحكمة والفخر والمديح.', 'من قولي: على قدر أهل العزم تأتي العزائم.'] },
@@ -43,6 +43,13 @@ export const WHO_AM_I_CARDS: WhoAmICard[] = [
   { id: 'hard-10', answer: 'ليوناردو دا فنشي', category: 'فن وعلوم', difficulty: 'hard', clues: ['وُلدت في توسكانا في عصر النهضة.', 'ملأت دفاتري برسوم تشريحية واختراعات.', 'رسمت العشاء الأخير.', 'رسمت الموناليزا.'] },
 ];
 
+export const WHO_AM_I_CARDS: WhoAmICard[] = [...BASE_CARDS, ...WHO_AM_I_EXPANSION];
+
 export function cardsForDifficulty(difficulty: WhoAmIDifficulty) {
-  return WHO_AM_I_CARDS.filter(card => card.difficulty === difficulty);
+  // Qaddha now targets medium → hard play. The old easy pool remains as legacy data
+  // but is not selected by default, and fictional characters are excluded.
+  const realCards = WHO_AM_I_CARDS.filter(card => !['شخصيات خيالية','رسوم متحركة','أفلام وروايات'].includes(card.category));
+  if (difficulty === 'hard') return realCards.filter(card => card.difficulty === 'hard');
+  if (difficulty === 'medium') return realCards.filter(card => card.difficulty === 'medium' || card.difficulty === 'hard');
+  return realCards.filter(card => card.difficulty === 'medium');
 }
