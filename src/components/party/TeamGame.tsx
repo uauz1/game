@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { ArrowLeft, Check, ChevronLeft, Eye, Grid2X2, Search, Shuffle, Sparkles, Trophy, Users, RotateCcw, Flag, X } from 'lucide-react';
 import { categories, type Question } from '../../data/party';
 import { buildPartyBoard, getPartyQuestionCount } from '../../data/partyBank';
+import { publishSessionGameResult } from '../../utils/sessionBridge';
+import { loadSharedTeams } from '../../utils/sharedTeams';
 import { loadTeamGamePreferences, saveTeamGamePreferences } from '../../utils/teamGameStorage';
 import Countdown from './Countdown';
 
@@ -12,7 +14,10 @@ type State = { stage: 'teams' | 'categories' | 'board' | 'question' | 'results';
 type Action = { type: 'team'; index: number; patch: Partial<Team> } | { type: 'category'; name: string } | { type: 'categories'; names: string[] } | { type: 'settings'; limit?: number; seconds?: number } | { type: 'stage'; stage: State['stage'] } | { type: 'start'; boardQuestions: Question[] } | { type: 'pick'; question: Question } | { type: 'reveal' } | { type: 'award'; team: number | null } | { type: 'undo' };
 function createInitial(): State {
   const preferences=loadTeamGamePreferences(categories.map(category=>category.name));
-  return { stage:'teams', teams:[{name:preferences.teamNames[0],color:preferences.teamColors[0],score:0},{name:preferences.teamNames[1],color:preferences.teamColors[1],score:0}],cats:preferences.categories,limit:preferences.limit,seconds:preferences.seconds,turn:0,current:null,revealed:false,awards:[],boardQuestions:[] };
+  const shared=loadSharedTeams();
+  const teamNames=shared?[shared[0].name,shared[1].name]:preferences.teamNames;
+  const teamColors=shared?[shared[0].color,shared[1].color]:preferences.teamColors;
+  return { stage:'teams', teams:[{name:teamNames[0],color:teamColors[0],score:0},{name:teamNames[1],color:teamColors[1],score:0}],cats:preferences.categories,limit:preferences.limit,seconds:preferences.seconds,turn:0,current:null,revealed:false,awards:[],boardQuestions:[] };
 }
 const colors = [{name:'أزرق',value:'#45b6ff'},{name:'وردي',value:'#ff70b5'},{name:'ذهبي',value:'#ffd45a'},{name:'بنفسجي',value:'#b997ff'}];
 
@@ -44,6 +49,7 @@ export default function TeamGame({ onHome }: { onHome: () => void }) {
   const [categorySearch, setCategorySearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all'|'selected'|'large'>('all');
   const [setupNotice, setSetupNotice] = useState('');
+  const resultSignatureRef=useRef('');
   const setup=s.stage==='teams'||s.stage==='categories';
   const winner=s.teams[0].score===s.teams[1].score?null:s.teams[s.teams[0].score>s.teams[1].score?0:1];
   const validNames=s.teams.every(t=>t.name.trim())&&s.teams[0].name.trim()!==s.teams[1].name.trim();
@@ -58,12 +64,29 @@ export default function TeamGame({ onHome }: { onHome: () => void }) {
     saveTeamGamePreferences({teamNames:[s.teams[0].name,s.teams[1].name],teamColors:[s.teams[0].color,s.teams[1].color],categories:s.cats,limit:s.limit,seconds:s.seconds});
   },[s.cats,s.limit,s.seconds,s.teams]);
 
+  useEffect(()=>{
+    if(s.stage!=='results')return;
+    const signature=[s.teams[0].name,s.teams[1].name,s.teams[0].score,s.teams[1].score,...s.awards.map(a=>`${a.question.id}:${a.team??'x'}`)].join('|');
+    if(resultSignatureRef.current===signature)return;
+    resultSignatureRef.current=signature;
+    publishSessionGameResult({
+      gameId:'teams',
+      teamA:s.teams[0].name,
+      teamB:s.teams[1].name,
+      scoreA:s.teams[0].score,
+      scoreB:s.teams[1].score,
+      winner:winner?.name||'تعادل',
+      signature,
+    });
+  },[s.awards,s.stage,s.teams,winner]);
+
   const selectRandomCategories=()=>{
     const shuffled=[...categories].sort(()=>Math.random()-.5).slice(0,6).map(category=>category.name);
     dispatch({type:'categories',names:shuffled});
     setSetupNotice('اخترنا لكم 6 فئات متنوعة عشوائيًا');
   };
   const startRound=()=>{
+    resultSignatureRef.current='';
     const boardQuestions=buildPartyBoard(s.cats);
     if(boardQuestions.length<s.cats.length*5){setSetupNotice('بعض الفئات لا تحتوي أسئلة كافية الآن. جرّبوا فئات أخرى.');return;}
     setSetupNotice('');
