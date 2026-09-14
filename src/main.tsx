@@ -8,6 +8,7 @@ import './huroof.css';
 import './whoami.css';
 import './teams.css';
 import './settings.css';
+import './settings-enhanced.css';
 import './responsive.css';
 import './home-fix.css';
 
