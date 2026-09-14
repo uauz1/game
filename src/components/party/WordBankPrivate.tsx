@@ -1,12 +1,20 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import Peer, { type DataConnection } from 'peerjs';
 import { ArrowLeft, Check, Copy, FastForward, Flag, Gamepad2, Link2, RefreshCw, RotateCcw, Smartphone, Sparkles, Trophy, Users, Wifi, WifiOff } from 'lucide-react';
 import { wordCards } from '../../data/newPartyGames';
 import { drawWithoutRepeats } from '../../utils/newGameRotation';
 import { useNewGameNumber } from '../../utils/newGameSettings';
 import { loadSharedTeams, saveSharedTeams } from '../../utils/sharedTeams';
 import { loadHuroofPreferences } from '../../utils/huroofStorage';
-import { buildJoinUrl, createJoinQr, createRoomId, createRoomToken, isValidRoomId, isValidRoomToken, peerOptions } from '../../utils/peerRoom';
+import {
+  buildRealtimeJoinUrl,
+  createRealtimeJoinQr,
+  createRealtimeRoomChannel,
+  createRealtimeRoomId,
+  createRealtimeRoomToken,
+  isValidRealtimeRoomId,
+  isValidRealtimeRoomToken,
+  removeRealtimeChannel,
+} from '../../utils/qaddhaRealtime';
 import Countdown from './Countdown';
 
 type Team = { name: string; color: string; score: number };
@@ -41,43 +49,48 @@ function useWordPrivateRoom(state: WordPrivateState, onCommand: (command: WordCo
   const [status, setStatus] = useState<RoomStatus>('starting');
   const [hostUrl, setHostUrl] = useState('');
   const [qrCode, setQrCode] = useState('');
-  const connectionRef = useRef<DataConnection | null>(null);
+  const channelRef = useRef<ReturnType<typeof createRealtimeRoomChannel> | null>(null);
   const stateRef = useRef(state);
   const commandRef = useRef(onCommand);
   stateRef.current = state;
   commandRef.current = onCommand;
 
   useEffect(() => {
-    const token = createRoomToken();
-    const peerId = createRoomId('words');
-    const peer = new Peer(peerId, peerOptions);
-    peer.on('open', () => {
-      const nextUrl = buildJoinUrl('words', peerId, token);
-      setHostUrl(nextUrl);
-      setStatus('ready');
-      createJoinQr(nextUrl).then(setQrCode).catch(() => setStatus('error'));
-    });
-    peer.on('connection', connection => {
-      const metadata = connection.metadata as { token?: string; game?: string } | undefined;
-      if (metadata?.token !== token || metadata?.game !== 'words') { connection.close(); return; }
-      connectionRef.current?.close();
-      connectionRef.current = connection;
-      setStatus('connecting');
-      connection.on('open', () => { setStatus('connected'); connection.send(stateRef.current); });
-      connection.on('data', payload => {
+    const roomId = createRealtimeRoomId('words');
+    const token = createRealtimeRoomToken();
+    const nextUrl = buildRealtimeJoinUrl('words', roomId, token);
+    setHostUrl(nextUrl);
+    void createRealtimeJoinQr(nextUrl).then(setQrCode).catch(() => setStatus('error'));
+
+    const channel = createRealtimeRoomChannel('words', roomId, token);
+    channelRef.current = channel;
+    channel
+      .on('broadcast', { event: 'hello' }, () => {
+        setStatus('connected');
+        void channel.send({ type: 'broadcast', event: 'state', payload: stateRef.current });
+      })
+      .on('broadcast', { event: 'command' }, ({ payload }) => {
         if (!payload || typeof payload !== 'object') return;
         const command = payload as Partial<WordCommand>;
         if (command.type === 'correct' || command.type === 'skip') commandRef.current({ type: command.type });
+      })
+      .subscribe(nextStatus => {
+        if (nextStatus === 'SUBSCRIBED') setStatus(current => current === 'connected' ? current : 'ready');
+        else if (nextStatus === 'CHANNEL_ERROR' || nextStatus === 'TIMED_OUT') setStatus('error');
+        else if (nextStatus === 'CLOSED') setStatus('disconnected');
       });
-      connection.on('close', () => { if (connectionRef.current === connection) connectionRef.current = null; setStatus('disconnected'); });
-      connection.on('error', () => setStatus('disconnected'));
-    });
-    peer.on('disconnected', () => { setStatus('disconnected'); if (!peer.destroyed) { try { peer.reconnect(); } catch { /* retry from UI */ } } });
-    peer.on('error', () => setStatus('error'));
-    return () => { connectionRef.current?.close(); peer.destroy(); };
+
+    return () => {
+      channelRef.current = null;
+      void removeRealtimeChannel(channel);
+    };
   }, []);
 
-  useEffect(() => { if (connectionRef.current?.open) connectionRef.current.send(state); }, [state]);
+  useEffect(() => {
+    const channel = channelRef.current;
+    if (channel && status === 'connected') void channel.send({ type: 'broadcast', event: 'state', payload: state });
+  }, [state, status]);
+
   return { status, hostUrl, qrCode };
 }
 
@@ -89,7 +102,7 @@ function Pairing({ status, hostUrl, qrCode, compact = false }: { status: RoomSta
     try { await navigator.clipboard?.writeText(hostUrl); setCopied(true); window.setTimeout(() => setCopied(false), 1600); } catch { /* QR remains available. */ }
   };
   if (compact) return <div className={`host-link-compact ${connected ? 'connected' : ''}`}>{connected ? <Wifi/> : <WifiOff/>}<div><b>{connected ? 'جوال الموصّف متصل' : 'جوال الموصّف غير متصل'}</b><small>{connected ? 'الكلمة والممنوعات ظاهرة على الجوال فقط' : 'ارجع للإعدادات وامسح QR مجددًا'}</small></div></div>;
-  return <section className="host-pairing" aria-live="polite"><div className="host-pairing-copy"><span><Smartphone/> شاشة الموصّف السرية</span><h3>امسح QR بالجوال</h3><p>عدّلنا الرمز ليكون أقصر وعالي التباين وأسهل للكاميرا. بعد الفتح انتظر حتى تظهر كلمة <b>متصل</b>.</p><div className={`host-connection ${connected ? 'connected' : ''}`}>{connected ? <Wifi/> : <RefreshCw className={status === 'starting' || status === 'connecting' || status === 'disconnected' ? 'spin' : ''}/>}<b>{connected ? 'تم اتصال جوال الموصّف' : status === 'error' ? 'تعذر إنشاء الغرفة · حدّث الصفحة' : status === 'disconnected' ? 'نعيد الاتصال تلقائيًا…' : 'بانتظار اتصال الجوال'}</b></div><button className="quiet host-copy" disabled={!hostUrl} onClick={copy}>{copied ? <Check/> : <Copy/>}{copied ? 'تم نسخ الرابط' : 'نسخ رابط الجوال'}</button>{hostUrl ? <a className="quiet host-copy" href={hostUrl} target="_blank" rel="noreferrer">فتح رابط الجوال للتجربة <Link2/></a> : null}</div><div className="host-qr">{qrCode ? <img src={qrCode} alt="رمز QR لشاشة موصّف بنك الكلمات"/> : <div className="qr-loading"><RefreshCw className="spin"/><span>نجهز الغرفة…</span></div>}</div></section>;
+  return <section className="host-pairing" aria-live="polite"><div className="host-pairing-copy"><span><Smartphone/> شاشة الموصّف السرية</span><h3>امسح QR بالجوال</h3><p>الاتصال الآن يمر عبر خادم قدّها مباشرة، لذلك ما يحتاج الجوال والكمبيوتر يكونون على نفس الشبكة.</p><div className={`host-connection ${connected ? 'connected' : ''}`}>{connected ? <Wifi/> : <RefreshCw className={status === 'starting' || status === 'connecting' || status === 'ready' ? 'spin' : ''}/>}<b>{connected ? 'تم اتصال جوال الموصّف' : status === 'error' ? 'تعذر الاتصال بالخادم · حدّث الصفحة' : status === 'disconnected' ? 'انقطع الاتصال · افتح الرمز مجددًا' : 'بانتظار اتصال الجوال'}</b></div><button className="quiet host-copy" disabled={!hostUrl} onClick={copy}>{copied ? <Check/> : <Copy/>}{copied ? 'تم نسخ الرابط' : 'نسخ رابط الجوال'}</button>{hostUrl ? <a className="quiet host-copy" href={hostUrl} target="_blank" rel="noreferrer">فتح رابط الجوال للتجربة <Link2/></a> : null}</div><div className="host-qr">{qrCode ? <img src={qrCode} alt="رمز QR لشاشة موصّف بنك الكلمات"/> : <div className="qr-loading"><RefreshCw className="spin"/><span>نجهز الغرفة…</span></div>}</div></section>;
 }
 
 export default function WordBankPrivate({ onHome }: { onHome: () => void }) {
@@ -150,29 +163,49 @@ export default function WordBankPrivate({ onHome }: { onHome: () => void }) {
 export function WordBankPhone({ roomId, token }: { roomId: string; token: string }) {
   const [status, setStatus] = useState<'connecting'|'connected'|'disconnected'|'error'>('connecting');
   const [game, setGame] = useState<WordPrivateState | null>(null);
-  const connectionRef = useRef<DataConnection | null>(null);
+  const channelRef = useRef<ReturnType<typeof createRealtimeRoomChannel> | null>(null);
+
   useEffect(() => {
-    if (!isValidRoomId(roomId, 'words') || !isValidRoomToken(token)) { setStatus('error'); return; }
-    const peer = new Peer(peerOptions); let stopped = false; let retryTimer = 0;
-    const connect = () => {
-      if (stopped || peer.destroyed) return; setStatus('connecting');
-      const connection = peer.connect(roomId, { reliable: true, serialization: 'json', metadata: { token, game: 'words' } });
-      connectionRef.current = connection;
-      connection.on('open', () => setStatus('connected'));
-      connection.on('data', payload => { if (payload && typeof payload === 'object' && (payload as WordPrivateState).type === 'word-private-state') setGame(payload as WordPrivateState); });
-      connection.on('close', () => { if (stopped) return; setStatus('disconnected'); retryTimer = window.setTimeout(connect, 1500); });
-      connection.on('error', () => { if (stopped) return; setStatus('disconnected'); retryTimer = window.setTimeout(connect, 1500); });
+    if (!isValidRealtimeRoomId(roomId, 'words') || !isValidRealtimeRoomToken(token)) { setStatus('error'); return; }
+    let stopped = false;
+    let helloTimer = 0;
+    const channel = createRealtimeRoomChannel('words', roomId, token);
+    channelRef.current = channel;
+    const hello = () => void channel.send({ type: 'broadcast', event: 'hello', payload: { role: 'word-phone', at: Date.now() } });
+
+    channel
+      .on('broadcast', { event: 'state' }, ({ payload }) => {
+        if (!payload || typeof payload !== 'object' || (payload as WordPrivateState).type !== 'word-private-state') return;
+        setGame(payload as WordPrivateState);
+        setStatus('connected');
+        window.clearInterval(helloTimer);
+      })
+      .subscribe(nextStatus => {
+        if (stopped) return;
+        if (nextStatus === 'SUBSCRIBED') {
+          setStatus('connecting');
+          hello();
+          helloTimer = window.setInterval(hello, 1200);
+        } else if (nextStatus === 'CHANNEL_ERROR' || nextStatus === 'TIMED_OUT') setStatus('error');
+        else if (nextStatus === 'CLOSED') setStatus('disconnected');
+      });
+
+    return () => {
+      stopped = true;
+      window.clearInterval(helloTimer);
+      channelRef.current = null;
+      void removeRealtimeChannel(channel);
     };
-    peer.on('open', connect);
-    peer.on('disconnected', () => { if (stopped || peer.destroyed) return; setStatus('disconnected'); try { peer.reconnect(); } catch { retryTimer = window.setTimeout(connect, 1500); } });
-    peer.on('error', error => { if (error.type === 'peer-unavailable' || error.type === 'network' || error.type === 'socket-closed') retryTimer = window.setTimeout(connect, 1500); else setStatus('error'); });
-    return () => { stopped = true; window.clearTimeout(retryTimer); connectionRef.current?.close(); peer.destroy(); };
   }, [roomId, token]);
-  const send = (command: WordCommand) => { if (connectionRef.current?.open) connectionRef.current.send(command); };
+
+  const send = (command: WordCommand) => {
+    const channel = channelRef.current;
+    if (channel && status === 'connected') void channel.send({ type: 'broadcast', event: 'command', payload: command });
+  };
   const activeTeam = game?.teams[game.activeTeam];
 
-  return <main className="mobile-host" dir="rtl"><header><span className="host-brand"><Gamepad2/> قدّها</span><span className={`mobile-host-status ${status}`}>{status==='connected'?<Wifi/>:<WifiOff/>}{status==='connected'?'متصل بالشاشة':status==='error'?'الرابط غير صالح':'جاري الاتصال…'}</span></header>
-    {!game ? <section className="host-wait"><Link2/><h1>{status==='error'?'تعذر فتح غرفة بنك الكلمات':'نربط جوالك بالشاشة…'}</h1><p>{status==='error'?'ارجع للشاشة الكبيرة وامسح QR الجديد.':'خل الصفحة مفتوحة. إذا كان الكمبيوتر والجوال على نفس الواي فاي يكون الاتصال أسرع.'}</p></section> : game.phase === 'setup' ? <section className="host-wait"><Smartphone/><h1>الجوال جاهز</h1><p>ابدأ اللعبة من الشاشة الكبيرة. لا تورّي الشاشة لباقي اللاعبين.</p></section> : game.phase === 'result' ? <section className="host-wait"><Trophy/><h1>انتهت اللعبة</h1><p>شوفوا النتيجة النهائية على الشاشة الكبيرة.</p></section> : <>
+  return <main className="mobile-host" dir="rtl"><header><span className="host-brand"><Gamepad2/> قدّها</span><span className={`mobile-host-status ${status}`}>{status==='connected'?<Wifi/>:<WifiOff/>}{status==='connected'?'متصل بالشاشة':status==='error'?'تعذر الاتصال':'جاري الاتصال…'}</span></header>
+    {!game ? <section className="host-wait"><Link2/><h1>{status==='error'?'تعذر فتح غرفة بنك الكلمات':'نربط جوالك بالشاشة…'}</h1><p>{status==='error'?'ارجع للشاشة الكبيرة وولّد QR جديد.':'خل الصفحة مفتوحة؛ الاتصال الآن يمر عبر خادم قدّها وليس مباشرة بين الجهازين.'}</p></section> : game.phase === 'setup' ? <section className="host-wait"><Smartphone/><h1>الجوال جاهز</h1><p>ابدأ اللعبة من الشاشة الكبيرة. لا تورّي الشاشة لباقي اللاعبين.</p></section> : game.phase === 'result' ? <section className="host-wait"><Trophy/><h1>انتهت اللعبة</h1><p>شوفوا النتيجة النهائية على الشاشة الكبيرة.</p></section> : <>
       <section className="host-round-head"><small>الكلمة {game.round+1} من {game.totalRounds}</small><h1>دور {activeTeam?.name}</h1><div className="host-team-turn" style={{'--team':activeTeam?.color} as CSSProperties}><Users/><span>أنت الموصّف الآن</span><strong>{game.seconds}ث</strong></div></section>
       <section className="host-secret-board"><div><span>سري · لا تورّي أحد</span><b>{game.card?.category}</b></div><article className="revealed" style={{gridTemplateColumns:'1fr'}}><b style={{fontSize:'clamp(30px,10vw,52px)',textAlign:'center'}}>{game.card?.word}</b></article></section>
       <section style={{padding:'0 18px 18px'}}><small style={{display:'block',marginBottom:10,color:'#b99a55'}}>ممنوع تقول:</small><div className="taboo-list">{game.card?.taboo.map(word=><b key={word}>{word}</b>)}</div></section>
