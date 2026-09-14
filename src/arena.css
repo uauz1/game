@@ -32,3 +32,15 @@
 @media(max-width:1050px){.arena-illustration.cinematic-arena{transform:none;margin:0;height:370px}}
 @media(max-width:760px){.arena-illustration.cinematic-arena{width:100%;height:300px;margin:10px auto 0;border-radius:24px}.cinematic-arena img{object-position:30% center}}
 @media(max-width:450px){.arena-illustration.cinematic-arena{height:230px;border-radius:19px}.cinematic-arena img{object-position:27% center}}
+
+/* Full-viewport cinematic home hero */
+.party-app:has(.lobby-hero) .topbar{z-index:10;background:linear-gradient(180deg,#080b18e8,#080b1899);backdrop-filter:blur(14px);border-bottom-color:#ffd45a24}
+.party-app:has(.lobby-hero) main{overflow:visible}
+.party-app:has(.lobby-hero) .lobby-hero{position:relative;isolation:isolate;display:grid;grid-template-columns:1fr;min-height:calc(100svh - 90px);align-items:center;padding-block:55px 75px}
+.party-app:has(.lobby-hero) .lobby-copy{position:relative;z-index:3;max-width:610px;padding:32px;border-radius:28px;background:linear-gradient(135deg,#080b18e3,#080b188f 72%,transparent);box-shadow:0 24px 80px #0008;backdrop-filter:blur(4px)}
+.party-app:has(.lobby-hero) .arena-illustration.cinematic-arena{position:absolute;z-index:-1;top:-90px;right:calc(50% - 50vw);bottom:0;left:calc(50% - 50vw);width:auto;height:auto;margin:0;border:0;border-radius:0;box-shadow:none;background:#070b18}
+.party-app:has(.lobby-hero) .cinematic-arena img{width:100%;height:100%;object-fit:cover;object-position:center center;transform:none;filter:saturate(1.04) contrast(1.04)}
+.party-app:has(.lobby-hero) .cinematic-arena::before{content:"";position:absolute;z-index:1;inset:0;background:linear-gradient(90deg,#0609160d 0%,#070a1740 40%,#070a17e8 82%,#070a17fa 100%),linear-gradient(180deg,#070a1738 55%,#070a17d6 100%);pointer-events:none}
+.party-app:has(.lobby-hero) .cinematic-arena::after{background:linear-gradient(180deg,#05071428 55%,#050714e0 100%)}
+@media(max-width:760px){.party-app:has(.lobby-hero) .lobby-hero{min-height:calc(100svh - 75px);padding-block:40px 55px}.party-app:has(.lobby-hero) .lobby-copy{max-width:100%;padding:24px 20px;background:linear-gradient(135deg,#080b18eb,#080b18aa)}.party-app:has(.lobby-hero) .arena-illustration.cinematic-arena{top:-75px;height:auto;width:auto;border-radius:0}.party-app:has(.lobby-hero) .cinematic-arena img{object-position:35% center}.party-app:has(.lobby-hero) .cinematic-arena::before{background:linear-gradient(180deg,#0609164d 0%,#070a1790 48%,#070a17f5 100%)}}
+@media(max-width:450px){.party-app:has(.lobby-hero) .lobby-copy{padding:22px 16px}.party-app:has(.lobby-hero) .cinematic-arena img{object-position:31% center}}
