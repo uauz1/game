@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Award, BarChart3, CalendarDays, Clock3, Compass, Crown, Flame, Gamepad2, Heart, History, Library, LockKeyhole, LogIn, Play, Sparkles, Target, Trophy, UserRound, X } from 'lucide-react';
-import { readTournamentHistory, type TournamentHistoryEntry } from '../../utils/tournamentHistory';
+import { getTournamentStandings, readTournamentHistory, type TournamentHistoryEntry } from '../../utils/tournamentHistory';
 
 export type PlayerActivity = {
   gameId: string;
@@ -121,6 +121,8 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
     return game ? [{ ...game, playedAt: activity.playedAt }] : [];
   }), [games, recent]);
   const seenIds = useMemo(() => new Set(recentGames.map(game => game.id)), [recentGames]);
+  const standings = useMemo(() => getTournamentStandings(tournamentHistory), [tournamentHistory]);
+  const bestTeam = standings[0];
   const uniqueRecent = seenIds.size;
   const explorationProgress = games.length ? Math.round((uniqueRecent / games.length) * 100) : 0;
   const today = localDayKey();
@@ -149,6 +151,7 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
     { id: 'daily', title: 'موعدنا اليومي', desc: 'ابدأ 3 تحديات يومية', icon: CalendarDays, unlocked: dailyState.totalDaily >= 3 },
     { id: 'streak', title: 'ما تنقطع', desc: 'حافظ على سلسلة 3 أيام', icon: Flame, unlocked: dailyState.streak >= 3 },
     { id: 'tournament', title: 'ليلة بطولة', desc: 'أكمل أول بطولة كاملة', icon: Trophy, unlocked: tournamentCount >= 1 },
+    { id: 'champion', title: 'فريق بطولات', desc: 'خل فريقًا يحقق 3 انتصارات', icon: Crown, unlocked: Boolean(bestTeam && bestTeam.wins >= 3) },
     { id: 'level4', title: 'رفعنا المستوى', desc: 'وصل للمستوى 4', icon: Crown, unlocked: level >= 4 },
     { id: 'weekly', title: 'أسبوع حافل', desc: 'نشّط 4 ألعاب مختلفة خلال أسبوع', icon: Target, unlocked: activeThisWeek >= weeklyGoal },
     { id: 'veteran', title: 'قدّها المخضرم', desc: 'جرّب 8 ألعاب مختلفة', icon: Trophy, unlocked: uniqueRecent >= 8 },
@@ -196,6 +199,7 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
         <article><Heart/><div><small>المفضلة</small><b>{favoriteGames.length}</b><span>اختيارات محفوظة</span></div></article>
         <article><BarChart3/><div><small>استكشافك</small><b>{uniqueRecent}</b><span>ألعاب مختلفة</span></div></article>
         <article><Trophy/><div><small>بطولات مكتملة</small><b>{tournamentCount}</b><span>{decisiveTournaments} بنتيجة حاسمة</span></div></article>
+        <article><Crown/><div><small>أفضل فريق</small><b>{bestTeam?.wins || 0}</b><span>{bestTeam?.team || 'بانتظار أول بطولة'}</span></div></article>
       </div>
 
       <section className={`weekly-mission ${weeklyProgress >= weeklyGoal ? 'complete' : ''}`}>
@@ -225,6 +229,11 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
       </section>
 
       <section className="player-section player-achievements"><div className="player-section-title"><Award/><h3>الإنجازات</h3><span>{unlockedCount}/{achievements.length}</span></div><div className="achievement-grid">{achievements.map(({id,title,desc,icon:Icon,unlocked})=><article key={id} className={unlocked?'unlocked':'locked'}><span>{unlocked?<Icon/>:<LockKeyhole/>}</span><div><b>{title}</b><small>{unlocked?'مفتوح':desc}</small></div>{unlocked&&<em>✓</em>}</article>)}</div>{nextAchievement&&<p className="next-achievement"><Trophy/> الإنجاز الجاي: <b>{nextAchievement.title}</b> — {nextAchievement.desc}</p>}</section>
+
+      <section className="player-section team-standings-section">
+        <div className="player-section-title"><Crown/><h3>ترتيب الفرق</h3><span>{standings.length}</span></div>
+        {standings.length ? <div className="team-standings-list">{standings.slice(0, 5).map((team, index) => <article key={team.team} className={index === 0 ? 'leader' : ''}><span className="standing-rank">{index + 1}</span><div><b>{team.team}</b><small>{team.played} بطولة · فارق {team.differential >= 0 ? '+' : ''}{team.differential}</small></div><strong>{team.wins}<small> فوز</small></strong><em>{team.draws} ت · {team.losses} خ</em></article>)}</div> : <div className="player-empty"><Crown/><b>الترتيب يبدأ مع أول بطولة</b><p>استخدم نفس أسماء الفرق في البطولات عشان يبني قدّها سجل انتصارات حقيقي بينهم.</p></div>}
+      </section>
 
       <section className="player-section tournament-history-section">
         <div className="player-section-title"><History/><h3>سجل البطولات</h3><span>{tournamentHistory.length}</span></div>
