@@ -1,0 +1,96 @@
+import type { Question } from '@/types';
+
+// Curated, stable, mostly medium/hard questions added as a deeper competitive layer.
+// Keep these facts timeless and avoid current-office-holder/live-ranking questions.
+export const vaultQuestions: Question[] = [
+  { id:'vault-saudi-001', category:'saudi', text:'أي موقع سعودي كان أول موقع في المملكة يُدرج على قائمة التراث العالمي لليونسكو؟', choices:['حي الطريف','الحِجر','واحة الأحساء','جدة التاريخية'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-saudi-002', category:'saudi', text:'أي سلسلة جبلية تمتد بمحاذاة الجزء الغربي من المملكة العربية السعودية؟', choices:['جبال طويق','جبال السروات','جبال أجا','جبال شمر'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-saudi-003', category:'saudi', text:'ما الاسم التاريخي الأشهر للمنطقة الأثرية التي تضم مدائن صالح؟', choices:['تيماء','الحِجر','دومة الجندل','الفاو'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-saudi-004', category:'saudi', text:'في أي منطقة إدارية تقع جزر فرسان؟', choices:['مكة المكرمة','تبوك','جازان','المدينة المنورة'], correctAnswer:2, difficulty:'medium', type:'multiple' },
+  { id:'vault-saudi-005', category:'saudi', text:'أي مدينة سعودية ارتبطت تاريخيًا بسوق عكاظ؟', choices:['الطائف','حائل','الأحساء','نجران'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+  { id:'vault-saudi-006', category:'saudi', text:'أي وادٍ يشتهر بامتداده الطويل في وسط المملكة وارتباطه بمدينة الرياض؟', choices:['وادي الرمة','وادي الدواسر','وادي حنيفة','وادي فاطمة'], correctAnswer:2, difficulty:'hard', type:'multiple' },
+
+  { id:'vault-geography-001', category:'geography', text:'أي دولة أوروبية تحيط بها إيطاليا من جميع الجهات عدا الفاتيكان؟', choices:['أندورا','سان مارينو','موناكو','ليختنشتاين'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-geography-002', category:'geography', text:'ما المضيق الذي يفصل بين آسيا وأمريكا الشمالية؟', choices:['هرمز','ملقا','بيرينغ','جبل طارق'], correctAnswer:2, difficulty:'medium', type:'multiple' },
+  { id:'vault-geography-003', category:'geography', text:'أي نهر يمر بمدن فيينا وبراتيسلافا وبودابست؟', choices:['الراين','الدانوب','السين','الفولغا'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-geography-004', category:'geography', text:'ما أكبر جزيرة في البحر المتوسط؟', choices:['قبرص','سردينيا','صقلية','كريت'], correctAnswer:2, difficulty:'medium', type:'multiple' },
+  { id:'vault-geography-005', category:'geography', text:'أي دولة تمتلك إقليم كالينينغراد المنفصل جغرافيًا عن أراضيها الرئيسية؟', choices:['بولندا','روسيا','ليتوانيا','بيلاروسيا'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-geography-006', category:'geography', text:'أي صحراء تمتد عبر بوتسوانا وناميبيا وجنوب أفريقيا؟', choices:['ناميب','كالهاري','أتاكاما','غوبي'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+
+  { id:'vault-history-001', category:'history', text:'أي حضارة قديمة بنت مدينة ماتشو بيتشو؟', choices:['المايا','الإنكا','الأزتك','الأولمك'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-history-002', category:'history', text:'ما اسم الطريق التجاري التاريخي الذي ربط شرق آسيا بالبحر المتوسط؟', choices:['طريق البخور','طريق الحرير','طريق العنبر','طريق التوابل'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-history-003', category:'history', text:'في أي مدينة وُجد حجر رشيد الذي ساعد على فك رموز الهيروغليفية؟', choices:['الإسكندرية','رشيد','الأقصر','الجيزة'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-history-004', category:'history', text:'أي إمبراطورية كانت القسطنطينية عاصمتها لقرون قبل فتحها العثماني؟', choices:['الرومانية الغربية','البيزنطية','المغولية','الفارسية الساسانية'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-history-005', category:'history', text:'ما الاسم الشائع للثورة التي بدأت في فرنسا عام 1789؟', choices:['الثورة الصناعية','الثورة الفرنسية','ثورة الباستيل الإنجليزية','ثورة يوليو الروسية'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-history-006', category:'history', text:'أي شعب قديم اشتهر بتأسيس قرطاج على ساحل شمال أفريقيا؟', choices:['الفينيقيون','الآشوريون','الحثيون','السومريون'], correctAnswer:0, difficulty:'hard', type:'multiple' },
+
+  { id:'vault-science-001', category:'science', text:'أي جسيم دون ذري يحمل شحنة كهربائية سالبة؟', choices:['البروتون','النيوترون','الإلكترون','النيوترينو'], correctAnswer:2, difficulty:'medium', type:'multiple' },
+  { id:'vault-science-002', category:'science', text:'ما العنصر الأكثر وفرة في الكون المرصود؟', choices:['الأكسجين','الهيليوم','الهيدروجين','الكربون'], correctAnswer:2, difficulty:'medium', type:'multiple' },
+  { id:'vault-science-003', category:'science', text:'أي ظاهرة تفسر انحراف الضوء عند انتقاله بين وسطين مختلفين؟', choices:['الحيود','الانكسار','الاستقطاب','التداخل'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-science-004', category:'science', text:'ما العضية المسؤولة أساسًا عن إنتاج معظم ATP في الخلية حقيقية النواة؟', choices:['الريبوسوم','جهاز غولجي','الميتوكوندريا','الليسوسوم'], correctAnswer:2, difficulty:'hard', type:'multiple' },
+  { id:'vault-science-005', category:'science', text:'أي قانون يربط بين الضغط والحجم لغاز مثالي عند ثبوت درجة الحرارة؟', choices:['قانون بويل','قانون أوم','قانون هوك','قانون كولوم'], correctAnswer:0, difficulty:'hard', type:'multiple' },
+  { id:'vault-science-006', category:'science', text:'أي طبقة من الغلاف الجوي تحتوي معظم الأوزون الذي يحمي الأرض من الأشعة فوق البنفسجية؟', choices:['التروبوسفير','الستراتوسفير','الميزوسفير','الإكسوسفير'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+
+  { id:'vault-tech-001', category:'tech', text:'ما الوظيفة الأساسية لنظام DNS على الإنترنت؟', choices:['تشفير الملفات','تحويل أسماء النطاقات إلى عناوين IP','ضغط الصور','إرسال البريد'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-tech-002', category:'tech', text:'أي بنية بيانات تعمل غالبًا بمبدأ LIFO؟', choices:['Queue','Stack','Graph','Hash table'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-tech-003', category:'tech', text:'ما البروتوكول الآمن المستخدم عادة لتصفح مواقع الويب المشفرة؟', choices:['FTP','HTTP','HTTPS','SMTP'], correctAnswer:2, difficulty:'medium', type:'multiple' },
+  { id:'vault-tech-004', category:'tech', text:'في قواعد البيانات، ماذا يحقق المفتاح الأساسي Primary Key؟', choices:['يضغط الجدول','يميز كل صف بشكل فريد','يشفر كل الأعمدة','ينسخ البيانات تلقائيًا'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-tech-005', category:'tech', text:'أي مفهوم برمجي يعني إخفاء تفاصيل التنفيذ خلف واجهة واضحة؟', choices:['Recursion','Encapsulation','Polling','Rendering'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-tech-006', category:'tech', text:'ما النظام العددي الذي تعتمد عليه الحواسيب الرقمية في تمثيل البيانات داخليًا أساسًا؟', choices:['العشري','الثنائي','الثماني فقط','الست عشري فقط'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+
+  { id:'vault-space-001', category:'space', text:'ما الكوكب الذي يملك أقصر يوم تقريبًا بين كواكب المجموعة الشمسية؟', choices:['المريخ','المشتري','عطارد','نبتون'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-space-002', category:'space', text:'ما اسم الحد المحيط بالثقب الأسود الذي لا يمكن للضوء تجاوزه إلى الخارج؟', choices:['حزام كايبر','أفق الحدث','خط الثلج','نقطة لاغرانج'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-space-003', category:'space', text:'أي كوكب يدور حول نفسه باتجاه معاكس لمعظم الكواكب؟', choices:['الزهرة','المريخ','المشتري','نبتون'], correctAnswer:0, difficulty:'hard', type:'multiple' },
+  { id:'vault-space-004', category:'space', text:'ما اسم المجرة التي تنتمي إليها المجموعة الشمسية؟', choices:['المرأة المسلسلة','درب التبانة','المثلث','سومبريرو'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-space-005', category:'space', text:'ما أقرب مجرة حلزونية كبيرة إلى درب التبانة؟', choices:['المرأة المسلسلة','سحابة ماجلان الكبرى','مجرة المثلث','مجرة الدوامة'], correctAnswer:0, difficulty:'hard', type:'multiple' },
+  { id:'vault-space-006', category:'space', text:'أي قمر من أقمار زحل يشتهر بغلاف جوي كثيف وبحيرات من الهيدروكربونات؟', choices:['أوروبا','تيتان','غانيميد','فوبوس'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+
+  { id:'vault-cars-001', category:'cars', text:'ما وظيفة ناقل الحركة التفاضلي Differential في السيارة؟', choices:['تبريد المحرك','السماح للعجلتين بالدوران بسرعات مختلفة عند الانعطاف','شحن البطارية','زيادة ضغط الإطارات'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-cars-002', category:'cars', text:'ماذا يقيس عداد RPM في السيارة؟', choices:['سرعة المركبة','دورات المحرك في الدقيقة','حرارة الإطارات','ضغط الوقود فقط'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-cars-003', category:'cars', text:'ما الوظيفة الأساسية للمحول الحفاز Catalytic Converter؟', choices:['رفع ضغط الزيت','تقليل ملوثات العادم','تبريد ناقل الحركة','زيادة سعة البطارية'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-cars-004', category:'cars', text:'أي نظام يساعد على منع انزلاق العجلات أثناء التسارع؟', choices:['ABS','Traction Control','Cruise Control','TPMS'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-cars-005', category:'cars', text:'ما وظيفة الرادياتير في السيارة ذات محرك الاحتراق؟', choices:['تبريد سائل المحرك','تنقية الوقود','رفع جهد البطارية','تشغيل المكابح'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+  { id:'vault-cars-006', category:'cars', text:'أي جزء يحول الطاقة الكيميائية للوقود إلى حركة دورانية في محرك الاحتراق؟', choices:['المحرك','المولد فقط','المكيف','المكثف'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+
+  { id:'vault-sports-001', category:'sports', text:'في التنس، ماذا تعني نتيجة Deuce؟', choices:['فوز المجموعة','تعادل 40-40 في الشوط','كسر إرسال','خطأ مزدوج'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-sports-002', category:'sports', text:'في كرة السلة، كم نقطة تحتسب عادة للرمية الحرة الناجحة؟', choices:['1','2','3','4'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+  { id:'vault-sports-003', category:'sports', text:'أي رياضة تستخدم مصطلحات Birdie وEagle؟', choices:['الغولف','البيسبول','الرجبي','الكريكيت'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+  { id:'vault-sports-004', category:'sports', text:'في أي رياضة يوجد جهاز يسمى Pommel Horse؟', choices:['الجمباز','المبارزة','التجديف','رفع الأثقال'], correctAnswer:0, difficulty:'hard', type:'multiple' },
+  { id:'vault-sports-005', category:'sports', text:'ما طول المسبح الأولمبي القياسي؟', choices:['25 مترًا','40 مترًا','50 مترًا','100 متر'], correctAnswer:2, difficulty:'medium', type:'multiple' },
+  { id:'vault-sports-006', category:'sports', text:'في الكرة الطائرة، كم لاعبًا من كل فريق يكونون داخل الملعب عادة؟', choices:['5','6','7','8'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+
+  { id:'vault-football-001', category:'football', text:'ما العقوبة التي تُحتسب إذا ارتكب مدافع مخالفة تستوجب ركلة حرة مباشرة داخل منطقة جزائه؟', choices:['ركلة ركنية','ركلة جزاء','إسقاط كرة دائمًا','ركلة مرمى'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-football-002', category:'football', text:'كم تبلغ المسافة القانونية بين علامة الجزاء وخط المرمى تقريبًا؟', choices:['9 أمتار','10 أمتار','11 مترًا','12 مترًا'], correctAnswer:2, difficulty:'medium', type:'multiple' },
+  { id:'vault-football-003', category:'football', text:'أي جهة تضع قوانين لعبة كرة القدم المعروفة باسم Laws of the Game؟', choices:['FIFA وحدها','IFAB','IOC','UEFA وحده'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-football-004', category:'football', text:'ما اسم الحالة التي يكون فيها اللاعب أقرب لخط مرمى الخصم من الكرة وثاني آخر مدافع لحظة تمرير زميله إليه، مع تحقق شروط القانون؟', choices:['تسلل','ركنية','لمسة يد','ميزة'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+  { id:'vault-football-005', category:'football', text:'ما الحد الأدنى لعدد اللاعبين الذي لا يمكن أن تستمر المباراة إذا نزل فريق تحته وفق قوانين اللعبة؟', choices:['5','6','7','8'], correctAnswer:2, difficulty:'hard', type:'multiple' },
+  { id:'vault-football-006', category:'football', text:'عند ركلة البداية، متى تصبح الكرة في اللعب؟', choices:['عند صافرة الحكم فقط','عندما تُركل وتتحرك بوضوح','بعد لمس لاعبين لها','بعد تجاوز دائرة المنتصف'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+
+  { id:'vault-inventions-001', category:'inventions', text:'من ارتبط اسمه بتطوير أول لقاح ناجح ضد الجدري؟', choices:['لويس باستور','إدوارد جينر','روبرت كوخ','ألكسندر فليمنغ'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-inventions-002', category:'inventions', text:'أي اختراع ارتبط باسم يوهانس غوتنبرغ في أوروبا؟', choices:['التلغراف','الطباعة بالحروف المتحركة','المحرك البخاري','الهاتف'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-inventions-003', category:'inventions', text:'من طوّر شبكة الويب العالمية World Wide Web في CERN؟', choices:['تيم برنرز-لي','آلان تورنغ','دينيس ريتشي','لينوس تورفالدس'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+  { id:'vault-inventions-004', category:'inventions', text:'أي جهاز ارتبط تاريخيًا بألكسندر غراهام بيل؟', choices:['الراديو','الهاتف','المصباح','التلفاز'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-inventions-005', category:'inventions', text:'أي تقنية تعتمد على الأقمار الصناعية وتوقيت شديد الدقة لتحديد الموقع؟', choices:['NFC','GPS','Bluetooth','RFID'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-inventions-006', category:'inventions', text:'ما الجهاز الذي حوّل الاتصالات البعيدة إلى نبضات كهربائية مشفرة قبل ظهور الهاتف؟', choices:['التلغراف','الفونوغراف','البوصلة','المجهر'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+
+  { id:'vault-nature-001', category:'nature', text:'ما العملية التي تطلق بها النباتات بخار الماء عبر الأوراق؟', choices:['التنفس الخلوي','النتح','التخمر','الإنبات'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-nature-002', category:'nature', text:'أي نوع من الصخور يتكون غالبًا من تبرد الصهارة أو الحمم؟', choices:['رسوبية','نارية','متحولة فقط','كلسية فقط'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-nature-003', category:'nature', text:'ما التيار المحيطي الدافئ الذي يؤثر في مناخ غرب أوروبا؟', choices:['تيار الكناري','تيار الخليج','تيار بنغويلا','تيار لابرادور'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-nature-004', category:'nature', text:'أي طبقة من الأرض تتكون أساسًا من الحديد والنيكل وتشمل جزءًا صلبًا وآخر سائلًا؟', choices:['القشرة','الوشاح','اللب','الغلاف الصخري'], correctAnswer:2, difficulty:'medium', type:'multiple' },
+  { id:'vault-nature-005', category:'nature', text:'ما الظاهرة المناخية المرتبطة بارتفاع دوري لحرارة سطح المحيط الهادئ الاستوائي الأوسط والشرقي؟', choices:['النينيو','المد الأحمر','الإعصار القطبي','المونسون'], correctAnswer:0, difficulty:'hard', type:'multiple' },
+  { id:'vault-nature-006', category:'nature', text:'أي غاز دفيئة ينتج طبيعيًا وبشريًا ويملك تأثيرًا أقوى لكل جزيء من ثاني أكسيد الكربون على المدى القصير؟', choices:['الأكسجين','الميثان','النيون','الأرجون'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+
+  { id:'vault-books-001', category:'books', text:'من مؤلف رواية "1984"؟', choices:['جورج أورويل','ألدوس هكسلي','فرانز كافكا','إرنست همنغواي'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+  { id:'vault-books-002', category:'books', text:'من كتب "دون كيشوت"؟', choices:['دانتي','ميغيل دي ثيربانتس','تولستوي','غوته'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-books-003', category:'books', text:'أي شاعر عربي لُقّب بأمير الشعراء؟', choices:['أحمد شوقي','المتنبي','محمود درويش','أبو تمام'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+  { id:'vault-books-004', category:'books', text:'من صاحب "رسالة الغفران"؟', choices:['الجاحظ','أبو العلاء المعري','ابن المقفع','ابن خلدون'], correctAnswer:1, difficulty:'hard', type:'multiple' },
+  { id:'vault-books-005', category:'books', text:'من مؤلف رواية "الجريمة والعقاب"؟', choices:['تولستوي','دوستويفسكي','تشيخوف','بوشكين'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-books-006', category:'books', text:'أي عمل أدبي يبدأ برحلة بحرية بحثًا عن الحوت الأبيض موبي ديك؟', choices:['موبي ديك','روبنسون كروزو','جزيرة الكنز','قلب الظلام'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+
+  { id:'vault-general-001', category:'general', text:'أي معدن سائل في درجة حرارة الغرفة استُخدم تاريخيًا في موازين الحرارة؟', choices:['الزئبق','الألومنيوم','الفضة','الزنك'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+  { id:'vault-general-002', category:'general', text:'أي مقياس يُستخدم للتعبير عن صلادة المعادن من التلك حتى الألماس؟', choices:['موهس','ريختر','بوفورت','ديسيبل'], correctAnswer:0, difficulty:'hard', type:'multiple' },
+  { id:'vault-general-003', category:'general', text:'ما اللغة الرسمية الأساسية في البرازيل؟', choices:['الإسبانية','البرتغالية','الفرنسية','الإيطالية'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-general-004', category:'general', text:'أي وحدة دولية تقيس التردد؟', choices:['واط','هرتز','نيوتن','باسكال'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-general-005', category:'general', text:'أي عنصر كيميائي يحمل الرمز W؟', choices:['التنغستن','القصدير','التيتانيوم','التيلوريوم'], correctAnswer:0, difficulty:'hard', type:'multiple' },
+  { id:'vault-general-006', category:'general', text:'ما اسم الجهاز المستخدم لقياس الضغط الجوي؟', choices:['بارومتر','هيدرومتر','فولتميتر','كالوريمتر'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+];
