@@ -48,12 +48,12 @@ const games = [
   {id:'riddles',title:'فوازير',desc:'فكّروا فيها سوا، الحل أقرب مما تتوقعون.',icon:Puzzle,tag:'ألغاز',cover:asset('riddles-cover.jpg'),ready:true},
   {id:'family',title:'تحدي العائلة',desc:'اكشفوا أشهر إجابات الجمهور واجمعوا النقاط.',icon:Trophy,tag:'إجابات جمهور',cover:asset('family-cover.jpg'),ready:true},
   {id:'connection',title:'وش الرابط؟',desc:'أربع إشارات تخفي رابطًا واحدًا… اكتشفوه بأقل تلميحات.',icon:Link2,tag:'ربط + سرعة بديهة',cover:asset('connection-cover.jpg'),ready:true},
-  {id:'auction',title:'المزاد',desc:'زايدوا على عدد الإجابات… والفريق اللي يرسو عليه المزاد لازم يثبتها.',icon:Trophy,tag:'فرق + مخاطرة',cover:asset('auction-cover.svg'),ready:true},
-  {id:'order',title:'رتّبها',desc:'أربعة عناصر مبعثرة. رتبوها صح قبل ما يضيع عليكم النقطة.',icon:Sparkles,tag:'ترتيب + معرفة',cover:asset('order-cover.svg'),ready:true},
-  {id:'memory',title:'ذاكرة البرق',desc:'ثواني للحفظ، وبعدها رجّعوا التسلسل بنفس الترتيب.',icon:Brain,tag:'ذاكرة + تركيز',cover:asset('memory-cover.svg'),ready:true},
-  {id:'missing',title:'وش الناقص؟',desc:'ركزوا في العناصر… نخفي واحد ومهمتكم تعرفونه بسرعة.',icon:Search,tag:'ملاحظة + ذاكرة',cover:asset('missing-cover.svg'),ready:true},
-  {id:'acting',title:'مثّلها',desc:'تمثيل صامت، وقت يركض، وفريق يحاول يلقطها.',icon:Gamepad2,tag:'تمثيل + فرق',cover:asset('acting-cover.svg'),ready:true},
-  {id:'secret',title:'الكلمة السرّية',desc:'الكل يعرف المكان إلا المتخفي… اكشفوه قبل ما يندمج.',icon:Users,tag:'خداع + نقاش',cover:asset('secret-cover.svg'),ready:true},
+  {id:'auction',title:'المزاد',desc:'زايدوا على عدد الإجابات… والفريق اللي يرسو عليه المزاد لازم يثبتها.',icon:Trophy,tag:'فرق + مخاطرة',cover:asset('auction-cover-v2.webp'),ready:true},
+  {id:'order',title:'رتّبها',desc:'أربعة عناصر مبعثرة. رتبوها صح قبل ما يضيع عليكم النقطة.',icon:Sparkles,tag:'ترتيب + معرفة',cover:asset('order-cover-v2.webp'),ready:true},
+  {id:'memory',title:'ذاكرة البرق',desc:'ثواني للحفظ، وبعدها رجّعوا التسلسل بنفس الترتيب.',icon:Brain,tag:'ذاكرة + تركيز',cover:asset('memory-cover-v2.webp'),ready:true},
+  {id:'missing',title:'وش الناقص؟',desc:'ركزوا في العناصر… نخفي واحد ومهمتكم تعرفونه بسرعة.',icon:Search,tag:'ملاحظة + ذاكرة',cover:asset('missing-cover-v2.webp'),ready:true},
+  {id:'acting',title:'مثّلها',desc:'تمثيل صامت، وقت يركض، وفريق يحاول يلقطها.',icon:Gamepad2,tag:'تمثيل + فرق',cover:asset('acting-cover-v2.webp'),ready:true},
+  {id:'secret',title:'الكلمة السرّية',desc:'الكل يعرف المكان إلا المتخفي… اكشفوه قبل ما يندمج.',icon:Users,tag:'خداع + نقاش',cover:asset('secret-cover-v2.webp'),ready:true},
 ];
 const gameGroups: Record<string,string> = {teams:'جماعية',letters:'كلمات',who:'تخمين',photo:'تحديات',words:'كلمات',fast:'سريعة',character:'تخمين',riddles:'تحديات',family:'جماعية',connection:'تخمين',auction:'جماعية',order:'تحديات',memory:'سريعة',missing:'سريعة',acting:'جماعية',secret:'جماعية'};
 const PLAYER_KEY = 'qaddha.player.v1';
