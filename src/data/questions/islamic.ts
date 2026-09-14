@@ -2,11 +2,11 @@ import type { Question } from '@/types';
 
 export const islamicQuestions: Question[] = [
   {
-    id: 'isl-1', category: 'islamic', difficulty: 'easy', type: 'multiple',
-    text: 'كم عدد أركان الإسلام؟',
-    choices: ['4', '5', '6', '7'],
+    id: 'isl-1', category: 'islamic', difficulty: 'medium', type: 'multiple',
+    text: 'أي سورة من سور القرآن لا تبدأ بالبسملة؟',
+    choices: ['الأنفال', 'التوبة', 'يونس', 'هود'],
     correctAnswer: 1,
-    explanation: 'أركان الإسلام خمسة: الشهادتان، الصلاة، الزكاة، الصوم، والحج.',
+    explanation: 'سورة التوبة هي السورة الوحيدة التي لا تبدأ بالبسملة.',
   },
   {
     id: 'isl-2', category: 'islamic', difficulty: 'easy', type: 'multiple',
