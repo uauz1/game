@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Award, BarChart3, Clock3, Gamepad2, Heart, Library, LockKeyhole, LogIn, Sparkles, Trophy, UserRound, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Award, BarChart3, CalendarDays, Clock3, Compass, Flame, Gamepad2, Heart, Library, LockKeyhole, LogIn, Play, Sparkles, Trophy, UserRound, X } from 'lucide-react';
 
 export type PlayerActivity = {
   gameId: string;
@@ -26,6 +26,14 @@ type PlayerPanelProps = {
   onSignOut: () => void;
 };
 
+type DailyState = {
+  lastPlayedDay: string;
+  streak: number;
+  totalDaily: number;
+};
+
+const DAILY_KEY = 'qaddha.daily-challenge.v1';
+
 function formatRecent(timestamp: number) {
   const elapsed = Date.now() - timestamp;
   const minutes = Math.floor(elapsed / 60_000);
@@ -36,11 +44,48 @@ function formatRecent(timestamp: number) {
   return new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'short' }).format(timestamp);
 }
 
+function localDayKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function dayDistance(from: string, to: string) {
+  const parse = (value: string) => {
+    const [year, month, day] = value.split('-').map(Number);
+    return Date.UTC(year, month - 1, day);
+  };
+  return Math.round((parse(to) - parse(from)) / 86_400_000);
+}
+
+function readDailyState(): DailyState {
+  try {
+    const raw = JSON.parse(localStorage.getItem(DAILY_KEY) || '{}');
+    return {
+      lastPlayedDay: typeof raw.lastPlayedDay === 'string' ? raw.lastPlayedDay : '',
+      streak: typeof raw.streak === 'number' ? Math.max(0, raw.streak) : 0,
+      totalDaily: typeof raw.totalDaily === 'number' ? Math.max(0, raw.totalDaily) : 0,
+    };
+  } catch {
+    return { lastPlayedDay: '', streak: 0, totalDaily: 0 };
+  }
+}
+
+function stableDailyIndex(day: string, length: number) {
+  if (!length) return 0;
+  let hash = 0;
+  for (const char of day) hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
+  return Math.abs(hash) % length;
+}
+
 export default function PlayerPanel({ open, onClose, games, favorites, recent, onPlay, onToggleFavorite, accountConfigured, accountName, onAuth, onSignOut }: PlayerPanelProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [dailyState, setDailyState] = useState<DailyState>(() => readDailyState());
 
   useEffect(() => {
     if (!open) return;
+    setDailyState(readDailyState());
     const previousOverflow = document.body.style.overflow;
     const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
     document.body.style.overflow = 'hidden';
@@ -52,22 +97,58 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
     };
   }, [onClose, open]);
 
-  if (!open) return null;
-  const favoriteGames = games.filter((game) => favorites.includes(game.id));
-  const recentGames = recent.flatMap((activity) => {
+  const favoriteGames = useMemo(() => games.filter((game) => favorites.includes(game.id)), [favorites, games]);
+  const recentGames = useMemo(() => recent.flatMap((activity) => {
     const game = games.find((item) => item.id === activity.gameId);
     return game ? [{ ...game, playedAt: activity.playedAt }] : [];
-  });
-  const uniqueRecent = new Set(recentGames.map(game => game.id)).size;
+  }), [games, recent]);
+  const seenIds = useMemo(() => new Set(recentGames.map(game => game.id)), [recentGames]);
+  const uniqueRecent = seenIds.size;
   const explorationProgress = games.length ? Math.round((uniqueRecent / games.length) * 100) : 0;
+  const today = localDayKey();
+  const dailyGame = games[stableDailyIndex(today, games.length)];
+  const dailyDone = dailyState.lastPlayedDay === today;
+  const recommendation = games.find(game => !seenIds.has(game.id) && !favorites.includes(game.id))
+    || games.find(game => !seenIds.has(game.id))
+    || favoriteGames[0]
+    || games[0];
+
   const achievements = [
     { id: 'first', title: 'أول تحدّي', desc: 'ابدأ أول لعبة في قدّها', icon: Gamepad2, unlocked: uniqueRecent >= 1 },
     { id: 'explorer', title: 'مستكشف قدّها', desc: 'جرّب 4 ألعاب مختلفة', icon: Sparkles, unlocked: uniqueRecent >= 4 },
     { id: 'collector', title: 'اختياراتي', desc: 'احفظ 3 ألعاب في المفضلة', icon: Heart, unlocked: favoriteGames.length >= 3 },
+    { id: 'daily', title: 'موعدنا اليومي', desc: 'ابدأ 3 تحديات يومية', icon: CalendarDays, unlocked: dailyState.totalDaily >= 3 },
+    { id: 'streak', title: 'ما تنقطع', desc: 'حافظ على سلسلة 3 أيام', icon: Flame, unlocked: dailyState.streak >= 3 },
     { id: 'veteran', title: 'قدّها المخضرم', desc: 'جرّب 8 ألعاب مختلفة', icon: Trophy, unlocked: uniqueRecent >= 8 },
   ];
   const unlockedCount = achievements.filter(item => item.unlocked).length;
   const nextAchievement = achievements.find(item => !item.unlocked);
+
+  if (!open) return null;
+
+  const launchDaily = () => {
+    if (!dailyGame) return;
+    const current = readDailyState();
+    let next = current;
+    if (current.lastPlayedDay !== today) {
+      const gap = current.lastPlayedDay ? dayDistance(current.lastPlayedDay, today) : 0;
+      next = {
+        lastPlayedDay: today,
+        streak: gap === 1 ? current.streak + 1 : 1,
+        totalDaily: current.totalDaily + 1,
+      };
+      try { localStorage.setItem(DAILY_KEY, JSON.stringify(next)); } catch { /* Daily progress can remain visit-only. */ }
+      setDailyState(next);
+    }
+    onPlay(dailyGame.id);
+    onClose();
+  };
+
+  const launchRecommendation = () => {
+    if (!recommendation) return;
+    onPlay(recommendation.id);
+    onClose();
+  };
 
   return <div className="player-overlay" onMouseDown={(event) => event.currentTarget === event.target && onClose()}>
     <section className="player-panel" role="dialog" aria-modal="true" aria-label="ملف اللاعب">
@@ -77,6 +158,20 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
         <article><Library/><div><small>مكتبة قدّها</small><b>{games.length}</b><span>لعبة جاهزة</span></div></article>
         <article><Heart/><div><small>المفضلة</small><b>{favoriteGames.length}</b><span>اختيارات محفوظة</span></div></article>
         <article><BarChart3/><div><small>استكشافك</small><b>{uniqueRecent}</b><span>ألعاب مختلفة</span></div></article>
+      </div>
+
+      <div className="player-engagement-grid">
+        <section className={`daily-challenge-card ${dailyDone ? 'done' : ''}`}>
+          <div className="engagement-card-icon"><CalendarDays/></div>
+          <div className="engagement-card-copy"><span>تحدي اليوم</span><h3>{dailyGame?.title || 'قدّها'}</h3><p>{dailyDone ? 'دخلت تحدي اليوم. ارجع بكرة لاختيار جديد.' : 'اختيار واحد يتغيّر كل يوم. ابدأ وحافظ على سلسلتك.'}</p><small><Flame/> سلسلة {dailyState.streak} يوم · {dailyState.totalDaily} تحديات يومية</small></div>
+          <button onClick={launchDaily}>{dailyDone ? 'العبه مرة ثانية' : 'ابدأ تحدي اليوم'} <Play/></button>
+        </section>
+
+        <section className="smart-recommend-card">
+          <div className="engagement-card-icon"><Compass/></div>
+          <div className="engagement-card-copy"><span>اقتراح لك</span><h3>{recommendation?.title || 'جرّب لعبة جديدة'}</h3><p>{recommendation && !seenIds.has(recommendation.id) ? 'ما لعبتها مؤخرًا، مناسبة لتوسّع استكشافك.' : 'اختيار سريع مبني على ألعابك الأخيرة ومفضّلتك.'}</p><small><Sparkles/> قدّها يفضّل لك الألعاب الأقل تكرارًا</small></div>
+          <button onClick={launchRecommendation}>جرّبها الآن <Play/></button>
+        </section>
       </div>
 
       <section className="player-progress-card" aria-label="تقدم استكشاف الألعاب">
