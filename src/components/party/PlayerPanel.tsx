@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Award, BarChart3, CalendarDays, Clock3, Compass, Crown, Flame, Gamepad2, Heart, Library, LockKeyhole, LogIn, Play, Sparkles, Target, Trophy, UserRound, X } from 'lucide-react';
+import { Award, BarChart3, CalendarDays, Clock3, Compass, Crown, Flame, Gamepad2, Heart, History, Library, LockKeyhole, LogIn, Play, Sparkles, Target, Trophy, UserRound, X } from 'lucide-react';
+import { readTournamentHistory, type TournamentHistoryEntry } from '../../utils/tournamentHistory';
 
 export type PlayerActivity = {
   gameId: string;
@@ -87,21 +88,30 @@ function playerTitle(level: number) {
   return 'داخل التحدّي';
 }
 
+function formatTournamentDate(timestamp: number) {
+  return new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(timestamp);
+}
+
 export default function PlayerPanel({ open, onClose, games, favorites, recent, onPlay, onToggleFavorite, accountConfigured, accountName, onAuth, onSignOut }: PlayerPanelProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const [dailyState, setDailyState] = useState<DailyState>(() => readDailyState());
+  const [tournamentHistory, setTournamentHistory] = useState<TournamentHistoryEntry[]>(() => readTournamentHistory());
 
   useEffect(() => {
     if (!open) return;
     setDailyState(readDailyState());
+    setTournamentHistory(readTournamentHistory());
     const previousOverflow = document.body.style.overflow;
     const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
+    const refreshHistory = () => setTournamentHistory(readTournamentHistory());
     document.body.style.overflow = 'hidden';
     closeRef.current?.focus();
     window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('qaddha:tournament-history-changed', refreshHistory);
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('qaddha:tournament-history-changed', refreshHistory);
     };
   }, [onClose, open]);
 
@@ -121,12 +131,14 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
     || favoriteGames[0]
     || games[0];
 
-  const xp = uniqueRecent * 120 + favoriteGames.length * 40 + dailyState.totalDaily * 80 + Math.min(dailyState.streak, 7) * 35;
+  const tournamentCount = tournamentHistory.length;
+  const decisiveTournaments = tournamentHistory.filter(item => item.winner !== 'تعادل').length;
+  const xp = uniqueRecent * 120 + favoriteGames.length * 40 + dailyState.totalDaily * 80 + Math.min(dailyState.streak, 7) * 35 + tournamentCount * 100;
   const level = Math.max(1, Math.floor(xp / 300) + 1);
   const levelFloor = (level - 1) * 300;
   const levelProgress = Math.min(100, Math.round(((xp - levelFloor) / 300) * 100));
   const weekAgo = Date.now() - 7 * 86_400_000;
-  const activeThisWeek = recentGames.filter(game => game.playedAt >= weekAgo).length;
+  const activeThisWeek = new Set(recentGames.filter(game => game.playedAt >= weekAgo).map(game => game.id)).size;
   const weeklyGoal = 4;
   const weeklyProgress = Math.min(weeklyGoal, activeThisWeek);
 
@@ -136,8 +148,9 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
     { id: 'collector', title: 'اختياراتي', desc: 'احفظ 3 ألعاب في المفضلة', icon: Heart, unlocked: favoriteGames.length >= 3 },
     { id: 'daily', title: 'موعدنا اليومي', desc: 'ابدأ 3 تحديات يومية', icon: CalendarDays, unlocked: dailyState.totalDaily >= 3 },
     { id: 'streak', title: 'ما تنقطع', desc: 'حافظ على سلسلة 3 أيام', icon: Flame, unlocked: dailyState.streak >= 3 },
+    { id: 'tournament', title: 'ليلة بطولة', desc: 'أكمل أول بطولة كاملة', icon: Trophy, unlocked: tournamentCount >= 1 },
     { id: 'level4', title: 'رفعنا المستوى', desc: 'وصل للمستوى 4', icon: Crown, unlocked: level >= 4 },
-    { id: 'weekly', title: 'أسبوع حافل', desc: 'نشّط 4 ألعاب خلال أسبوع', icon: Target, unlocked: activeThisWeek >= weeklyGoal },
+    { id: 'weekly', title: 'أسبوع حافل', desc: 'نشّط 4 ألعاب مختلفة خلال أسبوع', icon: Target, unlocked: activeThisWeek >= weeklyGoal },
     { id: 'veteran', title: 'قدّها المخضرم', desc: 'جرّب 8 ألعاب مختلفة', icon: Trophy, unlocked: uniqueRecent >= 8 },
   ];
   const unlockedCount = achievements.filter(item => item.unlocked).length;
@@ -171,7 +184,7 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
 
   return <div className="player-overlay" onMouseDown={(event) => event.currentTarget === event.target && onClose()}>
     <section className="player-panel" role="dialog" aria-modal="true" aria-label="ملف اللاعب">
-      <header><div className="player-avatar"><UserRound/></div><div><span>{accountName ? 'حساب متصل' : 'وضع الضيف'}</span><h2>{accountName || 'يا هلا باللاعب'}</h2><p>مفضّلتك وآخر ألعابك وتقدّمك في قدّها في مكان واحد.</p></div><button ref={closeRef} className="settings-close" aria-label="إغلاق ملف اللاعب" onClick={onClose}><X/></button></header>
+      <header><div className="player-avatar"><UserRound/></div><div><span>{accountName ? 'حساب متصل' : 'وضع الضيف'}</span><h2>{accountName || 'يا هلا باللاعب'}</h2><p>مفضّلتك وآخر ألعابك وتقدّمك وبطولاتك في قدّها في مكان واحد.</p></div><button ref={closeRef} className="settings-close" aria-label="إغلاق ملف اللاعب" onClick={onClose}><X/></button></header>
 
       <section className="player-level-card" aria-label={`المستوى ${level}`}>
         <div className="player-level-badge"><Crown/><strong>{level}</strong></div>
@@ -182,6 +195,7 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
         <article><Library/><div><small>مكتبة قدّها</small><b>{games.length}</b><span>لعبة جاهزة</span></div></article>
         <article><Heart/><div><small>المفضلة</small><b>{favoriteGames.length}</b><span>اختيارات محفوظة</span></div></article>
         <article><BarChart3/><div><small>استكشافك</small><b>{uniqueRecent}</b><span>ألعاب مختلفة</span></div></article>
+        <article><Trophy/><div><small>بطولات مكتملة</small><b>{tournamentCount}</b><span>{decisiveTournaments} بنتيجة حاسمة</span></div></article>
       </div>
 
       <section className={`weekly-mission ${weeklyProgress >= weeklyGoal ? 'complete' : ''}`}>
@@ -211,6 +225,11 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
       </section>
 
       <section className="player-section player-achievements"><div className="player-section-title"><Award/><h3>الإنجازات</h3><span>{unlockedCount}/{achievements.length}</span></div><div className="achievement-grid">{achievements.map(({id,title,desc,icon:Icon,unlocked})=><article key={id} className={unlocked?'unlocked':'locked'}><span>{unlocked?<Icon/>:<LockKeyhole/>}</span><div><b>{title}</b><small>{unlocked?'مفتوح':desc}</small></div>{unlocked&&<em>✓</em>}</article>)}</div>{nextAchievement&&<p className="next-achievement"><Trophy/> الإنجاز الجاي: <b>{nextAchievement.title}</b> — {nextAchievement.desc}</p>}</section>
+
+      <section className="player-section tournament-history-section">
+        <div className="player-section-title"><History/><h3>سجل البطولات</h3><span>{tournamentHistory.length}</span></div>
+        {tournamentHistory.length ? <div className="tournament-history-list">{tournamentHistory.slice(0, 6).map(item => <article key={item.id}><div><small>{formatTournamentDate(item.finishedAt)} · {item.gameCount} ألعاب</small><b>{item.winner === 'تعادل' ? 'تعادل' : `🏆 ${item.winner}`}</b></div><div className="history-score"><span>{item.teamA}<strong>{item.scoreA}</strong></span><i>—</i><span>{item.teamB}<strong>{item.scoreB}</strong></span></div></article>)}</div> : <div className="player-empty"><Trophy/><b>ما عندك بطولة محفوظة إلى الآن</b><p>أكمل بطولة من مدير الجلسة، ونتيجتها تنحفظ هنا تلقائيًا.</p></div>}
+      </section>
 
       <div className={`guest-account-note ${accountName ? 'signed-in' : ''}`}><LogIn/><div><b>{accountName ? 'أنت مسجل الدخول' : 'الحساب اختياري'}</b><small>{accountName ? 'تقدر تكمل اللعب كالمعتاد وتسجيل الخروج وقت ما تحب.' : accountConfigured ? 'سجّل دخولك أو أنشئ حسابًا، أو كمل اللعب مباشرة كضيف.' : 'تلعب الآن بلا تسجيل. خدمة الحسابات جاهزة وتحتاج تفعيل الربط الآمن فقط.'}</small></div>{accountConfigured && <button onClick={accountName ? onSignOut : onAuth}>{accountName ? 'خروج' : 'دخول'}</button>}</div>
       <section className="player-section"><div className="player-section-title"><Heart/><h3>المفضلة</h3><span>{favoriteGames.length}</span></div>{favoriteGames.length ? <div className="player-game-list">{favoriteGames.map((game) => <article key={game.id}><img src={game.cover} alt=""/><button onClick={() => { onPlay(game.id); onClose(); }}><b>{game.title}</b><small>العب الآن</small></button><button className="favorite-remove" aria-label={`إزالة ${game.title} من المفضلة`} onClick={() => onToggleFavorite(game.id)}><Heart fill="currentColor"/></button></article>)}</div> : <div className="player-empty"><Heart/><b>مفضّلتك فاضية</b><p>اضغط القلب على أي لعبة عشان تلقاها هنا بسرعة.</p></div>}</section>
