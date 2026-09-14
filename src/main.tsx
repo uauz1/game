@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { AuthProvider } from './contexts/AuthContext.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
+import './utils/sessionResultObserver.ts';
 import './index.css';
 import './huroof.css';
 import './whoami.css';
