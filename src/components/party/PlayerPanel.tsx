@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Award, BarChart3, CalendarDays, Clock3, Compass, Flame, Gamepad2, Heart, Library, LockKeyhole, LogIn, Play, Sparkles, Trophy, UserRound, X } from 'lucide-react';
+import { Award, BarChart3, CalendarDays, Clock3, Compass, Crown, Flame, Gamepad2, Heart, Library, LockKeyhole, LogIn, Play, Sparkles, Target, Trophy, UserRound, X } from 'lucide-react';
 
 export type PlayerActivity = {
   gameId: string;
@@ -79,6 +79,14 @@ function stableDailyIndex(day: string, length: number) {
   return Math.abs(hash) % length;
 }
 
+function playerTitle(level: number) {
+  if (level >= 8) return 'أسطورة الجلسة';
+  if (level >= 6) return 'قائد التحدّي';
+  if (level >= 4) return 'منافس مخضرم';
+  if (level >= 2) return 'لاعب قدّها';
+  return 'داخل التحدّي';
+}
+
 export default function PlayerPanel({ open, onClose, games, favorites, recent, onPlay, onToggleFavorite, accountConfigured, accountName, onAuth, onSignOut }: PlayerPanelProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const [dailyState, setDailyState] = useState<DailyState>(() => readDailyState());
@@ -113,12 +121,23 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
     || favoriteGames[0]
     || games[0];
 
+  const xp = uniqueRecent * 120 + favoriteGames.length * 40 + dailyState.totalDaily * 80 + Math.min(dailyState.streak, 7) * 35;
+  const level = Math.max(1, Math.floor(xp / 300) + 1);
+  const levelFloor = (level - 1) * 300;
+  const levelProgress = Math.min(100, Math.round(((xp - levelFloor) / 300) * 100));
+  const weekAgo = Date.now() - 7 * 86_400_000;
+  const activeThisWeek = recentGames.filter(game => game.playedAt >= weekAgo).length;
+  const weeklyGoal = 4;
+  const weeklyProgress = Math.min(weeklyGoal, activeThisWeek);
+
   const achievements = [
     { id: 'first', title: 'أول تحدّي', desc: 'ابدأ أول لعبة في قدّها', icon: Gamepad2, unlocked: uniqueRecent >= 1 },
     { id: 'explorer', title: 'مستكشف قدّها', desc: 'جرّب 4 ألعاب مختلفة', icon: Sparkles, unlocked: uniqueRecent >= 4 },
     { id: 'collector', title: 'اختياراتي', desc: 'احفظ 3 ألعاب في المفضلة', icon: Heart, unlocked: favoriteGames.length >= 3 },
     { id: 'daily', title: 'موعدنا اليومي', desc: 'ابدأ 3 تحديات يومية', icon: CalendarDays, unlocked: dailyState.totalDaily >= 3 },
     { id: 'streak', title: 'ما تنقطع', desc: 'حافظ على سلسلة 3 أيام', icon: Flame, unlocked: dailyState.streak >= 3 },
+    { id: 'level4', title: 'رفعنا المستوى', desc: 'وصل للمستوى 4', icon: Crown, unlocked: level >= 4 },
+    { id: 'weekly', title: 'أسبوع حافل', desc: 'نشّط 4 ألعاب خلال أسبوع', icon: Target, unlocked: activeThisWeek >= weeklyGoal },
     { id: 'veteran', title: 'قدّها المخضرم', desc: 'جرّب 8 ألعاب مختلفة', icon: Trophy, unlocked: uniqueRecent >= 8 },
   ];
   const unlockedCount = achievements.filter(item => item.unlocked).length;
@@ -154,11 +173,22 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
     <section className="player-panel" role="dialog" aria-modal="true" aria-label="ملف اللاعب">
       <header><div className="player-avatar"><UserRound/></div><div><span>{accountName ? 'حساب متصل' : 'وضع الضيف'}</span><h2>{accountName || 'يا هلا باللاعب'}</h2><p>مفضّلتك وآخر ألعابك وتقدّمك في قدّها في مكان واحد.</p></div><button ref={closeRef} className="settings-close" aria-label="إغلاق ملف اللاعب" onClick={onClose}><X/></button></header>
 
+      <section className="player-level-card" aria-label={`المستوى ${level}`}>
+        <div className="player-level-badge"><Crown/><strong>{level}</strong></div>
+        <div className="player-level-copy"><span>{playerTitle(level)}</span><h3>مستوى {level}</h3><div className="player-level-track"><i style={{ width: `${levelProgress}%` }}/></div><small>{xp} XP · باقي {Math.max(0, 300 - (xp - levelFloor))} XP للمستوى الجاي</small></div>
+      </section>
+
       <div className="player-stat-grid" aria-label="ملخص مكتبة اللاعب">
         <article><Library/><div><small>مكتبة قدّها</small><b>{games.length}</b><span>لعبة جاهزة</span></div></article>
         <article><Heart/><div><small>المفضلة</small><b>{favoriteGames.length}</b><span>اختيارات محفوظة</span></div></article>
         <article><BarChart3/><div><small>استكشافك</small><b>{uniqueRecent}</b><span>ألعاب مختلفة</span></div></article>
       </div>
+
+      <section className={`weekly-mission ${weeklyProgress >= weeklyGoal ? 'complete' : ''}`}>
+        <div><Target/><span><small>مهمة الأسبوع</small><b>نشّط 4 ألعاب مختلفة هذا الأسبوع</b></span><strong>{weeklyProgress}/{weeklyGoal}</strong></div>
+        <div className="weekly-mission-track"><i style={{ width: `${Math.round((weeklyProgress / weeklyGoal) * 100)}%` }}/></div>
+        <p>{weeklyProgress >= weeklyGoal ? 'ممتاز، أنهيت مهمة الأسبوع.' : `باقي ${weeklyGoal - weeklyProgress} ${weeklyGoal - weeklyProgress === 1 ? 'لعبة' : 'ألعاب'} لإكمال المهمة.`}</p>
+      </section>
 
       <div className="player-engagement-grid">
         <section className={`daily-challenge-card ${dailyDone ? 'done' : ''}`}>
