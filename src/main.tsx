@@ -1,4 +1,4 @@
-import { StrictMode } from 'react';
+import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { AuthProvider } from './contexts/AuthContext.tsx';
@@ -16,8 +16,16 @@ import './quick-play.css';
 import './responsive.css';
 import './home-fix.css';
 
+const WhoAmIPhone = lazy(() => import('./components/party/WhoAmIPrivate.tsx').then(module => ({ default: module.WhoAmIPhone })));
+const params = new URLSearchParams(window.location.search);
+const isWhoHost = params.get('host') === 'who';
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary><AuthProvider><App /></AuthProvider></ErrorBoundary>
+    <ErrorBoundary>
+      {isWhoHost
+        ? <Suspense fallback={<main className="mobile-host" dir="rtl"><section className="host-wait"><h1>نربطك بشاشة اللعبة…</h1></section></main>}><WhoAmIPhone roomId={params.get('room') || ''} token={params.get('token') || ''}/></Suspense>
+        : <AuthProvider><App /></AuthProvider>}
+    </ErrorBoundary>
   </StrictMode>
 );
