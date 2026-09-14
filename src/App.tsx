@@ -28,7 +28,8 @@ const FlashMemoryGame = lazy(() => import('./components/party/ExtraPartyGames').
 const MissingGame = lazy(() => import('./components/party/ExtraPartyGames').then(module => ({ default: module.MissingGame })));
 const SilentActingGame = lazy(() => import('./components/party/ActingPrivate'));
 const ActingPhone = lazy(() => import('./components/party/ActingPrivate').then(module => ({ default: module.ActingPhone })));
-const SecretWordGame = lazy(() => import('./components/party/FinalPartyGames').then(module => ({ default: module.SecretWordGame })));
+const SecretWordGame = lazy(() => import('./components/party/SecretWordPrivate'));
+const SecretWordPhone = lazy(() => import('./components/party/SecretWordPrivate').then(module => ({ default: module.SecretWordPhone })));
 const FamilyHostController = lazy(() => import('./components/party/HostRoom').then(module => ({ default: module.FamilyHostController })));
 const SmartPartySession = lazy(() => import('./components/party/SmartPartySession'));
 const AuthModal = lazy(() => import('./components/party/AuthModal'));
@@ -110,6 +111,7 @@ export default function App() {
   const hostParams=useMemo(()=>new URLSearchParams(window.location.search),[]);
   const returningToSession=isGame&&returnTarget()==='session';
 
+  if(hostParams.get('host')==='secret')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><SecretWordPhone roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
   if(hostParams.get('host')==='acting')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><ActingPhone roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
   if(hostParams.get('host')==='words')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><WordBankPhone roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
   if(hostParams.get('host')==='family')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><FamilyHostController roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
