@@ -15,7 +15,8 @@ const TeamGame = lazy(() => import('./components/party/TeamGame'));
 const LettersGame = lazy(() => import('./components/party/LettersGame'));
 const WhoAmIGame = lazy(() => import('./components/party/WhoAmIGame'));
 const PhotoChallengeGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.PhotoChallengeGame })));
-const WordBankGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.WordBankGame })));
+const WordBankGame = lazy(() => import('./components/party/WordBankPrivate'));
+const WordBankPhone = lazy(() => import('./components/party/WordBankPrivate').then(module => ({ default: module.WordBankPhone })));
 const FastestGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.FastestGame })));
 const CharacterGuessGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.CharacterGuessGame })));
 const RiddlesGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.RiddlesGame })));
@@ -108,6 +109,7 @@ export default function App() {
   const hostParams=useMemo(()=>new URLSearchParams(window.location.search),[]);
   const returningToSession=isGame&&returnTarget()==='session';
 
+  if(hostParams.get('host')==='words')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><WordBankPhone roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
   if(hostParams.get('host')==='family')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><FamilyHostController roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
 
   return <div className="app party-app" dir="rtl"><div className="tv-orientation-hint" role="status"><Cast aria-hidden="true"/><span><b>عرض التلفزيون جاهز</b> لفّ الجوال بالعرض ثم فعّل ملء الشاشة لأفضل نتيجة.</span></div><header className="topbar"><button className="brand" aria-label="قدّها الرئيسية" onClick={()=>{if(screen==='home')window.scrollTo({top:0,behavior:'smooth'});else if(isGame)requestHome();else go('home');}} style={{padding:0,background:'transparent',border:0,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:'12px',minWidth:'190px'}}>
