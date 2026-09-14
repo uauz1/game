@@ -22,3 +22,13 @@
 @media(max-width:430px){.party-app .topbar{margin-inline:10px}.party-app main{padding-inline:12px}.brand{min-width:0!important}.brand>span:last-child>span:last-child{display:none}.category-heading{display:block}.category-heading .selection-count{display:inline-block;margin-top:12px}.category-picker{grid-template-columns:1fr}.category-picker button{display:grid;grid-template-columns:50px 1fr;grid-template-rows:auto auto;text-align:right}.category-picker .category-art{grid-row:1/3}.category-picker b,.category-picker small{align-self:auto;text-align:right}.question-board{gap:16px 9px}.host-controls{grid-template-columns:1fr}.judging{border-right:0;border-top:1px solid var(--line);padding:15px 0 0}.timer-dial{width:105px;height:105px}}
 
 .game-cover-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 49%;transform:scale(1.02);transition:transform .45s ease,filter .45s ease}.lobby-game .game-art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#080b1b18 35%,#080b1bbc 100%);pointer-events:none}.lobby-game:hover .game-cover-image{transform:scale(1.075);filter:saturate(1.08)}.lobby-game .game-number,.lobby-game .game-status,.lobby-game .cover-spark{z-index:3}.lobby-game .game-number{color:#ffffff80}.lobby-game .game-status{background:#17111caa;border-color:#ffd45a55;backdrop-filter:blur(7px)}
+
+/* Cinematic Qaddha majlis hero */
+.arena-illustration.cinematic-arena{height:420px;transform:none;margin:0;border-radius:30px;overflow:hidden;background:#080d22;box-shadow:0 28px 70px #0008,0 0 0 1px #ffd45a30,0 0 60px #5b35d326}
+.cinematic-arena img{display:block;width:100%;height:100%;object-fit:cover;object-position:35% center;transform:scale(1.01);filter:saturate(1.05) contrast(1.03)}
+.cinematic-arena::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,transparent 55%,#090d22b8 100%),linear-gradient(180deg,#ffffff08,transparent 30%,#03061452)}
+.cinematic-sheen{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(circle at 30% 64%,#ffd45a18,transparent 27%);mix-blend-mode:screen}
+@media(min-width:1600px){.arena-illustration.cinematic-arena{height:470px}}
+@media(max-width:1050px){.arena-illustration.cinematic-arena{transform:none;margin:0;height:370px}}
+@media(max-width:760px){.arena-illustration.cinematic-arena{width:100%;height:300px;margin:10px auto 0;border-radius:24px}.cinematic-arena img{object-position:30% center}}
+@media(max-width:450px){.arena-illustration.cinematic-arena{height:230px;border-radius:19px}.cinematic-arena img{object-position:27% center}}
