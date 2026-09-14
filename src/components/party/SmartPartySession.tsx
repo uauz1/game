@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Brain, Cast, Check, Clock3, Gamepad2, Play, QrCode, RotateCcw, Shuffle, Smartphone, Sparkles, Trophy, Users, WandSparkles } from 'lucide-react';
 import { readQaddhaPreferences } from './SiteSettings';
+import { beginSessionGame, clearPendingSessionGame, consumeSessionGameResult } from '../../utils/sessionBridge';
+import { saveSharedTeams } from '../../utils/sharedTeams';
 import { saveTournamentResult } from '../../utils/tournamentHistory';
 
 export type SessionGame = {
@@ -147,6 +149,7 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
   const [variation, setVariation] = useState<number>(saved.variation);
   const [smartCompleted, setSmartCompleted] = useState<string[]>(saved.smartCompleted);
   const [tournament, setTournament] = useState<TournamentState>(saved.tournament);
+  const [importNotice, setImportNotice] = useState('');
 
   const plan = useMemo(() => pickPlan(games, vibe, duration, players, recentIds, variation), [games, vibe, duration, players, recentIds, variation]);
   const completed = mode === 'tournament' ? tournament.completed : smartCompleted;
@@ -170,6 +173,24 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
   }, [mode, generated, players, duration, vibe, variation, smartCompleted, tournament]);
 
   useEffect(() => {
+    const imported = consumeSessionGameResult();
+    if (!imported) return;
+    setStarted(null);
+    if (mode === 'tournament') {
+      const normalized = imported.scoreA === imported.scoreB ? { a: 1, b: 1 } : imported.scoreA > imported.scoreB ? { a: 3, b: 0 } : { a: 0, b: 3 };
+      setTournament(current => ({
+        ...current,
+        scores: { ...current.scores, [imported.gameId]: normalized },
+        completed: current.completed.includes(imported.gameId) ? current.completed : [...current.completed, imported.gameId],
+      }));
+      setImportNotice(`استوردنا نتيجة ${games.find(game => game.id === imported.gameId)?.title || 'اللعبة'} تلقائيًا · الفائز يحصل على 3 نقاط بطولة.`);
+    } else {
+      setSmartCompleted(current => current.includes(imported.gameId) ? current : [...current, imported.gameId]);
+      setImportNotice(`تم تسجيل ${games.find(game => game.id === imported.gameId)?.title || 'اللعبة'} كمكتملة تلقائيًا.`);
+    }
+  }, [games, mode]);
+
+  useEffect(() => {
     if (mode !== 'tournament' || !allDone || historySavedRef.current) return;
     const signature = [tournament.teamA, tournament.teamB, ...plan.map(game => game.id), totalA, totalB].join('|');
     saveTournamentResult({
@@ -186,7 +207,9 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
 
   const build = () => {
     pulse(24);
+    clearPendingSessionGame();
     historySavedRef.current = false;
+    setImportNotice('');
     setGenerated(true);
     setStarted(null);
     setVariation((value: number) => value + 1);
@@ -196,7 +219,9 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
 
   const remix = () => {
     pulse([16, 30, 16]);
+    clearPendingSessionGame();
     historySavedRef.current = false;
+    setImportNotice('');
     setVariation((value: number) => value + 1);
     setStarted(null);
     if (mode === 'tournament') setTournament(current => ({ ...current, scores: {}, completed: [] }));
@@ -226,14 +251,26 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
 
   const resetTournament = () => {
     pulse(18);
+    clearPendingSessionGame();
     historySavedRef.current = false;
+    setImportNotice('');
     setTournament(current => ({ ...current, scores: {}, completed: [] }));
   };
-  const launch = (gameId: string) => { pulse(18); setStarted(gameId); onPlay(gameId); };
+  const launch = (gameId: string) => {
+    pulse(18);
+    setImportNotice('');
+    setStarted(gameId);
+    if (mode === 'tournament') {
+      saveSharedTeams([{ name: tournament.teamA, color: '#45b6ff' }, { name: tournament.teamB, color: '#ff70b5' }]);
+    }
+    beginSessionGame({ gameId, mode, teamA: tournament.teamA, teamB: tournament.teamB });
+    onPlay(gameId);
+  };
+  const leaveSession = () => { clearPendingSessionGame(); onBack(); };
 
   return <section className="smart-session" dir="rtl">
     <div className="session-topline">
-      <button className="quiet session-back" onClick={onBack}><ArrowLeft/> الرئيسية</button>
+      <button className="quiet session-back" onClick={leaveSession}><ArrowLeft/> الرئيسية</button>
       <span className="session-badge"><Sparkles/> مدير جلسة + بطولة</span>
     </div>
 
@@ -271,6 +308,8 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
         {!generated ? <div className="plan-empty"><Shuffle/><h3>خلو الاختيار علينا</h3><p>نرتب البداية والوسط والنهاية، ونبعد قدر الإمكان عن الألعاب اللي لعبتوها مؤخرًا.</p></div> : <>
           <div className="plan-summary"><span><Users/> {players} لاعبين</span><span><Clock3/> قرابة {perGame} دقائق لكل لعبة</span><span><Sparkles/> {vibeLabels[vibe]}</span><span><Check/> {doneCount}/{plan.length} مكتملة</span></div>
 
+          {importNotice && <div role="status" style={{padding:'12px 14px',margin:'10px 0 14px',border:'1px solid #5fc78440',borderRadius:15,background:'#5fc7840c',color:'#a9e1ba',fontSize:12,fontWeight:800}}><Check/> {importNotice}</div>}
+
           {nextGame && <div style={{display:'flex',gap:12,alignItems:'center',justifyContent:'space-between',padding:'14px 16px',margin:'10px 0 16px',border:'1px solid #d7a93b44',borderRadius:18,background:'#d7a93b0b'}}><div><small style={{color:'#b99a55'}}>اقتراح قدّها للجولة التالية</small><strong style={{display:'block',marginTop:3}}>{nextGame.title}</strong></div><button className="primary" onClick={()=>launch(nextGame.id)}><Play/> ابدأ التالي</button></div>}
 
           {mode==='tournament' && <div style={{display:'grid',gridTemplateColumns:'1fr auto 1fr',gap:12,alignItems:'center',padding:'18px',margin:'12px 0 16px',border:'1px solid #d7a93b55',borderRadius:20,background:'linear-gradient(135deg,#111,#17120a)'}}><div style={{textAlign:'center'}}><small style={{color:'#b99a55'}}>الفريق</small><strong style={{display:'block',fontSize:18}}>{tournament.teamA}</strong><b style={{display:'block',fontSize:34,color:'#e7bc4f'}}>{totalA}</b></div><Trophy style={{color:'#e7bc4f'}}/><div style={{textAlign:'center'}}><small style={{color:'#b99a55'}}>الفريق</small><strong style={{display:'block',fontSize:18}}>{tournament.teamB}</strong><b style={{display:'block',fontSize:34,color:'#e7bc4f'}}>{totalB}</b></div>{allDone&&<div style={{gridColumn:'1 / -1',textAlign:'center',paddingTop:10,borderTop:'1px solid #d7a93b33'}}><span style={{color:'#b99a55'}}>النتيجة النهائية · محفوظة في سجل البطولات</span><h3 style={{margin:'4px 0 0'}}>{leader==='تعادل'?'تعادل قوي 👏':`🏆 ${leader} بطل الجلسة`}</h3></div>}</div>}
@@ -289,7 +328,7 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
     <div className="session-tech-row">
       <article><Cast/><div><b>وضع التلفزيون جاهز</b><span>واجهة الشاشة الكبيرة موجودة أصلًا ونستخدمها هنا بدل تكرارها.</span></div><Check/></article>
       <article><QrCode/><div><b>دخول QR</b><span>متوفر حاليًا في تجربة المقدم، وبيكون أساس ربط الجلسات الجماعية.</span></div><Check/></article>
-      <article><Smartphone/><div><b>الجوال كمقدم</b><span>التحكم الحي موجود في تحدي العائلة ومهيأ للتوسعة لباقي الألعاب.</span></div><Check/></article>
+      <article><Smartphone/><div><b>رجوع ذكي للبطولة</b><span>اللعبة التي تبدأ من مدير الجلسة ترجعك له، والنتائج المدعومة تدخل تلقائيًا.</span></div><Check/></article>
       <article><Trophy/><div><b>سجل البطولات</b><span>نتيجة كل بطولة مكتملة تُحفظ محليًا تلقائيًا للرجوع لها من ملف اللاعب.</span></div><Check/></article>
     </div>
   </section>;
