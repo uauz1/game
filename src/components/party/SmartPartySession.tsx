@@ -23,7 +23,9 @@ type TournamentState = {
   completed: string[];
 };
 
-const STORAGE_KEY = 'qaddha.smart-session.v2';
+const STORAGE_KEY = 'qaddha.smart-session.v3';
+const LEGACY_STORAGE_KEY = 'qaddha.smart-session.v2';
+const PLAYER_KEY = 'qaddha.player.v1';
 
 const vibeLabels: Record<Vibe, string> = {
   balanced: 'متوازنة',
@@ -33,20 +35,46 @@ const vibeLabels: Record<Vibe, string> = {
 };
 
 const preferredByVibe: Record<Vibe, string[]> = {
-  balanced: ['teams', 'letters', 'family', 'connection', 'photo', 'fast', 'riddles', 'who', 'character', 'words'],
-  fast: ['fast', 'letters', 'photo', 'connection', 'teams', 'family', 'riddles', 'character', 'who', 'words'],
-  brain: ['connection', 'riddles', 'who', 'character', 'letters', 'teams', 'family', 'words', 'photo', 'fast'],
-  family: ['family', 'teams', 'photo', 'riddles', 'connection', 'letters', 'who', 'character', 'words', 'fast'],
+  balanced: ['teams', 'letters', 'family', 'connection', 'photo', 'fast', 'riddles', 'who', 'character', 'words', 'auction', 'order', 'memory', 'missing', 'acting', 'secret'],
+  fast: ['fast', 'letters', 'photo', 'memory', 'missing', 'connection', 'teams', 'family', 'order', 'riddles', 'character', 'who', 'words', 'auction', 'acting', 'secret'],
+  brain: ['connection', 'riddles', 'who', 'character', 'letters', 'order', 'memory', 'teams', 'family', 'words', 'photo', 'missing', 'auction', 'fast', 'secret', 'acting'],
+  family: ['family', 'teams', 'photo', 'riddles', 'connection', 'letters', 'acting', 'secret', 'who', 'character', 'words', 'order', 'memory', 'missing', 'auction', 'fast'],
 };
 
-function pickPlan(games: SessionGame[], vibe: Vibe, duration: number, players: number) {
+function hashId(value: string) {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) hash = ((hash << 5) - hash + value.charCodeAt(index)) | 0;
+  return Math.abs(hash);
+}
+
+function readRecentGameIds() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PLAYER_KEY) || '{}');
+    if (!Array.isArray(raw.recent)) return [] as string[];
+    return raw.recent
+      .filter((item: unknown): item is { gameId: string } => Boolean(item && typeof item === 'object' && typeof (item as { gameId?: unknown }).gameId === 'string'))
+      .map((item: { gameId: string }) => item.gameId)
+      .slice(0, 8);
+  } catch {
+    return [] as string[];
+  }
+}
+
+function pickPlan(games: SessionGame[], vibe: Vibe, duration: number, players: number, recentIds: string[], variation: number) {
   const gameCount = duration <= 30 ? 3 : duration <= 50 ? 4 : duration <= 75 ? 5 : 6;
   const order = preferredByVibe[vibe];
   const sorted = [...games].sort((a, b) => {
-    const ai = order.indexOf(a.id);
-    const bi = order.indexOf(b.id);
-    return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+    const score = (game: SessionGame) => {
+      const preferredIndex = order.indexOf(game.id);
+      const base = (preferredIndex < 0 ? order.length : preferredIndex) * 3;
+      const recentIndex = recentIds.indexOf(game.id);
+      const recentPenalty = recentIndex < 0 ? 0 : Math.max(10, 38 - recentIndex * 4);
+      const shuffleOffset = hashId(`${game.id}-${variation}`) % 18;
+      return base + recentPenalty + shuffleOffset;
+    };
+    return score(a) - score(b);
   });
+
   const plan = sorted.slice(0, Math.min(gameCount, sorted.length));
   if (players >= 10) {
     const teams = plan.findIndex(game => game.id === 'teams');
@@ -57,13 +85,16 @@ function pickPlan(games: SessionGame[], vibe: Vibe, duration: number, players: n
 
 function readSaved() {
   try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const source = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY) || '{}';
+    const raw = JSON.parse(source);
     return {
       mode: raw.mode === 'tournament' ? 'tournament' as Mode : 'smart' as Mode,
       generated: Boolean(raw.generated),
       players: typeof raw.players === 'number' ? raw.players : 8,
       duration: [30,45,60,90].includes(raw.duration) ? raw.duration : 45,
       vibe: (['balanced','fast','brain','family'] as Vibe[]).includes(raw.vibe) ? raw.vibe as Vibe : 'balanced' as Vibe,
+      variation: typeof raw.variation === 'number' ? raw.variation : 0,
+      smartCompleted: Array.isArray(raw.smartCompleted) ? raw.smartCompleted.filter((id: unknown): id is string => typeof id === 'string') : [],
       tournament: {
         teamA: typeof raw.tournament?.teamA === 'string' ? raw.tournament.teamA : 'الفريق الأول',
         teamB: typeof raw.tournament?.teamB === 'string' ? raw.tournament.teamB : 'الفريق الثاني',
@@ -72,37 +103,52 @@ function readSaved() {
       } as TournamentState,
     };
   } catch {
-    return { mode:'smart' as Mode, generated:false, players:8, duration:45, vibe:'balanced' as Vibe, tournament:{ teamA:'الفريق الأول', teamB:'الفريق الثاني', scores:{}, completed:[] } as TournamentState };
+    return { mode:'smart' as Mode, generated:false, players:8, duration:45, vibe:'balanced' as Vibe, variation:0, smartCompleted:[] as string[], tournament:{ teamA:'الفريق الأول', teamB:'الفريق الثاني', scores:{}, completed:[] } as TournamentState };
   }
 }
 
 export default function SmartPartySession({ games, onBack, onPlay }: Props) {
   const saved = useMemo(readSaved, []);
+  const recentIds = useMemo(readRecentGameIds, []);
   const [players, setPlayers] = useState(saved.players);
   const [duration, setDuration] = useState(saved.duration);
   const [vibe, setVibe] = useState<Vibe>(saved.vibe);
   const [mode, setMode] = useState<Mode>(saved.mode);
   const [generated, setGenerated] = useState(saved.generated);
   const [started, setStarted] = useState<string | null>(null);
+  const [variation, setVariation] = useState(saved.variation);
+  const [smartCompleted, setSmartCompleted] = useState<string[]>(saved.smartCompleted);
   const [tournament, setTournament] = useState<TournamentState>(saved.tournament);
 
-  const plan = useMemo(() => pickPlan(games, vibe, duration, players), [games, vibe, duration, players]);
+  const plan = useMemo(() => pickPlan(games, vibe, duration, players, recentIds, variation), [games, vibe, duration, players, recentIds, variation]);
+  const completed = mode === 'tournament' ? tournament.completed : smartCompleted;
   const perGame = Math.max(7, Math.floor(duration / Math.max(plan.length, 1)));
   const totalA = plan.reduce((sum, game) => sum + (tournament.scores[game.id]?.a || 0), 0);
   const totalB = plan.reduce((sum, game) => sum + (tournament.scores[game.id]?.b || 0), 0);
-  const allDone = generated && plan.length > 0 && plan.every(game => tournament.completed.includes(game.id));
+  const doneCount = plan.filter(game => completed.includes(game.id)).length;
+  const allDone = generated && plan.length > 0 && doneCount === plan.length;
+  const nextGame = plan.find(game => !completed.includes(game.id));
   const leader = totalA === totalB ? 'تعادل' : totalA > totalB ? tournament.teamA : tournament.teamB;
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ mode, generated, players, duration, vibe, tournament }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ mode, generated, players, duration, vibe, variation, smartCompleted, tournament }));
     } catch {/* Session persistence is optional. */}
-  }, [mode, generated, players, duration, vibe, tournament]);
+  }, [mode, generated, players, duration, vibe, variation, smartCompleted, tournament]);
 
   const build = () => {
     setGenerated(true);
     setStarted(null);
+    setVariation(value => value + 1);
     if (mode === 'tournament') setTournament(current => ({ ...current, scores: {}, completed: [] }));
+    else setSmartCompleted([]);
+  };
+
+  const remix = () => {
+    setVariation(value => value + 1);
+    setStarted(null);
+    if (mode === 'tournament') setTournament(current => ({ ...current, scores: {}, completed: [] }));
+    else setSmartCompleted([]);
   };
 
   const score = (gameId: string, side: 'a'|'b', delta: number) => {
@@ -114,13 +160,18 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
   };
 
   const toggleComplete = (gameId: string) => {
-    setTournament(current => ({
-      ...current,
-      completed: current.completed.includes(gameId) ? current.completed.filter(id => id !== gameId) : [...current.completed, gameId],
-    }));
+    if (mode === 'tournament') {
+      setTournament(current => ({
+        ...current,
+        completed: current.completed.includes(gameId) ? current.completed.filter(id => id !== gameId) : [...current.completed, gameId],
+      }));
+      return;
+    }
+    setSmartCompleted(current => current.includes(gameId) ? current.filter(id => id !== gameId) : [...current, gameId]);
   };
 
   const resetTournament = () => setTournament(current => ({ ...current, scores: {}, completed: [] }));
+  const launch = (gameId: string) => { setStarted(gameId); onPlay(gameId); };
 
   return <section className="smart-session" dir="rtl">
     <div className="session-topline">
@@ -132,7 +183,7 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
       <div>
         <span className="eyebrow"><WandSparkles/> مدير الجلسة الذكي</span>
         <h1>قول لنا جمعتكم.<br/><em>ونرتب اللعب عليكم.</em></h1>
-        <p>اختار جلسة سريعة أو بطولة كاملة. قدّها يرتب الألعاب، يحفظ التقدم، ويجمع النقاط حتى لو خرجت ورجعت.</p>
+        <p>اختار جلسة سريعة أو بطولة كاملة. قدّها ينوّع الألعاب حسب جوكم، يتجنب آخر ما لعبتموه، ويحفظ التقدم إذا خرجت ورجعت.</p>
       </div>
       <div className="session-orb" aria-hidden="true"><Brain/><span>AI<br/>GM</span></div>
     </div>
@@ -152,21 +203,26 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
         <div className="session-field"><span><Gamepad2/> نوع الجلسة</span><div className="vibe-options">{(Object.keys(vibeLabels) as Vibe[]).map(value => <button key={value} className={vibe === value ? 'active' : ''} onClick={() => setVibe(value)}>{vibeLabels[value]}</button>)}</div></div>
 
         <button className="primary session-build" onClick={build}><WandSparkles/> {mode==='tournament'?'أنشئ البطولة':'رتّب جلستنا'}</button>
+        {generated && <button className="quiet" onClick={remix} style={{width:'100%',justifyContent:'center',marginTop:8}}><Shuffle/> غيّر الخطة</button>}
         {mode==='tournament' && generated && <button className="quiet" onClick={resetTournament} style={{width:'100%',justifyContent:'center',marginTop:8}}><RotateCcw/> تصفير نقاط البطولة</button>}
       </aside>
 
       <div className={`session-plan ${generated ? 'ready' : ''}`}>
         <div className="builder-head"><span>02</span><div><small>{mode==='tournament'?'لوحة البطولة':'الخطة المقترحة'}</small><h2>{generated ? `${plan.length} ألعاب · ${duration} دقيقة` : 'جاهزة أول ما تختارون'}</h2></div></div>
 
-        {!generated ? <div className="plan-empty"><Shuffle/><h3>خلو الاختيار علينا</h3><p>نرتب البداية والوسط والنهاية عشان الجلسة ما تهدأ ولا تصير كلها نفس النوع.</p></div> : <>
-          <div className="plan-summary"><span><Users/> {players} لاعبين</span><span><Clock3/> قرابة {perGame} دقائق لكل لعبة</span><span><Sparkles/> {vibeLabels[vibe]}</span></div>
+        {!generated ? <div className="plan-empty"><Shuffle/><h3>خلو الاختيار علينا</h3><p>نرتب البداية والوسط والنهاية، ونبعد قدر الإمكان عن الألعاب اللي لعبتوها مؤخرًا.</p></div> : <>
+          <div className="plan-summary"><span><Users/> {players} لاعبين</span><span><Clock3/> قرابة {perGame} دقائق لكل لعبة</span><span><Sparkles/> {vibeLabels[vibe]}</span><span><Check/> {doneCount}/{plan.length} مكتملة</span></div>
+
+          {nextGame && <div style={{display:'flex',gap:12,alignItems:'center',justifyContent:'space-between',padding:'14px 16px',margin:'10px 0 16px',border:'1px solid #d7a93b44',borderRadius:18,background:'#d7a93b0b'}}><div><small style={{color:'#b99a55'}}>اقتراح قدّها للجولة التالية</small><strong style={{display:'block',marginTop:3}}>{nextGame.title}</strong></div><button className="primary" onClick={()=>launch(nextGame.id)}><Play/> ابدأ التالي</button></div>}
 
           {mode==='tournament' && <div style={{display:'grid',gridTemplateColumns:'1fr auto 1fr',gap:12,alignItems:'center',padding:'18px',margin:'12px 0 16px',border:'1px solid #d7a93b55',borderRadius:20,background:'linear-gradient(135deg,#111,#17120a)'}}><div style={{textAlign:'center'}}><small style={{color:'#b99a55'}}>الفريق</small><strong style={{display:'block',fontSize:18}}>{tournament.teamA}</strong><b style={{display:'block',fontSize:34,color:'#e7bc4f'}}>{totalA}</b></div><Trophy style={{color:'#e7bc4f'}}/><div style={{textAlign:'center'}}><small style={{color:'#b99a55'}}>الفريق</small><strong style={{display:'block',fontSize:18}}>{tournament.teamB}</strong><b style={{display:'block',fontSize:34,color:'#e7bc4f'}}>{totalB}</b></div>{allDone&&<div style={{gridColumn:'1 / -1',textAlign:'center',paddingTop:10,borderTop:'1px solid #d7a93b33'}}><span style={{color:'#b99a55'}}>النتيجة النهائية</span><h3 style={{margin:'4px 0 0'}}>{leader==='تعادل'?'تعادل قوي 👏':`🏆 ${leader} بطل الجلسة`}</h3></div>}</div>}
 
+          {mode==='smart' && allDone && <div style={{textAlign:'center',padding:'18px',margin:'12px 0 16px',border:'1px solid #d7a93b55',borderRadius:20,background:'linear-gradient(135deg,#111,#17120a)'}}><Trophy style={{color:'#e7bc4f'}}/><h3 style={{margin:'8px 0 4px'}}>خلصتوا الجلسة كاملة 👏</h3><p style={{margin:0,color:'#b9b3a7'}}>تبون جولة ثانية؟ اضغطوا «غيّر الخطة» ونجيب لكم تشكيلة مختلفة.</p></div>}
+
           <div className="plan-list">{plan.map((game, index) => {
             const gameScore=tournament.scores[game.id]||{a:0,b:0};
-            const done=tournament.completed.includes(game.id);
-            return <article key={game.id} className={`${started === game.id ? 'active' : ''} ${done?'completed':''}`}><span className="plan-number">{done?'✓':String(index + 1).padStart(2, '0')}</span><div><small>{index === 0 ? 'افتتاحية' : index === plan.length - 1 ? 'الختام' : 'الجولة التالية'}</small><h3>{game.title}</h3><p>{game.tag}</p>{mode==='tournament'&&<div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:10}}><button className="quiet" onClick={()=>score(game.id,'a',1)}>+ {tournament.teamA} <b>{gameScore.a}</b></button><button className="quiet" onClick={()=>score(game.id,'b',1)}>+ {tournament.teamB} <b>{gameScore.b}</b></button><button className="quiet" onClick={()=>toggleComplete(game.id)}>{done?'إلغاء الإكمال':'تمت الجولة'}</button></div>}</div><button onClick={() => { setStarted(game.id); onPlay(game.id); }}><Play/> ابدأ</button></article>;
+            const done=completed.includes(game.id);
+            return <article key={game.id} className={`${started === game.id ? 'active' : ''} ${done?'completed':''}`}><span className="plan-number">{done?'✓':String(index + 1).padStart(2, '0')}</span><div><small>{index === 0 ? 'افتتاحية' : index === plan.length - 1 ? 'الختام' : 'الجولة التالية'}</small><h3>{game.title}</h3><p>{game.tag}</p><div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:10}}>{mode==='tournament'&&<><button className="quiet" onClick={()=>score(game.id,'a',1)}>+ {tournament.teamA} <b>{gameScore.a}</b></button><button className="quiet" onClick={()=>score(game.id,'b',1)}>+ {tournament.teamB} <b>{gameScore.b}</b></button></>}<button className="quiet" onClick={()=>toggleComplete(game.id)}>{done?'إلغاء الإكمال':'تمت الجولة'}</button></div></div><button onClick={() => launch(game.id)}><Play/> ابدأ</button></article>;
           })}</div>
         </>}
       </div>
@@ -176,7 +232,7 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
       <article><Cast/><div><b>وضع التلفزيون جاهز</b><span>واجهة الشاشة الكبيرة موجودة أصلًا ونستخدمها هنا بدل تكرارها.</span></div><Check/></article>
       <article><QrCode/><div><b>دخول QR</b><span>متوفر حاليًا في تجربة المقدم، وبيكون أساس ربط الجلسات الجماعية.</span></div><Check/></article>
       <article><Smartphone/><div><b>الجوال كمقدم</b><span>التحكم الحي موجود في تحدي العائلة ومهيأ للتوسعة لباقي الألعاب.</span></div><Check/></article>
-      <article><Trophy/><div><b>بطولة محفوظة</b><span>نقاط الفرق وتقدم الجولات تبقى محفوظة على نفس الجهاز حتى ترجع تكمل.</span></div><Check/></article>
+      <article><Trophy/><div><b>خطة تتعلم من لعبكم</b><span>تتجنب آخر الألعاب قدر الإمكان، تحفظ التقدم، وتقترح الجولة التالية مباشرة.</span></div><Check/></article>
     </div>
   </section>;
 }
