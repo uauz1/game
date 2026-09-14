@@ -142,7 +142,7 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
   const [mode, setMode] = useState<Mode>(saved.mode);
   const [generated, setGenerated] = useState(saved.generated);
   const [started, setStarted] = useState<string | null>(null);
-  const [variation, setVariation] = useState(saved.variation);
+  const [variation, setVariation] = useState<number>(saved.variation);
   const [smartCompleted, setSmartCompleted] = useState<string[]>(saved.smartCompleted);
   const [tournament, setTournament] = useState<TournamentState>(saved.tournament);
 
@@ -171,14 +171,14 @@ export default function SmartPartySession({ games, onBack, onPlay }: Props) {
     pulse(24);
     setGenerated(true);
     setStarted(null);
-    setVariation(value => value + 1);
+    setVariation((value: number) => value + 1);
     if (mode === 'tournament') setTournament(current => ({ ...current, scores: {}, completed: [] }));
     else setSmartCompleted([]);
   };
 
   const remix = () => {
     pulse([16, 30, 16]);
-    setVariation(value => value + 1);
+    setVariation((value: number) => value + 1);
     setStarted(null);
     if (mode === 'tournament') setTournament(current => ({ ...current, scores: {}, completed: [] }));
     else setSmartCompleted([]);
