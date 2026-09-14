@@ -153,7 +153,7 @@ export function WordBankPhone({ roomId, token }: { roomId: string; token: string
   const connectionRef = useRef<DataConnection | null>(null);
   useEffect(() => {
     if (!isValidRoomId(roomId, 'words') || !isValidRoomToken(token)) { setStatus('error'); return; }
-    const peer = new Peer(undefined, peerOptions); let stopped = false; let retryTimer = 0;
+    const peer = new Peer(peerOptions); let stopped = false; let retryTimer = 0;
     const connect = () => {
       if (stopped || peer.destroyed) return; setStatus('connecting');
       const connection = peer.connect(roomId, { reliable: true, serialization: 'json', metadata: { token, game: 'words' } });
