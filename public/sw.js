@@ -1,5 +1,6 @@
-const CACHE_NAME = 'qaddha-v3';
-const ASSETS = ['/', '/index.html', '/manifest.webmanifest'];
+const CACHE_NAME = 'qaddha-v4';
+const BASE = new URL('./', self.location.href).pathname;
+const ASSETS = [BASE, `${BASE}index.html`, `${BASE}manifest.webmanifest`];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -25,26 +26,23 @@ self.addEventListener('fetch', (event) => {
       fetch(event.request)
         .then((response) => {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy));
+          caches.open(CACHE_NAME).then((cache) => cache.put(`${BASE}index.html`, copy));
           return response;
         })
-        .catch(async () => (await caches.match('/index.html')) || Response.error())
+        .catch(async () => (await caches.match(`${BASE}index.html`)) || Response.error())
     );
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const updated = fetch(event.request)
-        .then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          }
-          return response;
-        })
-        .catch(() => cached || Response.error());
-      return cached || updated;
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
+        return response;
+      })
+      .catch(async () => (await caches.match(event.request)) || Response.error())
   );
 });
