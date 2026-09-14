@@ -10,6 +10,17 @@ export type TournamentHistoryEntry = {
   signature: string;
 };
 
+export type TournamentTeamStanding = {
+  team: string;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  pointsFor: number;
+  pointsAgainst: number;
+  differential: number;
+};
+
 const HISTORY_KEY = 'qaddha.tournament-history.v1';
 const MAX_HISTORY = 20;
 
@@ -36,6 +47,44 @@ export function readTournamentHistory(): TournamentHistoryEntry[] {
   } catch {
     return [];
   }
+}
+
+export function getTournamentStandings(history = readTournamentHistory()): TournamentTeamStanding[] {
+  const table = new Map<string, TournamentTeamStanding>();
+  const touch = (team: string) => {
+    const clean = team.trim() || 'فريق بدون اسم';
+    const existing = table.get(clean);
+    if (existing) return existing;
+    const created: TournamentTeamStanding = { team: clean, played: 0, wins: 0, draws: 0, losses: 0, pointsFor: 0, pointsAgainst: 0, differential: 0 };
+    table.set(clean, created);
+    return created;
+  };
+
+  history.forEach((item) => {
+    const a = touch(item.teamA);
+    const b = touch(item.teamB);
+    a.played += 1;
+    b.played += 1;
+    a.pointsFor += item.scoreA;
+    a.pointsAgainst += item.scoreB;
+    b.pointsFor += item.scoreB;
+    b.pointsAgainst += item.scoreA;
+
+    if (item.scoreA === item.scoreB || item.winner === 'تعادل') {
+      a.draws += 1;
+      b.draws += 1;
+    } else if (item.scoreA > item.scoreB) {
+      a.wins += 1;
+      b.losses += 1;
+    } else {
+      b.wins += 1;
+      a.losses += 1;
+    }
+  });
+
+  return [...table.values()]
+    .map((team) => ({ ...team, differential: team.pointsFor - team.pointsAgainst }))
+    .sort((a, b) => b.wins - a.wins || b.differential - a.differential || b.pointsFor - a.pointsFor || a.team.localeCompare(b.team, 'ar'));
 }
 
 export function saveTournamentResult(input: Omit<TournamentHistoryEntry, 'id' | 'finishedAt'>) {
