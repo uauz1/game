@@ -4,13 +4,18 @@
   "description": "ألعاب جماعية عربية للتحدي والضحك والمنافسة",
   "lang": "ar",
   "dir": "rtl",
-  "start_url": "/",
+  "id": ".",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#0B1020",
   "theme_color": "#0B1020",
+  "categories": ["games", "entertainment"],
   "icons": [
     {
-      "src": "/qaddha-icon.svg",
+      "src": "qaddha-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
