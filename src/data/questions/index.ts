@@ -10,10 +10,11 @@ import { saudiQuestions, worldQuestions, trueFalseQuestions } from './saudi_worl
 import { extraQuestions } from './extra';
 import { themedQuestions } from './themed';
 import { vaultQuestions } from './vault';
+import { vaultExpansionQuestions } from './vault_expansion';
 
 const extrasFor = (category: string) => extraQuestions.filter((q) => q.category === category);
 const themedFor = (category: string) => themedQuestions.filter((q) => q.category === category);
-const vaultFor = (category: string) => vaultQuestions.filter((q) => q.category === category);
+const vaultFor = (category: string) => [...vaultQuestions, ...vaultExpansionQuestions].filter((q) => q.category === category);
 const trueFalsePool = [...trueFalseQuestions, ...extraQuestions.filter((q) => q.type === 'truefalse')];
 
 export const ALL_QUESTIONS: Question[] = [
@@ -36,6 +37,7 @@ export const ALL_QUESTIONS: Question[] = [
   ...extraQuestions,
   ...themedQuestions,
   ...vaultQuestions,
+  ...vaultExpansionQuestions,
 ];
 
 const withVault = (category: string, base: Question[]) => [...base, ...extrasFor(category), ...vaultFor(category)];
