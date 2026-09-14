@@ -195,6 +195,7 @@ export default function SiteSettings({ open, onClose }: { open: boolean; onClose
 
   const resetSession = () => {
     try {
+      localStorage.removeItem('qaddha.smart-session.v3');
       localStorage.removeItem('qaddha.smart-session.v2');
       localStorage.removeItem('qaddha.last-game');
       setNotice('تم مسح الجلسة والبطولة المحفوظة');
