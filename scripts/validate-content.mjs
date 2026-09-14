@@ -2,12 +2,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 
+const moduleCache = new Map();
 function loadDataFile(relativePath) {
   const filePath = path.resolve(relativePath);
+  if (moduleCache.has(filePath)) return moduleCache.get(filePath).exports;
   const source = fs.readFileSync(filePath, 'utf8');
   const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const module = { exports: {} };
-  Function('module', 'exports', output)(module, module.exports);
+  moduleCache.set(filePath, module);
+  const localRequire = (specifier) => {
+    if (!specifier.startsWith('.')) throw new Error(`Unsupported validator import: ${specifier}`);
+    const target = path.resolve(path.dirname(filePath), specifier.endsWith('.ts') ? specifier : `${specifier}.ts`);
+    return loadDataFile(target);
+  };
+  Function('module', 'exports', 'require', output)(module, module.exports, localRequire);
   return module.exports;
 }
 
