@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "validate:content": "node scripts/validate-content.mjs && node scripts/validate-question-bank.mjs"
+    "validate:content": "node scripts/validate-content.mjs && node scripts/validate-question-bank.mjs && node scripts/simulate-question-bank.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
