@@ -62,9 +62,6 @@ for (const file of files) {
       if (!text) errors.push(`${label}: missing question text`);
       const promptKey = normalizeArabic(text);
       if (promptKey) {
-        // Legacy banks contain a few equivalent prompts across categories. The
-        // runtime selector now removes them semantically, so keep CI informative
-        // without blocking deployment while the old bank is cleaned gradually.
         if (prompts.has(promptKey)) warnings.push(`${label}: duplicate prompt (also ${prompts.get(promptKey)})`);
         else prompts.set(promptKey, label);
       }
@@ -77,10 +74,15 @@ for (const file of files) {
 
       if (!Array.isArray(choices) || choices.length < 2) errors.push(`${label}: insufficient choices`);
       else {
-        const normalizedChoices = choices.map(normalizeArabic);
+        // Legacy true/false rows reserve slots 3 and 4 as empty placeholders.
+        // Validate only meaningful choices so those placeholders are not treated
+        // as duplicated answers.
+        const meaningfulChoices = choices.filter(choice => String(choice).trim().length > 0);
+        const normalizedChoices = meaningfulChoices.map(normalizeArabic);
         if (new Set(normalizedChoices).size !== normalizedChoices.length) errors.push(`${label}: duplicate choices`);
-        if (!Number.isInteger(question.correctAnswer) || question.correctAnswer < 0 || question.correctAnswer >= choices.length) {
-          errors.push(`${label}: correctAnswer is out of range`);
+        if (question.type === 'truefalse' && meaningfulChoices.length !== 2) errors.push(`${label}: true/false questions must have exactly two meaningful choices`);
+        if (!Number.isInteger(question.correctAnswer) || question.correctAnswer < 0 || question.correctAnswer >= choices.length || !String(choices[question.correctAnswer] ?? '').trim()) {
+          errors.push(`${label}: correctAnswer is out of range or points to an empty choice`);
         }
       }
     });
