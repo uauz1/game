@@ -11,6 +11,7 @@ import './settings.css';
 import './settings-enhanced.css';
 import './player-progress.css';
 import './team-standings.css';
+import './quick-play.css';
 import './responsive.css';
 import './home-fix.css';
 
