@@ -81,8 +81,30 @@ export const QUESTIONS_BY_CATEGORY: Record<string, Question[]> = {
 };
 
 const HISTORY_KEY = 'qaddha_question_history_v3';
-const MAX_HISTORY = 3000;
+const SITE_PREFS_KEY = 'qaddha_site_prefs_v1';
 type HistoryEntry = { id: string; category: string; at: number };
+type QuestionEnginePrefs = {
+  intensity: 'balanced' | 'competitive' | 'hardcore';
+  repeatProtection: 'standard' | 'strict' | 'maximum';
+};
+
+function readEnginePrefs(): QuestionEnginePrefs {
+  try {
+    const value = JSON.parse(localStorage.getItem(SITE_PREFS_KEY) || '{}');
+    const intensity = value.questionIntensity === 'balanced' || value.questionIntensity === 'hardcore' ? value.questionIntensity : 'competitive';
+    const repeatProtection = value.repeatProtection === 'standard' || value.repeatProtection === 'maximum' ? value.repeatProtection : 'strict';
+    return { intensity, repeatProtection };
+  } catch {
+    return { intensity: 'competitive', repeatProtection: 'strict' };
+  }
+}
+
+function historyLimit() {
+  const protection = readEnginePrefs().repeatProtection;
+  if (protection === 'maximum') return 6000;
+  if (protection === 'standard') return 1600;
+  return 3000;
+}
 
 function normalizeArabic(value: string) {
   return value
@@ -111,7 +133,7 @@ function readHistory(): HistoryEntry[] {
 
 function persistHistory(history: HistoryEntry[]) {
   try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-MAX_HISTORY)));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-historyLimit())));
   } catch {
     // Storage is optional; the selector still works for the active session.
   }
@@ -138,17 +160,24 @@ function semanticDedupe(pool: Question[]) {
   });
 }
 
+function mixedDifficultyRatios() {
+  const intensity = readEnginePrefs().intensity;
+  if (intensity === 'balanced') return { medium: 0.62, hard: 0.38 };
+  if (intensity === 'hardcore') return { medium: 0.28, hard: 0.72 };
+  return { medium: 0.46, hard: 0.54 };
+}
+
 function weightedDifficultyPool(pool: Question[], difficulty: Difficulty, targetCount: number) {
   if (difficulty !== 'mixed') {
     const exact = pool.filter((q) => q.difficulty === difficulty);
     return exact.length >= Math.min(targetCount, pool.length) ? exact : pool;
   }
 
-  // Competitive default: easy questions are used only if medium/hard inventory runs short.
   const medium = shuffle(pool.filter((q) => q.difficulty === 'medium'));
   const hard = shuffle(pool.filter((q) => q.difficulty === 'hard'));
   const easy = shuffle(pool.filter((q) => q.difficulty === 'easy'));
-  const desiredMedium = Math.ceil(targetCount * 0.46);
+  const ratios = mixedDifficultyRatios();
+  const desiredMedium = Math.ceil(targetCount * ratios.medium);
   const desiredHard = Math.max(0, targetCount - desiredMedium);
   const chosen = [...medium.slice(0, desiredMedium), ...hard.slice(0, desiredHard)];
   const chosenIds = new Set(chosen.map((q) => q.id));
@@ -198,10 +227,12 @@ function paceSession(questions: Question[], difficulty: Difficulty) {
   let mi = 0;
   let hi = 0;
   let ei = 0;
+  const intensity = readEnginePrefs().intensity;
 
   for (let i = 0; i < questions.length; i += 1) {
     const progress = questions.length <= 1 ? 1 : i / (questions.length - 1);
-    const preferHard = progress > 0.35 && (i % 2 === 1 || progress > 0.72);
+    const hardThreshold = intensity === 'hardcore' ? 0.15 : intensity === 'balanced' ? 0.5 : 0.35;
+    const preferHard = progress > hardThreshold && (i % 2 === 1 || progress > (intensity === 'hardcore' ? 0.45 : 0.72));
     if (preferHard && hi < hard.length) paced.push(hard[hi++]);
     else if (mi < medium.length) paced.push(medium[mi++]);
     else if (hi < hard.length) paced.push(hard[hi++]);
