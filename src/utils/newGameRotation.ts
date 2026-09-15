@@ -1,18 +1,40 @@
-const STORAGE_KEY = 'qaddha.new-games.used.v2';
+const STORAGE_KEY = 'qaddha.new-games.used.v1';
+const LEGACY_STORAGE_KEY = 'qaddha.new-games.used.v2';
+const MIGRATION_KEY = 'qaddha.new-games.used.migrated-v2';
 const SITE_PREFS_KEY = 'qaddha_site_prefs_v1';
 const MAX_HISTORY_PER_GAME = 1200;
 
 type UsedMap = Record<string, string[]>;
 type RepeatProtection = 'standard' | 'strict' | 'maximum';
 
-function readUsed(): UsedMap {
+function parseUsed(raw: string | null): UsedMap | null {
+  if (!raw) return null;
   try {
-    const value = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
-    if (!value || typeof value !== 'object') return {};
+    const value = JSON.parse(raw);
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
     return value as UsedMap;
   } catch {
-    return {};
+    return null;
   }
+}
+
+function readUsed(): UsedMap {
+  try {
+    const current = parseUsed(localStorage.getItem(STORAGE_KEY));
+    if (current) return current;
+
+    if (localStorage.getItem(MIGRATION_KEY) !== '1') {
+      const legacy = parseUsed(localStorage.getItem(LEGACY_STORAGE_KEY));
+      localStorage.setItem(MIGRATION_KEY, '1');
+      if (legacy) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy));
+        return legacy;
+      }
+    }
+  } catch {
+    // Rotation still works in memory when storage is unavailable.
+  }
+  return {};
 }
 
 function readRepeatProtection(): RepeatProtection {
