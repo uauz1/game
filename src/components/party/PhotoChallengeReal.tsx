@@ -82,7 +82,8 @@ async function fetchWikiImage(title: string): Promise<string> {
     }
   } catch {/* fall through to search */}
 
-  const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(title.replaceAll('_',' '))}&gsrlimit=5&prop=pageimages&piprop=thumbnail|original&pithumbsize=960&format=json&origin=*`;
+  const searchTitle = title.split('_').join(' ');
+  const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(searchTitle)}&gsrlimit=5&prop=pageimages&piprop=thumbnail|original&pithumbsize=960&format=json&origin=*`;
   const searchResponse = await fetch(searchUrl, { headers: { accept: 'application/json' } });
   if (!searchResponse.ok) throw new Error('image lookup failed');
   const searchData = await searchResponse.json() as { query?: { pages?: Record<string,{ thumbnail?:{source?:string}; original?:{source?:string} }> } };
