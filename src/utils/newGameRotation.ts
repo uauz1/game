@@ -1,7 +1,9 @@
 const STORAGE_KEY = 'qaddha.new-games.used.v2';
-const MAX_HISTORY_PER_GAME = 500;
+const SITE_PREFS_KEY = 'qaddha_site_prefs_v1';
+const MAX_HISTORY_PER_GAME = 1200;
 
 type UsedMap = Record<string, string[]>;
+type RepeatProtection = 'standard' | 'strict' | 'maximum';
 
 function readUsed(): UsedMap {
   try {
@@ -11,6 +13,22 @@ function readUsed(): UsedMap {
   } catch {
     return {};
   }
+}
+
+function readRepeatProtection(): RepeatProtection {
+  try {
+    const value = JSON.parse(localStorage.getItem(SITE_PREFS_KEY) ?? '{}') as { repeatProtection?: unknown };
+    if (value.repeatProtection === 'standard' || value.repeatProtection === 'maximum') return value.repeatProtection;
+  } catch {
+    // Fall back to strict protection when preferences are unavailable.
+  }
+  return 'strict';
+}
+
+function protectionWindow(mode: RepeatProtection) {
+  if (mode === 'maximum') return 1200;
+  if (mode === 'standard') return 80;
+  return 350;
 }
 
 function shuffled<T>(items: T[]) {
@@ -32,10 +50,19 @@ function appendHistory(history: string[], ids: string[]) {
   return next.slice(-MAX_HISTORY_PER_GAME);
 }
 
+function bucketShuffle<T>(items: T[], size = 8) {
+  const result: T[] = [];
+  for (let index = 0; index < items.length; index += size) {
+    result.push(...shuffled(items.slice(index, index + size)));
+  }
+  return result;
+}
+
 /**
- * Draws content with a strong preference for never/recently-unseen items.
- * If a pool is nearly exhausted we recycle the least-recently-seen entries
- * instead of resetting the whole history and immediately surfacing repeats.
+ * Draws unique content for the active round and keeps a long-lived history.
+ * Never-seen items are always preferred first. Once a pool is exhausted,
+ * older entries are recycled before anything that appeared recently.
+ * The user's repeat-protection setting controls how large that recent shield is.
  */
 export function drawWithoutRepeats<T>(game: string, pool: T[], count: number, getId: (item: T) => string) {
   const uniquePool = Array.from(new Map(pool.map(item => [getId(item), item])).values());
@@ -44,22 +71,26 @@ export function drawWithoutRepeats<T>(game: string, pool: T[], count: number, ge
   const usedMap = readUsed();
   const validIds = new Set(uniquePool.map(getId));
   const history = (usedMap[game] ?? []).filter(id => validIds.has(id));
-  const used = new Set(history);
-
-  const fresh = shuffled(uniquePool.filter(item => !used.has(getId(item))));
+  const everSeen = new Set(history);
+  const protectedIds = new Set(history.slice(-protectionWindow(readRepeatProtection())));
+  const byId = new Map(uniquePool.map(item => [getId(item), item]));
   const needed = Math.min(count, uniquePool.length);
 
-  // Oldest entries are safest to recycle first. Small random buckets stop the
-  // sequence from becoming predictable while preserving recency protection.
-  const oldestFirst = history
-    .map(id => uniquePool.find(item => getId(item) === id))
-    .filter((item): item is T => Boolean(item));
-  const recycled: T[] = [];
-  for (let i = 0; i < oldestFirst.length; i += 8) {
-    recycled.push(...shuffled(oldestFirst.slice(i, i + 8)));
-  }
+  const neverSeen = shuffled(uniquePool.filter(item => !everSeen.has(getId(item))));
+  const olderSeen = bucketShuffle(
+    history
+      .filter(id => !protectedIds.has(id))
+      .map(id => byId.get(id))
+      .filter((item): item is T => Boolean(item)),
+  );
+  const recentlySeen = bucketShuffle(
+    history
+      .filter(id => protectedIds.has(id))
+      .map(id => byId.get(id))
+      .filter((item): item is T => Boolean(item)),
+  );
 
-  const selected = [...fresh, ...recycled].slice(0, needed);
+  const selected = [...neverSeen, ...olderSeen, ...recentlySeen].slice(0, needed);
   usedMap[game] = appendHistory(history, selected.map(getId));
 
   try {
