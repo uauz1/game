@@ -1,6 +1,7 @@
 import { loadSharedTeams, saveSharedTeams } from './sharedTeams';
 
 const STORAGE_KEY = 'qaddha.teams.preferences.v1';
+const SITE_PREFS_KEY = 'qaddha_site_prefs_v1';
 
 export type TeamGamePreferences = {
   teamNames: [string, string];
@@ -18,10 +19,22 @@ export const defaultTeamGamePreferences: TeamGamePreferences = {
   seconds: 30,
 };
 
+function readGlobalSeconds() {
+  try {
+    const prefs = JSON.parse(localStorage.getItem(SITE_PREFS_KEY) ?? '{}') as { defaultDuration?: unknown };
+    const duration = Number(prefs.defaultDuration);
+    if (duration === 45 || duration === 60) return duration;
+  } catch {
+    // Keep the team game's own default when preferences are unavailable.
+  }
+  return defaultTeamGamePreferences.seconds;
+}
+
 export function loadTeamGamePreferences(availableCategories: string[]): TeamGamePreferences {
   const sharedTeams = loadSharedTeams();
   const fallback = {
     ...defaultTeamGamePreferences,
+    seconds: readGlobalSeconds(),
     categories: availableCategories.slice(0, 6),
   };
   try {
