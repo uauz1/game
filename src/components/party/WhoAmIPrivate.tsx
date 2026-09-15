@@ -13,6 +13,7 @@ import {
   removeRealtimeChannel,
 } from '../../utils/qaddhaRealtime';
 import Countdown from './Countdown';
+import WhoAnswerReveal from './WhoAnswerReveal';
 
 type Phase = 'setup' | 'playing' | 'result';
 type Team = { name: string; color: string; score: number; answers: number };
@@ -29,6 +30,8 @@ type HostState = {
   turn: 0 | 1;
   card: WhoAmICard | null;
 };
+
+type AnswerReveal = { card: WhoAmICard; teamName: string };
 
 const TEAM_COLORS = [
   { value: '#45b6ff', name: 'أزرق' },
@@ -103,6 +106,7 @@ export default function WhoAmIPrivate({ onHome }: { onHome: () => void }) {
   const [deck, setDeck] = useState<WhoAmICard[]>([]);
   const [clueCount, setClueCount] = useState(1);
   const [timedOut, setTimedOut] = useState(false);
+  const [answerReveal, setAnswerReveal] = useState<AnswerReveal | null>(null);
   const currentCard = deck[round] ?? null;
   const turn = round % 2 as 0 | 1;
   const availablePoints = Math.max(100, (5 - clueCount) * 100);
@@ -113,9 +117,18 @@ export default function WhoAmIPrivate({ onHome }: { onHome: () => void }) {
     saveWhoAmIPreferences({ teamNames: [teams[0].name, teams[1].name], teamColors: [teams[0].color, teams[1].color], seconds, difficulty, roundCount });
   }, [difficulty, roundCount, seconds, teams]);
 
+  useEffect(() => {
+    if (!answerReveal) return;
+    const timer = window.setTimeout(() => setAnswerReveal(null), 4500);
+    return () => window.clearTimeout(timer);
+  }, [answerReveal]);
+
   const judge = (teamIndex: 0 | 1 | null) => {
     if (phase !== 'playing') return;
-    if (teamIndex !== null && !timedOut) setTeams(current => current.map((team, index) => index === teamIndex ? { ...team, score: team.score + availablePoints, answers: team.answers + 1 } : team));
+    if (teamIndex !== null && !timedOut) {
+      if (currentCard) setAnswerReveal({ card: currentCard, teamName: teams[teamIndex].name });
+      setTeams(current => current.map((team, index) => index === teamIndex ? { ...team, score: team.score + availablePoints, answers: team.answers + 1 } : team));
+    }
     if (round + 1 >= deck.length) { setPhase('result'); return; }
     setRound(value => value + 1);
     setClueCount(1);
@@ -133,16 +146,18 @@ export default function WhoAmIPrivate({ onHome }: { onHome: () => void }) {
     const nextDeck = drawWhoAmICards(cardsForDifficulty(difficulty), roundCount, difficulty);
     if (!nextDeck.length) return;
     setTeams(current => current.map(team => ({ ...team, name: team.name.trim(), score: 0, answers: 0 })));
+    setAnswerReveal(null);
     setDeck(nextDeck); setRound(0); setClueCount(1); setTimedOut(false); setPhase('playing');
   };
-  const restart = () => { const nextDeck = drawWhoAmICards(cardsForDifficulty(difficulty), roundCount, difficulty); if (!nextDeck.length) return; setDeck(nextDeck); setTeams(current => current.map(team => ({ ...team, score: 0, answers: 0 }))); setRound(0); setClueCount(1); setTimedOut(false); setPhase('playing'); };
+  const restart = () => { const nextDeck = drawWhoAmICards(cardsForDifficulty(difficulty), roundCount, difficulty); if (!nextDeck.length) return; setAnswerReveal(null); setDeck(nextDeck); setTeams(current => current.map(team => ({ ...team, score: 0, answers: 0 }))); setRound(0); setClueCount(1); setTimedOut(false); setPhase('playing'); };
   const updateTeam = (index: number, patch: Partial<Team>) => setTeams(current => current.map((team, teamIndex) => teamIndex === index ? { ...team, ...patch } : team));
 
   return <section className="arena who-arena" aria-label="لعبة من أنا">
     <div className="arena-heading"><div><span className="eyebrow"><Brain size={16}/> من أنا؟</span><h1>{phase === 'setup' ? 'الإجابة عند المقدم فقط.' : phase === 'result' ? 'انكشفت الشخصيات!' : `الشخصية ${round + 1} من ${deck.length}`}</h1></div><button className="quiet" onClick={onHome}>الألعاب <ArrowLeft size={17}/></button></div>
     {phase === 'setup' ? <div className="who-setup"><div className="section-heading"><h2>جهّزوا المواجهة والمقدم</h2><p>الشاشة الكبيرة تعرض التلميحات فقط. الإجابة والتحكيم تبقى على جوال المقدم.</p></div><div className="team-setup">{teams.map((team,index)=><div className="team-editor" key={index} style={{'--team':team.color} as CSSProperties}><div className="team-emblem"><Users size={36}/><span>0{index+1}</span></div><label>اسم الفريق {index===0?'الأول':'الثاني'}</label><input maxLength={22} value={team.name} onChange={event=>updateTeam(index,{name:event.target.value})}/><div className="color-choices">{TEAM_COLORS.map(color=><button key={color.value} aria-pressed={team.color===color.value} disabled={teams[1-index].color===color.value} style={{background:color.value}} onClick={()=>updateTeam(index,{color:color.value})}>{team.color===color.value?<Check size={17}/>:null}</button>)}</div></div>)}</div><div className="match-settings who-settings"><div><Flag/><b>إعدادات الجولة</b></div><label>مدة الشخصية<select value={seconds} onChange={event=>setSeconds(Number(event.target.value))}><option value={30}>30 ثانية</option><option value={45}>45 ثانية</option><option value={60}>60 ثانية</option></select></label><label>المستوى<select value={difficulty} onChange={event=>setDifficulty(event.target.value as WhoAmIDifficulty)}><option value="easy">خفيف</option><option value="medium">متوازن</option><option value="hard">للمحترفين</option></select></label><label>عدد الشخصيات<select value={roundCount} onChange={event=>setRoundCount(Number(event.target.value))}><option value={6}>6 شخصيات</option><option value={8}>8 شخصيات</option><option value={10}>10 شخصيات</option></select></label></div><Pairing {...room}/>{!validNames?<p className="validation">اكتبوا اسمين مختلفين وغير فارغين.</p>:room.status!=='connected'?<p className="validation">وصّل جوال المقدم أولًا.</p>:null}<div className="arena-actions"><span>المقدم يتحكم بالتلميحات والنتيجة من جواله.</span><button className="primary" disabled={!validNames||room.status!=='connected'} onClick={startGame}>ابدأوا التخمين</button></div></div> : null}
     {phase === 'playing' && currentCard ? <><Pairing {...room} compact/><div className="who-scorebar">{teams.map((team,index)=><div key={team.name} className={`who-team-score ${turn===index?'is-turn':''}`} style={{'--team':team.color} as CSSProperties}><span>{team.name}</span><strong>{team.score}</strong><small>{team.answers} صحيحة</small></div>)}<div className="who-round"><small>الدور الأساسي</small><b>{teams[turn].name}</b><span>{currentCard.category}</span></div></div><div className="who-stage"><div className="mystery-avatar"><span>؟</span><Sparkles/></div><div className="who-value"><small>قيمة الإجابة الآن</small><strong>{timedOut?0:availablePoints}</strong><span>نقطة</span></div><div className="who-clues">{currentCard.clues.slice(0,clueCount).map((clue,index)=><div className="who-clue" key={clue}><span>{index+1}</span><p>{clue}</p></div>)}</div><Countdown key={currentCard.id} seconds={seconds} stopped={timedOut} onExpire={()=>setTimedOut(true)}/><div className="who-actions"><button className="secondary" disabled={timedOut||clueCount===currentCard.clues.length} onClick={()=>setClueCount(value=>Math.min(currentCard.clues.length,value+1))}><Lightbulb/> تلميح إضافي</button>{timedOut?<button className="primary" onClick={()=>judge(null)}>انتهى الوقت · الشخصية التالية</button>:<span className="validation" style={{margin:0}}>التحكيم والإجابة عند المقدم على الجوال</span>}</div></div></> : null}
-    {phase === 'result' ? <div className="who-result"><Trophy size={70}/><span className="eyebrow">نهاية التحدّي</span><h2>{winner===null?'تعادل يستاهل جولة ثانية!':`${teams[winner].name}… عرفوها!`}</h2><div className="who-result-scores">{teams.map(team=><span key={team.name} style={{'--team':team.color} as CSSProperties}><small>{team.name}</small><strong>{team.score}</strong><em>{team.answers} صحيحة</em></span>)}</div><div className="result-actions"><button className="primary" onClick={restart}><RotateCcw/> إعادة بنفس الإعدادات</button><button className="secondary" onClick={()=>setPhase('setup')}>تعديل الإعدادات</button></div></div> : null}
+    {phase === 'result' ? <div className="who-result"><Trophy size={70}/><span className="eyebrow">نهاية التحدّي</span><h2>{winner===null?'تعادل يستاهل جولة ثانية!':`${teams[winner].name}… عرفوها!`}</h2><div className="who-result-scores">{teams.map(team=><span key={team.name} style={{'--team':team.color} as CSSProperties}><small>{team.name}</small><strong>{team.score}</strong><em>{team.answers} صحيحة</em></span>)}</div><div className="result-actions"><button className="primary" onClick={restart}><RotateCcw/> إعادة بنفس الإعدادات</button><button className="secondary" onClick={()=>{setAnswerReveal(null);setPhase('setup');}}>تعديل الإعدادات</button></div></div> : null}
+    {answerReveal ? <WhoAnswerReveal card={answerReveal.card} teamName={answerReveal.teamName} onClose={()=>setAnswerReveal(null)}/> : null}
   </section>;
 }
 
