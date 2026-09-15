@@ -2,9 +2,7 @@ import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
 import QRCode from 'qrcode';
 
 const SUPABASE_URL = 'https://uhbtcjlapgpsohbkotpd.supabase.co';
-// Keep the browser transport on the legacy anon JWT for compatibility with the
-// currently pinned supabase-js/realtime client. This is a public client key,
-// not a service-role secret.
+// Public browser anon key. Never replace this with a service-role/private key.
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoYnRjamxhcGdwc29oYmtvdHBkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0MDgyNjMsImV4cCI6MjEwNDk4NDI2M30.9T3YTqtQ3kjV4wHjuUsamK_DOgRqBel53t51dYGpIOc';
 const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789';
 
@@ -16,6 +14,28 @@ const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     timeout: 15000,
   },
 });
+
+let lifecycleInstalled = false;
+
+function ensureRealtimeConnected() {
+  try {
+    client.realtime.connect();
+  } catch {
+    // subscribe() still gets a chance to establish transport if an eager connect fails.
+  }
+}
+
+function installReconnectLifecycle() {
+  if (lifecycleInstalled || typeof window === 'undefined') return;
+  lifecycleInstalled = true;
+  const reconnect = () => {
+    if (navigator.onLine) ensureRealtimeConnected();
+  };
+  window.addEventListener('online', reconnect);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') reconnect();
+  });
+}
 
 function randomCode(length: number) {
   const bytes = crypto.getRandomValues(new Uint8Array(length));
@@ -60,14 +80,19 @@ export function createRealtimeJoinQr(url: string) {
 }
 
 export function createRealtimeRoomChannel(game: string, roomId: string, token: string): RealtimeChannel {
+  installReconnectLifecycle();
+  ensureRealtimeConnected();
   return client.channel(`qaddha:${game}:${roomId}:${token}`, {
     config: {
       broadcast: { self: false, ack: false },
-      presence: { key: `${game}-${randomCode(8)}` },
     },
   });
 }
 
-export function removeRealtimeChannel(channel: RealtimeChannel) {
-  return client.removeChannel(channel);
+export async function removeRealtimeChannel(channel: RealtimeChannel) {
+  try {
+    return await client.removeChannel(channel);
+  } catch {
+    return 'error' as const;
+  }
 }
