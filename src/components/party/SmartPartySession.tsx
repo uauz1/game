@@ -11,6 +11,7 @@ type Mode = 'smart' | 'tournament';
 type Props = { games: SessionGame[]; onBack: () => void; onPlay: (gameId: string) => void; };
 type TournamentState = { teamA: string; teamB: string; scores: Record<string, { a: number; b: number }>; completed: string[]; };
 type ReadyPreset = { id:string; title:string; subtitle:string; players:number; duration:number; vibe:Vibe; mode:Mode; icon:'fast'|'family'|'brain'|'tournament' };
+type GameFit = { min:number; max:number; pace:'quick'|'full'; host?:boolean; qr?:boolean; label:string };
 
 const STORAGE_KEY = 'qaddha.smart-session.v3';
 const LEGACY_STORAGE_KEY = 'qaddha.smart-session.v2';
@@ -31,12 +32,31 @@ const preferredByVibe: Record<Vibe, string[]> = {
   family:['family','teams','photo','riddles','connection','letters','acting','secret','who','character','words','order','memory','missing','auction','fast'],
 };
 
+const gameFit: Record<string, GameFit> = {
+  teams:{min:4,max:18,pace:'full',host:true,label:'ممتاز للفرق'},
+  letters:{min:4,max:14,pace:'quick',label:'سرعة بديهة'},
+  who:{min:3,max:12,pace:'full',qr:true,label:'تخمين'},
+  photo:{min:2,max:10,pace:'quick',label:'صور وربط'},
+  words:{min:4,max:12,pace:'full',qr:true,label:'وصف وكلمات'},
+  fast:{min:2,max:14,pace:'quick',label:'سريع'},
+  character:{min:2,max:10,pace:'full',label:'شخصيات'},
+  riddles:{min:2,max:10,pace:'full',label:'ألغاز'},
+  family:{min:4,max:18,pace:'full',host:true,qr:true,label:'عائلي'},
+  connection:{min:2,max:10,pace:'quick',label:'ذكاء وربط'},
+  auction:{min:4,max:14,pace:'full',label:'مخاطرة وفرق'},
+  order:{min:2,max:10,pace:'quick',label:'ترتيب'},
+  memory:{min:2,max:8,pace:'quick',label:'ذاكرة'},
+  missing:{min:2,max:8,pace:'quick',label:'ملاحظة'},
+  acting:{min:4,max:16,pace:'full',qr:true,label:'تمثيل'},
+  secret:{min:4,max:12,pace:'full',qr:true,label:'نقاش وخداع'},
+};
+
 function hashId(value:string){ let hash=0; for(let i=0;i<value.length;i+=1) hash=((hash<<5)-hash+value.charCodeAt(i))|0; return Math.abs(hash); }
 function pulse(pattern:number|number[]=20){ try{ if(readQaddhaPreferences().haptics&&'vibrate' in navigator) navigator.vibrate(pattern); }catch{/* optional */} }
 function readRecentGameIds(){ try{ const raw=JSON.parse(localStorage.getItem(PLAYER_KEY)||'{}'); if(!Array.isArray(raw.recent)) return [] as string[]; return raw.recent.filter((item:unknown):item is {gameId:string}=>Boolean(item&&typeof item==='object'&&typeof (item as {gameId?:unknown}).gameId==='string')).map((item:{gameId:string})=>item.gameId).slice(0,8); }catch{return [] as string[];} }
 function pickPlan(games:SessionGame[],vibe:Vibe,duration:number,players:number,recentIds:string[],variation:number){
   const gameCount=duration<=30?3:duration<=50?4:duration<=75?5:6; const order=preferredByVibe[vibe];
-  const sorted=[...games].sort((a,b)=>{ const score=(game:SessionGame)=>{ const preferredIndex=order.indexOf(game.id); const base=(preferredIndex<0?order.length:preferredIndex)*3; const recentIndex=recentIds.indexOf(game.id); const recentPenalty=recentIndex<0?0:Math.max(10,38-recentIndex*4); const shuffleOffset=hashId(`${game.id}-${variation}`)%18; return base+recentPenalty+shuffleOffset; }; return score(a)-score(b); });
+  const sorted=[...games].sort((a,b)=>{ const score=(game:SessionGame)=>{ const preferredIndex=order.indexOf(game.id); const base=(preferredIndex<0?order.length:preferredIndex)*3; const recentIndex=recentIds.indexOf(game.id); const recentPenalty=recentIndex<0?0:Math.max(10,38-recentIndex*4); const fit=gameFit[game.id]; let partyPenalty=0; if(fit){ if(players<fit.min)partyPenalty+=90+(fit.min-players)*18; if(players>fit.max)partyPenalty+=34+(players-fit.max)*7; if(players<=4&&fit.pace==='quick')partyPenalty-=11; if(players>=10&&['teams','family','auction','acting','secret'].includes(game.id))partyPenalty-=14; if(duration<=30&&fit.pace==='full')partyPenalty+=8; } const shuffleOffset=hashId(`${game.id}-${variation}`)%18; return base+recentPenalty+partyPenalty+shuffleOffset; }; return score(a)-score(b); });
   const plan=sorted.slice(0,Math.min(gameCount,sorted.length)); if(players>=10){ const teams=plan.findIndex(game=>game.id==='teams'); if(teams>0)[plan[0],plan[teams]]=[plan[teams],plan[0]]; } return plan;
 }
 function defaultSessionState(){ const prefs=readQaddhaPreferences(); return { mode:prefs.defaultSessionMode as Mode, generated:false, players:prefs.defaultPlayers, duration:prefs.defaultDuration, vibe:prefs.defaultVibe as Vibe, variation:0, smartCompleted:[] as string[], tournament:{teamA:'الفريق الأول',teamB:'الفريق الثاني',scores:{},completed:[]} as TournamentState }; }
@@ -81,11 +101,12 @@ export default function SmartPartySession({games,onBack,onPlay}:Props){
       <div className={`session-plan ${generated?'ready':''}`}><div className="builder-head"><span>02</span><div><small>{mode==='tournament'?'لوحة البطولة':'الخطة المقترحة'}</small><h2>{generated?`${plan.length} ألعاب · ${duration} دقيقة`:'جاهزة أول ما تختارون'}</h2></div></div>
         {!generated?<div className="plan-empty"><Shuffle/><h3>خلو الاختيار علينا</h3><p>اختار جلسة جاهزة فوق أو خصص عددكم ومدتكم. نرتب البداية والوسط والنهاية ونبعد قدر الإمكان عن الألعاب اللي لعبتوها مؤخرًا.</p></div>:<>
           <div className="plan-summary"><span><Users/> {players} لاعبين</span><span><Clock3/> قرابة {perGame} دقائق لكل لعبة</span><span><Sparkles/> {vibeLabels[vibe]}</span><span><Check/> {doneCount}/{plan.length} مكتملة</span></div>
+          <div className="plan-intelligence"><WandSparkles/><div><b>خطة مناسبة لعددكم</b><span>{players<=4?'ركزنا أكثر على الألعاب السريعة والذكية المناسبة للمجموعات الصغيرة.':players>=10?'قدمنا ألعاب الفرق والتفاعل الجماعي لأنها أنسب لعددكم الكبير.':'وازنّا بين السرعة والتخمين والجولات الجماعية، مع تقليل الألعاب اللي لعبتوها مؤخرًا.'}</span></div></div>
           {importNotice&&<div role="status" style={{padding:'12px 14px',margin:'10px 0 14px',border:'1px solid #5fc78440',borderRadius:15,background:'#5fc7840c',color:'#a9e1ba',fontSize:12,fontWeight:800}}><Check/> {importNotice}</div>}
           {nextGame&&<div style={{display:'flex',gap:12,alignItems:'center',justifyContent:'space-between',padding:'14px 16px',margin:'10px 0 16px',border:'1px solid #d7a93b44',borderRadius:18,background:'#d7a93b0b'}}><div><small style={{color:'#b99a55'}}>اقتراح قدّها للجولة التالية</small><strong style={{display:'block',marginTop:3}}>{nextGame.title}</strong></div><button className="primary" onClick={()=>launch(nextGame.id)}><Play/> ابدأ التالي</button></div>}
           {mode==='tournament'&&<div style={{display:'grid',gridTemplateColumns:'1fr auto 1fr',gap:12,alignItems:'center',padding:'18px',margin:'12px 0 16px',border:'1px solid #d7a93b55',borderRadius:20,background:'linear-gradient(135deg,#111,#17120a)'}}><div style={{textAlign:'center'}}><small style={{color:'#b99a55'}}>الفريق</small><strong style={{display:'block',fontSize:18}}>{tournament.teamA}</strong><b style={{display:'block',fontSize:34,color:'#e7bc4f'}}>{totalA}</b></div><Trophy style={{color:'#e7bc4f'}}/><div style={{textAlign:'center'}}><small style={{color:'#b99a55'}}>الفريق</small><strong style={{display:'block',fontSize:18}}>{tournament.teamB}</strong><b style={{display:'block',fontSize:34,color:'#e7bc4f'}}>{totalB}</b></div>{allDone&&<div style={{gridColumn:'1 / -1',textAlign:'center',paddingTop:10,borderTop:'1px solid #d7a93b33'}}><span style={{color:'#b99a55'}}>النتيجة النهائية · محفوظة في سجل البطولات</span><h3 style={{margin:'4px 0 0'}}>{leader==='تعادل'?'تعادل قوي 👏':`🏆 ${leader} بطل الجلسة`}</h3></div>}</div>}
           {mode==='smart'&&allDone&&<div style={{textAlign:'center',padding:'18px',margin:'12px 0 16px',border:'1px solid #d7a93b55',borderRadius:20,background:'linear-gradient(135deg,#111,#17120a)'}}><Trophy style={{color:'#e7bc4f'}}/><h3 style={{margin:'8px 0 4px'}}>خلصتوا الجلسة كاملة 👏</h3><p style={{margin:0,color:'#b9b3a7'}}>تبون جولة ثانية؟ اضغطوا «غيّر الخطة» ونجيب لكم تشكيلة مختلفة.</p></div>}
-          <div className="plan-list">{plan.map((game,index)=>{ const gameScore=tournament.scores[game.id]||{a:0,b:0}; const done=completed.includes(game.id); return <article key={game.id} className={`${started===game.id?'active':''} ${done?'completed':''}`}><span className="plan-number">{done?'✓':String(index+1).padStart(2,'0')}</span><div><small>{index===0?'افتتاحية':index===plan.length-1?'الختام':'الجولة التالية'}</small><h3>{game.title}</h3><p>{game.tag}</p><div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:10}}>{mode==='tournament'&&<><button className="quiet" onClick={()=>score(game.id,'a',1)}>+ {tournament.teamA} <b>{gameScore.a}</b></button><button className="quiet" onClick={()=>score(game.id,'b',1)}>+ {tournament.teamB} <b>{gameScore.b}</b></button></>}<button className="quiet" onClick={()=>toggleComplete(game.id)}>{done?'إلغاء الإكمال':'تمت الجولة'}</button></div></div><button onClick={()=>launch(game.id)}><Play/> ابدأ</button></article>; })}</div>
+          <div className="plan-list">{plan.map((game,index)=>{ const gameScore=tournament.scores[game.id]||{a:0,b:0}; const done=completed.includes(game.id); const fit=gameFit[game.id]; return <article key={game.id} className={`${started===game.id?'active':''} ${done?'completed':''}`}><span className="plan-number">{done?'✓':String(index+1).padStart(2,'0')}</span><div><small>{index===0?'افتتاحية':index===plan.length-1?'الختام':'الجولة التالية'}</small><h3>{game.title}</h3><p>{game.tag}</p>{fit&&<div className="plan-traits"><span><Users/> {fit.min}–{fit.max}</span><span>{fit.pace==='quick'?<Zap/>:<Clock3/>} {fit.pace==='quick'?'سريعة':'جولة كاملة'}</span>{fit.host&&<span><Trophy/> مقدم</span>}{fit.qr&&<span><QrCode/> QR</span>}</div>}<div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:10}}>{mode==='tournament'&&<><button className="quiet" onClick={()=>score(game.id,'a',1)}>+ {tournament.teamA} <b>{gameScore.a}</b></button><button className="quiet" onClick={()=>score(game.id,'b',1)}>+ {tournament.teamB} <b>{gameScore.b}</b></button></>}<button className="quiet" onClick={()=>toggleComplete(game.id)}>{done?'إلغاء الإكمال':'تمت الجولة'}</button></div></div><button onClick={()=>launch(game.id)}><Play/> ابدأ</button></article>; })}</div>
         </>}
       </div>
     </div>
