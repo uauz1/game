@@ -2,12 +2,19 @@ import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
 import QRCode from 'qrcode';
 
 const SUPABASE_URL = 'https://uhbtcjlapgpsohbkotpd.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zviAFEw4s4YDpW2pdo-W1g_aCDWMpvO';
+// Keep the browser transport on the legacy anon JWT for compatibility with the
+// currently pinned supabase-js/realtime client. This is a public client key,
+// not a service-role secret.
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoYnRjamxhcGdwc29oYmtvdHBkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0MDgyNjMsImV4cCI6MjEwNDk4NDI2M30.9T3YTqtQ3kjV4wHjuUsamK_DOgRqBel53t51dYGpIOc';
 const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789';
 
-const client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  realtime: { params: { eventsPerSecond: 20 } },
+  realtime: {
+    params: { eventsPerSecond: 20 },
+    heartbeatIntervalMs: 15000,
+    timeout: 15000,
+  },
 });
 
 function randomCode(length: number) {
@@ -55,7 +62,7 @@ export function createRealtimeJoinQr(url: string) {
 export function createRealtimeRoomChannel(game: string, roomId: string, token: string): RealtimeChannel {
   return client.channel(`qaddha:${game}:${roomId}:${token}`, {
     config: {
-      broadcast: { self: false, ack: true },
+      broadcast: { self: false, ack: false },
       presence: { key: `${game}-${randomCode(8)}` },
     },
   });
