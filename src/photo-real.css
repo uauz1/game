@@ -1,5 +1,10 @@
 .real-photo-game{max-width:1180px}
 .real-photo-stage{background:radial-gradient(circle at 50% 0,rgba(215,169,59,.14),transparent 32%),linear-gradient(145deg,rgba(20,20,24,.98),rgba(9,10,13,.98));border:1px solid rgba(215,169,59,.2)}
+.photo-meta{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.photo-difficulty{display:inline-flex;align-items:center;justify-content:center;min-width:74px;border-radius:999px;padding:7px 12px;font-size:.8rem;font-weight:900;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff}
+.difficulty-سهل{border-color:rgba(125,225,163,.28);background:rgba(125,225,163,.08)}
+.difficulty-متوسط{border-color:rgba(255,212,90,.3);background:rgba(255,212,90,.08)}
+.difficulty-صعب{border-color:rgba(255,112,181,.3);background:rgba(255,112,181,.08)}
 .real-photo-equation{max-width:980px;margin:20px auto 8px;display:flex;align-items:center;justify-content:center;gap:18px;direction:ltr}
 .real-photo-grid{display:flex;align-items:center;justify-content:center;gap:18px;flex:1;min-width:0}
 .real-photo-piece{display:flex;align-items:center;gap:18px;flex:1;min-width:0}
@@ -18,4 +23,4 @@
 .real-photo-stage .photo-points{text-align:center;margin:14px 0;color:var(--muted)}
 .real-photo-stage .photo-points b{color:#ffd45a;font-size:1.15rem}
 .real-photo-stage .answer-feedback p{margin:0 0 16px;color:var(--muted)}
-@media(max-width:760px){.real-photo-equation{display:grid;gap:8px}.real-photo-grid{display:grid;grid-template-columns:1fr;gap:12px}.real-photo-piece{display:grid;gap:8px}.photo-plus{text-align:center}.photo-equals{text-align:center}.real-photo-tile,.real-photo-tile img,.real-photo-loading,.real-photo-letter{min-height:210px}.real-photo-tile span{font-size:.9rem}.real-photo-stage{padding-inline:12px}}
+@media(max-width:760px){.real-photo-equation{display:grid;gap:8px}.real-photo-grid{display:grid;grid-template-columns:1fr;gap:12px}.real-photo-piece{display:grid;gap:8px}.photo-plus{text-align:center}.photo-equals{text-align:center}.real-photo-tile,.real-photo-tile img,.real-photo-loading,.real-photo-letter{min-height:210px}.real-photo-tile span{font-size:.9rem}.real-photo-stage{padding-inline:12px}.photo-meta{justify-content:flex-start}}
