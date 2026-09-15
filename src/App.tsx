@@ -21,7 +21,7 @@ const WordBankPhone = lazy(() => import('./components/party/WordBankPrivate').th
 const FastestGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.FastestGame })));
 const CharacterGuessGame = lazy(() => import('./components/party/RealCharacterGuess'));
 const RiddlesGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.RiddlesGame })));
-const FamilyFeudGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.FamilyFeudGame })));
+const FamilyFeudGame = lazy(() => import('./components/party/FamilyFeudPro'));
 const ConnectionGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.ConnectionGame })));
 const AuctionGame = lazy(() => import('./components/party/ExtraPartyGames').then(module => ({ default: module.AuctionGame })));
 const OrderGame = lazy(() => import('./components/party/ExtraPartyGames').then(module => ({ default: module.OrderGame })));
