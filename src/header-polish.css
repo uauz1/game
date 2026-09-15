@@ -1,4 +1,4 @@
-/* Final header polish: compact, premium, responsive, and consistent with Qaddha's black/gold identity. */
+/* Premium header polish + selected Qaddha wordmark direction. */
 .party-app .topbar{
   position:sticky;
   top:10px;
@@ -43,73 +43,54 @@
   z-index:1;
   width:max-content;
   min-width:0 !important;
-  padding:4px 5px !important;
-  gap:10px !important;
+  padding:5px 8px 6px !important;
+  gap:0 !important;
   border-radius:15px !important;
   cursor:pointer !important;
   transition:background .2s ease,transform .2s ease;
 }
-.party-app .brand:hover{background:rgba(255,255,255,.035) !important;transform:translateY(-1px)}
-.party-app .brand>span:first-child{
-  width:50px !important;
-  height:50px !important;
-  border-radius:15px !important;
-  overflow:hidden;
-  background:
-    radial-gradient(circle at 36% 28%,rgba(255,214,112,.16),transparent 30%),
-    linear-gradient(145deg,#17130d 0%,#0b0b0c 52%,#050506 100%) !important;
-  border:1px solid rgba(236,194,88,.72) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,238,177,.14),
-    inset 0 0 0 1px rgba(122,79,14,.24),
-    inset 0 -10px 18px rgba(0,0,0,.3),
-    0 9px 22px rgba(0,0,0,.45),
-    0 0 24px rgba(215,169,59,.13) !important;
-}
-/* Qaddha signature mark: a custom gold Qaf monogram instead of a generic game icon. */
-.party-app .brand>span:first-child svg{display:none !important}
-.party-app .brand>span:first-child>span{display:none !important}
-.party-app .brand>span:first-child::before{
-  content:'ق';
+.party-app .brand:hover{background:rgba(255,255,255,.028) !important;transform:translateY(-1px)}
+/* The selected identity uses the Arabic wordmark itself in the website header. */
+.party-app .brand>span:first-child{display:none !important}
+.party-app .brand>span:nth-child(2){
   position:relative;
-  z-index:2;
-  display:block;
-  margin-top:-1px;
-  font-family:'Tajawal','Cairo',Arial,sans-serif;
-  font-size:31px;
-  line-height:1;
-  font-weight:900;
-  letter-spacing:-2px;
-  color:#efc85f;
-  background:linear-gradient(180deg,#fff1ad 0%,#f2ca62 34%,#d49a2b 65%,#9a6110 100%);
-  -webkit-background-clip:text;
-  background-clip:text;
-  -webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 2px 1px rgba(0,0,0,.72)) drop-shadow(0 0 7px rgba(238,190,76,.18));
-  transform:translateY(1px) scaleX(1.05);
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:flex-start !important;
+  line-height:.92 !important;
+  padding:1px 2px 0;
 }
-.party-app .brand>span:first-child::after{
+.party-app .brand>span:nth-child(2)::after{
   content:'';
-  position:absolute;
-  inset:5px;
-  z-index:1;
-  border-radius:11px;
-  border:1px solid rgba(255,218,118,.16);
-  box-shadow:
-    inset 0 0 10px rgba(255,201,76,.035),
-    0 0 0 1px rgba(0,0,0,.38);
-  pointer-events:none;
+  width:30px;
+  height:1px;
+  margin-top:6px;
+  background:linear-gradient(90deg,#f1c65f,rgba(197,137,31,.12));
+  box-shadow:0 0 10px rgba(230,177,62,.16);
 }
-.party-app .brand:hover>span:first-child{
-  border-color:rgba(255,214,107,.92) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,238,177,.18),
-    inset 0 0 0 1px rgba(122,79,14,.28),
-    0 10px 26px rgba(0,0,0,.48),
-    0 0 30px rgba(215,169,59,.2) !important;
+.party-app .brand>span:nth-child(2)>span:first-child{
+  font-family:'Aref Ruqaa','Noto Naskh Arabic','Geeza Pro','Traditional Arabic','Amiri',serif !important;
+  font-size:34px !important;
+  line-height:.9 !important;
+  font-weight:700 !important;
+  letter-spacing:-1.6px !important;
+  background:linear-gradient(180deg,#fff0b5 0%,#efc76c 36%,#d79f35 67%,#9c6418 100%) !important;
+  -webkit-background-clip:text !important;
+  background-clip:text !important;
+  color:transparent !important;
+  -webkit-text-fill-color:transparent !important;
+  text-shadow:none !important;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.56)) drop-shadow(0 0 7px rgba(222,169,55,.08));
+  transform:scaleX(1.03);
+  transform-origin:right center;
 }
-.party-app .brand>span:nth-child(2)>span:first-child{font-size:27px !important;letter-spacing:-.7px !important}
-.party-app .brand>span:nth-child(2)>span:last-child{font-size:9px !important;margin-top:5px !important;color:#a99059 !important}
+.party-app .brand>span:nth-child(2)>span:last-child{
+  font-size:8.5px !important;
+  font-weight:650 !important;
+  letter-spacing:.35px !important;
+  margin-top:7px !important;
+  color:#9f8e69 !important;
+}
 .topbar-caption{
   position:relative;
   z-index:1;
@@ -185,12 +166,10 @@
     gap:7px;
     border-radius:18px;
   }
-  .party-app .brand{gap:8px !important}
-  .party-app .brand>span:first-child{width:44px !important;height:44px !important;border-radius:13px !important}
-  .party-app .brand>span:first-child::before{font-size:27px}
-  .party-app .brand>span:first-child::after{inset:4px;border-radius:10px}
-  .party-app .brand>span:nth-child(2)>span:first-child{font-size:24px !important}
+  .party-app .brand{padding-inline:6px !important}
+  .party-app .brand>span:nth-child(2)>span:first-child{font-size:29px !important}
   .party-app .brand>span:nth-child(2)>span:last-child{display:none}
+  .party-app .brand>span:nth-child(2)::after{margin-top:5px;width:25px}
   .topbar-caption{display:none}
   .topbar-actions{gap:6px}
   .header-profile-button,.header-settings-button{width:42px;height:42px;padding:0;border-radius:12px}
@@ -199,9 +178,7 @@
 }
 @media (max-width:390px){
   .party-app .topbar{width:calc(100% - 12px);padding-inline:6px}
-  .party-app .brand>span:first-child{width:41px !important;height:41px !important}
-  .party-app .brand>span:first-child::before{font-size:25px}
-  .party-app .brand>span:nth-child(2)>span:first-child{font-size:22px !important}
+  .party-app .brand>span:nth-child(2)>span:first-child{font-size:27px !important}
   .header-profile-button,.header-settings-button{width:39px;height:39px}
 }
 @media (prefers-reduced-motion:reduce){
