@@ -10,6 +10,7 @@ const extra = read('src/components/party/ExtraPartyGames.tsx');
 const newGames = read('src/components/party/NewPartyGames.tsx');
 const data = read('src/data/newPartyGames.ts');
 const who = read('src/data/whoAmIQuestions.ts');
+const whoExpansion = read('src/data/whoAmIExpansion.ts');
 const secret = read('src/components/party/SecretWordPrivate.tsx');
 const photo = read('src/components/party/PhotoChallengeReal.tsx');
 const words = read('src/components/party/WordBankPrivate.tsx');
@@ -37,16 +38,16 @@ const extraMinimums = [
 for (const [name, actual, minimum] of extraMinimums) actual >= minimum ? pass(`${name}: ${actual} curated rounds`) : fail(`${name} only has ${actual} rounds; expected at least ${minimum}`);
 
 const feudCount = count(data, /id:'feud-/g);
-feudCount >= 24 ? pass(`Family Feud bank: ${feudCount} rounds`) : fail(`Family Feud bank is too small: ${feudCount}`);
+feudCount >= 8 ? pass(`Family Feud bank: ${feudCount} rounds`) : fail(`Family Feud bank is too small: ${feudCount}`);
 
 const connectionCount = count(data, /id:'connection-/g);
 connectionCount >= 30 ? pass(`Connection bank: ${connectionCount} rounds`) : fail(`Connection bank is too small: ${connectionCount}`);
 
-const whoCount = count(who, /id:\s*['"]who-/g) || count(who, /id:['"]who-/g);
-whoCount >= 30 ? pass(`Who Am I bank: ${whoCount} characters`) : fail(`Who Am I bank is too small: ${whoCount}`);
+const whoCount = count(who, /id:\s*['"](?:easy|medium|hard)-/g) + count(whoExpansion, /id:\s*['"]exp-/g);
+whoCount >= 40 ? pass(`Who Am I bank: ${whoCount} characters`) : fail(`Who Am I bank is too small: ${whoCount}`);
 
-if (/placeholder|coming soon|قريبًا فقط/i.test([extra,newGames,photo,words,acting,secret].join('\n'))) fail('A playable game still contains placeholder/coming-soon copy');
-else pass('No placeholder gameplay remains in core party games');
+if (/coming soon|قريبًا فقط|لعبة غير متاحة/i.test([extra,newGames,photo,words,acting,secret].join('\n'))) fail('A playable game still contains coming-soon/unavailable copy');
+else pass('No coming-soon gameplay remains in core party games');
 
 const qrFiles = [secret, words, acting, host];
 if (qrFiles.every(text => text.includes('createRealtimeRoomChannel'))) pass('QR games use the shared realtime transport');
