@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "validate:content": "node scripts/validate-content.mjs && node scripts/validate-question-bank.mjs && node scripts/simulate-question-bank.mjs"
+    "validate:content": "node scripts/validate-content.mjs && node scripts/validate-question-bank.mjs && node scripts/simulate-question-bank.mjs && node scripts/validate-party-games.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
@@ -25,7 +25,7 @@
   "devDependencies": {
     "@eslint/js": "^9.9.1",
     "@types/qrcode": "^1.5.6",
-    "@types/react": "^18.3.5",
+    "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.18",
