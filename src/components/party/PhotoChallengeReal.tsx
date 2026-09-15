@@ -14,8 +14,6 @@ type PhotoCard = { id: string; answer: string; category: string; clues: PhotoClu
 
 const colors = ['#45b6ff', '#ff70b5', '#a77bff', '#ffd45a'];
 
-// Qaddha photo rebus: read pictures as Arabic words, English sounds, letters, or a mix, then combine the sounds.
-// The answer bank is original to Qaddha; it uses the same broad rebus mechanic without copying any third-party puzzle set.
 const cards: PhotoCard[] = [
   {id:'sound-01',answer:'دبي',category:'مدن',clues:[{title:'Brown_bear',revealLabel:'دب'},{title:'Bee',revealLabel:'bee / بي'}],hints:['مدينة خليجية','جرّب عربي + إنجليزي'],explanation:'دب + bee (بي) = دبي'},
   {id:'sound-02',answer:'تبوك',category:'السعودية',clues:[{title:'Tea',revealLabel:'tea / تي'},{title:'Book',revealLabel:'book / بوك'}],hints:['مدينة سعودية','اقرأ الصورتين بالإنجليزي'],explanation:'tea + book = تبوك'},
@@ -25,7 +23,7 @@ const cards: PhotoCard[] = [
   {id:'sound-06',answer:'المغرب',category:'دول',clues:[{title:'Mug',revealLabel:'mug / مَغ'},{title:'Rib',revealLabel:'rib / رِب'}],hints:['دولة عربية','اقرأ الصورتين بالإنجليزي بسرعة'],explanation:'mug + rib ≈ المغرب'},
   {id:'sound-07',answer:'الهند',category:'دول',clues:[{title:'Chicken',revealLabel:'hen / هِن'},{title:'D',revealLabel:'D / دي'}],hints:['دولة آسيوية','طائر + حرف'],explanation:'hen + D = هندي ≈ الهند'},
   {id:'sound-08',answer:'إيران',category:'دول',clues:[{title:'Ear',revealLabel:'ear / إير'},{title:'N',revealLabel:'N / إن'}],hints:['دولة آسيوية','عضو جسم + حرف'],explanation:'ear + N ≈ إيران'},
-  {id:'sound-09',answer:'سوريا',category:'دول',clues:[{title:'Pain',revealLabel:'sore / سور'},{title:'A',revealLabel:'A / يا-أ'},],hints:['دولة عربية','المعنى الأول: مؤلم'],explanation:'sore + A ≈ سوريا'},
+  {id:'sound-09',answer:'سوريا',category:'دول',clues:[{title:'Pain',revealLabel:'sore / سور'},{title:'A',revealLabel:'A / يا-أ'}],hints:['دولة عربية','المعنى الأول: مؤلم'],explanation:'sore + A ≈ سوريا'},
   {id:'sound-10',answer:'اليابان',category:'دول',clues:[{title:'Y',revealLabel:'Y / واي'},{title:'Frying_pan',revealLabel:'pan / بان'}],hints:['دولة آسيوية','حرف + أداة مطبخ'],explanation:'Y + pan ≈ يابان'},
   {id:'sound-11',answer:'كوريا',category:'دول',clues:[{title:'Core',revealLabel:'core / كور'},{title:'A',revealLabel:'A / يا-أ'}],hints:['دولة آسيوية','اقرأ الأولى بالإنجليزي'],explanation:'core + A ≈ كوريا'},
   {id:'sound-12',answer:'تركيا',category:'دول',clues:[{title:'Turkey_(bird)',revealLabel:'turkey / تركي'},{title:'A',revealLabel:'A / ا'}],hints:['دولة بين آسيا وأوروبا','طائر بالإنجليزي + حرف'],explanation:'turkey + A ≈ تركيا'},
@@ -70,16 +68,29 @@ const cards: PhotoCard[] = [
 ];
 
 const imageCache = new Map<string,string>();
+const isLetterClue = (title:string) => /^[A-Z]$/.test(title);
+
 async function fetchWikiImage(title: string): Promise<string> {
   if (imageCache.has(title)) return imageCache.get(title)!;
-  const endpoint = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-  const response = await fetch(endpoint, { headers: { accept: 'application/json' } });
-  if (!response.ok) throw new Error('image lookup failed');
-  const data = await response.json() as { thumbnail?: { source?: string }; originalimage?: { source?: string } };
-  const url = data.originalimage?.source || data.thumbnail?.source;
-  if (!url) throw new Error('no image');
-  imageCache.set(title,url);
-  return url;
+  const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+  try {
+    const response = await fetch(summaryUrl, { headers: { accept: 'application/json' } });
+    if (response.ok) {
+      const data = await response.json() as { thumbnail?: { source?: string }; originalimage?: { source?: string } };
+      const direct = data.originalimage?.source || data.thumbnail?.source;
+      if (direct) { imageCache.set(title,direct); return direct; }
+    }
+  } catch {/* fall through to search */}
+
+  const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(title.replaceAll('_',' '))}&gsrlimit=5&prop=pageimages&piprop=thumbnail|original&pithumbsize=960&format=json&origin=*`;
+  const searchResponse = await fetch(searchUrl, { headers: { accept: 'application/json' } });
+  if (!searchResponse.ok) throw new Error('image lookup failed');
+  const searchData = await searchResponse.json() as { query?: { pages?: Record<string,{ thumbnail?:{source?:string}; original?:{source?:string} }> } };
+  const pages = Object.values(searchData.query?.pages ?? {});
+  const fallback = pages.map(page=>page.original?.source || page.thumbnail?.source).find((url): url is string => Boolean(url));
+  if (!fallback) throw new Error('no image');
+  imageCache.set(title,fallback);
+  return fallback;
 }
 
 function initialTeams(): Team[] {
@@ -95,7 +106,9 @@ function initialTeams(): Team[] {
 function RealClueImage({ clue, revealed }: { clue: PhotoClue; revealed: boolean }) {
   const [src,setSrc]=useState('');
   const [failed,setFailed]=useState(false);
-  useEffect(()=>{let live=true;setSrc('');setFailed(false);void fetchWikiImage(clue.title).then(url=>{if(live)setSrc(url)}).catch(()=>{if(live)setFailed(true)});return()=>{live=false};},[clue.title]);
+  const letter=isLetterClue(clue.title);
+  useEffect(()=>{if(letter)return;let live=true;setSrc('');setFailed(false);void fetchWikiImage(clue.title).then(url=>{if(live)setSrc(url)}).catch(()=>{if(live)setFailed(true)});return()=>{live=false};},[clue.title,letter]);
+  if(letter)return <div className="real-photo-tile real-photo-letter"><strong>{clue.title}</strong>{revealed?<span>{clue.revealLabel}</span>:null}</div>;
   return <div className="real-photo-tile">{src?<img src={src} alt="" referrerPolicy="no-referrer"/>:<div className="real-photo-loading">{failed?<ImageIcon/>:<RefreshCw className="spin"/>}</div>}{revealed?<span>{clue.revealLabel}</span>:null}</div>;
 }
 
@@ -114,8 +127,15 @@ export default function PhotoChallengeReal({ onHome }: GameProps) {
   const winner=useMemo(()=>teams[0].score===teams[1].score?null:teams[0].score>teams[1].score?0:1,[teams]);
   const points=Math.max(100,300-hintLevel*100);
   const updateTeam=(index:number,patch:Partial<Team>)=>setTeams(current=>current.map((team,i)=>i===index?{...team,...patch}:team));
-  const start=()=>{const prepared=teams.map(team=>({...team,name:team.name.trim(),score:0}));saveSharedTeams(prepared);setTeams(prepared);setDeck(drawWithoutRepeats('photos-sound-v4',cards,rounds,item=>item.id));setRound(0);setHintLevel(0);setRevealed(false);setTimedOut(false);setPhase('play');};
+  const start=()=>{const prepared=teams.map(team=>({...team,name:team.name.trim(),score:0}));saveSharedTeams(prepared);setTeams(prepared);setDeck(drawWithoutRepeats('photos-sound-v5',cards,rounds,item=>item.id));setRound(0);setHintLevel(0);setRevealed(false);setTimedOut(false);setPhase('play');};
   const award=(team:number|null)=>{if(team!==null&&!timedOut)setTeams(value=>value.map((item,index)=>index===team?{...item,score:item.score+points}:item));if(round+1>=deck.length)setPhase('result');else{setRound(value=>value+1);setHintLevel(0);setRevealed(false);setTimedOut(false);}};
+
+  useEffect(()=>{
+    if(phase!=='play')return;
+    const next=deck[round+1];
+    if(!next)return;
+    next.clues.filter(clue=>!isLetterClue(clue.title)).forEach(clue=>{void fetchWikiImage(clue.title).catch(()=>undefined);});
+  },[deck,phase,round]);
 
   return <section className="arena new-game photo-game real-photo-game">
     <div className="arena-heading"><div><span className="eyebrow"><Sparkles size={15}/> تحدي الصور</span><h1>{phase==='setup'?'اقرأ الصور… ثم اسمع الكلمة.':phase==='result'?'خلص التحدّي!':`اللغز ${round+1} من ${deck.length}`}</h1></div><button className="quiet" onClick={onHome}>الألعاب <ArrowLeft size={17}/></button></div>
