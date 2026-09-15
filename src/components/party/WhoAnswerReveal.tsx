@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Check, ImageOff, X } from 'lucide-react';
-import type { WhoAmICard } from '../../data/whoAmIQuestions';
 
+type PortraitCard = { answer: string; category: string };
 type Portrait = { src: string; sourceUrl: string };
 
 const SKIP_IMAGE_CATEGORY = /خيالية|رسوم|أفلام وروايات/i;
 
-async function fetchWikipediaPortrait(card: WhoAmICard): Promise<Portrait | null> {
+async function fetchWikipediaPortrait(card: PortraitCard): Promise<Portrait | null> {
   if (SKIP_IMAGE_CATEGORY.test(card.category)) return null;
   const params = new URLSearchParams({
     action: 'query',
@@ -30,7 +30,7 @@ async function fetchWikipediaPortrait(card: WhoAmICard): Promise<Portrait | null
   return { src, sourceUrl };
 }
 
-export default function WhoAnswerReveal({ card, teamName, onClose }: { card: WhoAmICard; teamName: string; onClose: () => void }) {
+export default function WhoAnswerReveal({ card, teamName, onClose }: { card: PortraitCard; teamName: string; onClose: () => void }) {
   const [portrait, setPortrait] = useState<Portrait | null>(null);
   const [loading, setLoading] = useState(true);
 
