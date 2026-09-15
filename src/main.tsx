@@ -19,6 +19,7 @@ import './private-play.css';
 import './qr-game-badges.css';
 import './header-polish.css';
 import './hero-background-polish.css';
+import './site-premium-polish.css';
 
 const WhoAmIPhone = lazy(() => import('./components/party/WhoAmIPrivate.tsx').then(module => ({ default: module.WhoAmIPhone })));
 const params = new URLSearchParams(window.location.search);
