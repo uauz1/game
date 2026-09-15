@@ -15,7 +15,7 @@ const TeamGame = lazy(() => import('./components/party/TeamGame'));
 const LettersGame = lazy(() => import('./components/party/LettersGame'));
 const WhoAmIGame = lazy(() => import('./components/party/WhoAmIGame'));
 const WhoAmIPhone = lazy(() => import('./components/party/WhoAmIPrivate').then(module => ({ default: module.WhoAmIPhone })));
-const PhotoChallengeGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.PhotoChallengeGame })));
+const PhotoChallengeGame = lazy(() => import('./components/party/PhotoChallengeReal'));
 const WordBankGame = lazy(() => import('./components/party/WordBankPrivate'));
 const WordBankPhone = lazy(() => import('./components/party/WordBankPrivate').then(module => ({ default: module.WordBankPhone })));
 const FastestGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.FastestGame })));
@@ -46,7 +46,7 @@ const games = [
   {id:'teams',title:'قدّها فرق',desc:'اختاروا الفئات. ارفعوا الرهان. وخلّوا المعرفة تحسمها.',icon:Users,tag:'فريقان + مقدم',cover:asset('teams-cover.jpg'),ready:true},
   {id:'letters',title:'حروف مع عزيز',desc:'حرف واحد، احتمالات كثيرة. مين يجيبها أول؟',icon:Sparkles,tag:'حروف + سرعة بديهة',cover:asset('letters-cover.jpg'),ready:true},
   {id:'who',title:'من أنا؟',desc:'شخصية غامضة وتلميحات تقرّبكم للحل.',icon:Brain,tag:'تخمين + خطف',cover:asset('who-cover.jpg'),ready:true},
-  {id:'photo',title:'تحدي الصورة',desc:'التفاصيل الصغيرة تخبّي الإجابة الكبيرة.',icon:Camera,tag:'تحدّي بصري',cover:asset('photo-cover.jpg'),ready:true},
+  {id:'photo',title:'تحدي الصور',desc:'اربطوا صورًا حقيقية واكتشفوا الكلمة أو العبارة قبل الخصم.',icon:Camera,tag:'صور حقيقية + ربط',cover:asset('photo-cover.jpg'),ready:true},
   {id:'words',title:'بنك الكلمات',desc:'اوصف الكلمة من غير ما تقول الكلمات الممنوعة.',icon:BookOpen,tag:'كلمات + وصف',cover:asset('word-bank-cover-wide.jpg'),ready:true},
   {id:'fast',title:'مين أسرع؟',desc:'لحظة واحدة تصنع الفارق.',icon:Zap,tag:'سرعة + زر',cover:asset('fastest-cover.jpg'),ready:true},
   {id:'character',title:'خمن الشخصية',desc:'تلميح وراء تلميح… من تكون؟',icon:UserRound,tag:'شخصيات',cover:asset('character-cover.jpg'),ready:true},
