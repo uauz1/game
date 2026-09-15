@@ -14,6 +14,7 @@ import './final-games.css';
 const TeamGame = lazy(() => import('./components/party/TeamGame'));
 const LettersGame = lazy(() => import('./components/party/LettersGame'));
 const WhoAmIGame = lazy(() => import('./components/party/WhoAmIGame'));
+const WhoAmIPhone = lazy(() => import('./components/party/WhoAmIPrivate').then(module => ({ default: module.WhoAmIPhone })));
 const PhotoChallengeGame = lazy(() => import('./components/party/NewPartyGames').then(module => ({ default: module.PhotoChallengeGame })));
 const WordBankGame = lazy(() => import('./components/party/WordBankPrivate'));
 const WordBankPhone = lazy(() => import('./components/party/WordBankPrivate').then(module => ({ default: module.WordBankPhone })));
@@ -111,6 +112,7 @@ export default function App() {
   const hostParams=useMemo(()=>new URLSearchParams(window.location.search),[]);
   const returningToSession=isGame&&returnTarget()==='session';
 
+  if(hostParams.get('host')==='who')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><WhoAmIPhone roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
   if(hostParams.get('host')==='secret')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><SecretWordPhone roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
   if(hostParams.get('host')==='acting')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><ActingPhone roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
   if(hostParams.get('host')==='words')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><WordBankPhone roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
