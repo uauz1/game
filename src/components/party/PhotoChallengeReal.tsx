@@ -5,6 +5,7 @@ import { loadSharedTeams, saveSharedTeams } from '../../utils/sharedTeams';
 import { drawWithoutRepeats } from '../../utils/newGameRotation';
 import { useNewGameNumber } from '../../utils/newGameSettings';
 import Countdown from './Countdown';
+import '../../photo-real.css';
 
 type Team = { name: string; color: string; score: number };
 type GameProps = { onHome: () => void };
