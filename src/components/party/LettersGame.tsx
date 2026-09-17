@@ -4,6 +4,7 @@ import { HUROOF_LETTERS, questionsForLetter, type HuroofDifficulty, type HuroofQ
 import { findWinningPath, type CellOwner } from '../../utils/huroofPath';
 import { loadHuroofPreferences, loadUsedHuroofQuestions, saveHuroofPreferences, saveUsedHuroofQuestions } from '../../utils/huroofStorage';
 import Countdown from './Countdown';
+import { clearMultiplayerChallenge, publishMultiplayerChallenge, publishMultiplayerTeamNames } from '../../utils/multiplayerSession';
 
 const BOARD_SIZE = 5;
 const CELL_COUNT = BOARD_SIZE * BOARD_SIZE;
@@ -81,6 +82,8 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
   }, [bestOf, difficulty, seconds, teams]);
 
   useEffect(() => saveUsedHuroofQuestions(usedQuestionIds), [usedQuestionIds]);
+  useEffect(()=>{publishMultiplayerTeamNames([teams[0].name,teams[1].name]);},[teams]);
+  useEffect(()=>{if(phase==='question'&&current&&!revealed&&!noAnswer){publishMultiplayerChallenge({gameId:'letters',roundKey:`${current.question.id}-${current.cell}`,answers:[current.question.answer],points:1});return()=>clearMultiplayerChallenge('letters');}clearMultiplayerChallenge('letters');},[current,noAnswer,phase,revealed]);
 
   const updateTeam = (index: number, patch: Partial<Team>) => {
     setTeams(currentTeams => currentTeams.map((team, teamIndex) => teamIndex === index ? { ...team, ...patch } : team));
@@ -139,8 +142,8 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
     setPhase('board');
   };
 
-  const awardCell = (judgingTeam: 0 | 1) => {
-    if (!current || !revealed || phase !== 'question') return;
+  const awardCell = (judgingTeam: 0 | 1, force = false) => {
+    if (!current || (!revealed && !force) || phase !== 'question') return;
     const judgedQuestion = current;
 
     setStats(value => ({
@@ -221,6 +224,8 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
     const nextRoundNumber = round + 1;
     resetBoard(nextRoundNumber, (nextRoundNumber - 1) % 2 as 0 | 1);
   };
+
+  useEffect(()=>{const receive=(event:Event)=>{const detail=(event as CustomEvent<{gameId?:string;team?:number}>).detail;if(detail?.gameId!=='letters'||phase!=='question'||!current||revealed||noAnswer)return;setRevealed(true);awardCell(detail.team===1?1:0,true);};window.addEventListener('qaddha:multiplayer-team-score',receive);return()=>window.removeEventListener('qaddha:multiplayer-team-score',receive);},[current,noAnswer,phase,revealed,teams,owners,targetWins]);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
