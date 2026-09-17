@@ -1,6 +1,7 @@
 import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import PlatformShell from './components/party/PlatformShell.tsx';
+import MultiplayerPlayer from './components/party/MultiplayerPlayer.tsx';
 import { AuthProvider } from './contexts/AuthContext.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import QaddhaRemoteControl from './components/admin/QaddhaRemoteControl.tsx';
@@ -23,6 +24,7 @@ import './header-polish.css';
 import './hero-background-polish.css';
 import './site-premium-polish.css';
 import './party-hub.css';
+import './multiplayer.css';
 import './tv-mode.css';
 
 const WhoAmIPhone = lazy(() => import('./components/party/WhoAmIPrivate.tsx').then(module => ({ default: module.WhoAmIPhone })));
@@ -30,12 +32,15 @@ const QaddhaAdminDashboard = lazy(() => import('./components/admin/QaddhaAdminDa
 const params = new URLSearchParams(window.location.search);
 const host = params.get('host');
 const isWhoHost = host === 'who';
+const playRoom = params.get('playroom');
 const isAdmin = params.get('admin') === '1' || window.location.pathname === '/admin' || window.location.pathname === '/admin/' || window.location.pathname === '/admin.html';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      {isWhoHost
+      {playRoom
+        ? <MultiplayerPlayer code={playRoom}/>
+        : isWhoHost
         ? <Suspense fallback={<main className="mobile-host" dir="rtl"><section className="host-wait"><h1>نربطك بشاشة اللعبة…</h1></section></main>}><WhoAmIPhone roomId={params.get('room') || ''} token={params.get('token') || ''}/></Suspense>
         : <AuthProvider>{isAdmin
           ? <Suspense fallback={<main dir="rtl" style={{minHeight:'100vh',display:'grid',placeItems:'center',background:'#080808',color:'#fff'}}>جاري فتح لوحة قدّها…</main>}><QaddhaAdminDashboard /></Suspense>
