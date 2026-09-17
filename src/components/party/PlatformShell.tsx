@@ -86,10 +86,7 @@ export default function PlatformShell() {
   const playFromHub = (gameId: string) => {
     try { localStorage.setItem('qaddha.hub-launch.v1', gameId); } catch {/* optional */}
     closeHub();
-    window.dispatchEvent(new CustomEvent('qaddha:hub-launch', { detail: { gameId } }));
-    const appCard = document.querySelector(`.game-${CSS.escape(gameId)}`) as HTMLButtonElement | null;
-    if (appCard) appCard.click();
-    else window.setTimeout(() => (document.querySelector(`.game-${CSS.escape(gameId)}`) as HTMLButtonElement | null)?.click(), 80);
+    window.setTimeout(()=>window.dispatchEvent(new CustomEvent('qaddha:hub-launch', { detail: { gameId } })),0);
   };
 
   if (hubOpen) return <><PartyHub games={HUB_GAMES} onBack={closeHub} onPlay={playFromHub}/><MultiplayerHostLayer/></>;
