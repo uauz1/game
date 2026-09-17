@@ -83,9 +83,10 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
       const self: RoomMember = { id: memberId.current, name: name.trim() || 'ضيف', role: host ? 'host' : 'guest', joinedAt: Date.now() };
       const syncPresence = () => {
         const state = channel.presenceState<RoomMember>();
-        const next = Object.values(state).flat().filter((member): member is RoomMember =>
+        const raw = Object.values(state).flat();
+        const next: RoomMember[] = raw.filter(member =>
           Boolean(member) && typeof member.id === 'string' && typeof member.name === 'string'
-        ).sort((a,b)=>a.joinedAt-b.joinedAt).slice(0,24);
+        ).map(member=>({id:member.id,name:member.name,role:member.role==='host'?'host':'guest',joinedAt:typeof member.joinedAt==='number'?member.joinedAt:Date.now()})).sort((a,b)=>a.joinedAt-b.joinedAt).slice(0,24);
         setMembers(next);
       };
       channel
@@ -101,7 +102,7 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
         .subscribe(status => {
           if (status === 'SUBSCRIBED') {
             setRoomState('connected');
-            await channel.track(self);
+            void channel.track(self);
             recordRoomJoined();
             try { localStorage.setItem('qaddha.party-name.v1', self.name); } catch {/* optional */}
 
