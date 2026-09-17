@@ -1,6 +1,5 @@
 import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
 import QRCode from 'qrcode';
-import { saveActiveHostRoom } from './multiplayerSession';
 
 const SUPABASE_URL = 'https://uhbtcjlapgpsohbkotpd.supabase.co';
 // Public browser anon key. Never replace this with a service-role/private key.
@@ -50,7 +49,6 @@ export function createPartyCode(length = 6) {
   const bytes = crypto.getRandomValues(new Uint8Array(length));
   let value = '';
   for (const byte of bytes) value += roomAlphabet[byte % roomAlphabet.length];
-  if (length === 6) saveActiveHostRoom(value);
   return value;
 }
 
