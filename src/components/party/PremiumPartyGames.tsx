@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Brain, Check, ChevronLeft, Clock3, Flame, RefreshCw, RotateCcw, ShieldQuestion, Sparkles, Trophy, Users, X, Zap } from 'lucide-react';
-import { clearMultiplayerChallenge, publishMultiplayerChallenge } from '../../utils/multiplayerSession';
+import { clearMultiplayerChallenge, publishMultiplayerChallenge, publishMultiplayerTeamNames } from '../../utils/multiplayerSession';
 
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 type Team = { name: string; score: number };
@@ -158,6 +158,7 @@ export function IntruderGame({ onHome }: { onHome: () => void }) {
   const [picked,setPicked]=useState<number|null>(null);
   const [revealed,setRevealed]=useState(false);
   const current=deck[round];
+  useEffect(()=>{publishMultiplayerTeamNames([teams[0].name,teams[1].name]);},[teams]);
   useEffect(()=>{
     if(phase==='playing'&&current&&!revealed){
       publishMultiplayerChallenge({
