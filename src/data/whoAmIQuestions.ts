@@ -1,12 +1,12 @@
 import { WHO_AM_I_EXPANSION } from './whoAmIExpansion';
 
-export type WhoAmIDifficulty = 'easy' | 'medium' | 'hard';
+export type WhoAmIDifficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 
 export type WhoAmICard = {
   id: string;
   answer: string;
   category: string;
-  difficulty: WhoAmIDifficulty;
+  difficulty: Exclude<WhoAmIDifficulty, 'mixed'>;
   clues: [string, string, string, string];
 };
 
@@ -46,10 +46,7 @@ const BASE_CARDS: WhoAmICard[] = [
 export const WHO_AM_I_CARDS: WhoAmICard[] = [...BASE_CARDS, ...WHO_AM_I_EXPANSION];
 
 export function cardsForDifficulty(difficulty: WhoAmIDifficulty) {
-  // Qaddha now targets medium → hard play. The old easy pool remains as legacy data
-  // but is not selected by default, and fictional characters are excluded.
   const realCards = WHO_AM_I_CARDS.filter(card => !['شخصيات خيالية','رسوم متحركة','أفلام وروايات'].includes(card.category));
-  if (difficulty === 'hard') return realCards.filter(card => card.difficulty === 'hard');
-  if (difficulty === 'medium') return realCards.filter(card => card.difficulty === 'medium' || card.difficulty === 'hard');
-  return realCards.filter(card => card.difficulty === 'medium');
+  if (difficulty === 'mixed') return realCards;
+  return realCards.filter(card => card.difficulty === difficulty);
 }
