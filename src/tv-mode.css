@@ -1,0 +1,87 @@
+/* Automatic large-screen presentation mode for Qaddha. */
+html[data-qaddha-display="tv"],
+html[data-qaddha-display="tv"] body,
+html[data-qaddha-display="tv"] #root,
+html[data-qaddha-display="tv"] .party-app {
+  min-width: 100%;
+  min-height: 100dvh;
+}
+
+html[data-qaddha-display="tv"] body {
+  overflow-x: hidden;
+}
+
+html[data-qaddha-display="tv"] .party-app {
+  width: 100%;
+}
+
+html[data-qaddha-display="tv"] .party-app main {
+  width: min(100%, 1800px);
+  max-width: 1800px;
+  margin-inline: auto;
+  padding-inline: clamp(24px, 3vw, 64px);
+}
+
+html[data-qaddha-display="tv"] .party-app .topbar {
+  width: min(calc(100% - 32px), 1740px);
+  max-width: 1740px;
+  margin-inline: auto;
+}
+
+html[data-qaddha-display="tv"] .question-card h2,
+html[data-qaddha-display="tv"] .new-stage > h2,
+html[data-qaddha-display="tv"] .huroof-question h2,
+html[data-qaddha-display="tv"] .who-clue,
+html[data-qaddha-display="tv"] .game-copy h3 {
+  text-wrap: balance;
+}
+
+html[data-qaddha-display="tv"] button,
+html[data-qaddha-display="tv"] input,
+html[data-qaddha-display="tv"] select {
+  min-height: 48px;
+}
+
+@media (orientation: landscape) and (min-width: 700px) {
+  html[data-qaddha-display="tv"] .new-game,
+  html[data-qaddha-display="tv"] .who-arena,
+  html[data-qaddha-display="tv"] .huroof-arena,
+  html[data-qaddha-display="tv"] .game-flow {
+    width: 100%;
+    max-width: 1680px;
+    margin-inline: auto;
+  }
+
+  html[data-qaddha-display="tv"] .new-stage,
+  html[data-qaddha-display="tv"] .who-stage,
+  html[data-qaddha-display="tv"] .question-stage {
+    min-height: calc(100dvh - 150px);
+  }
+
+  html[data-qaddha-display="tv"] .question-card h2,
+  html[data-qaddha-display="tv"] .new-stage > h2,
+  html[data-qaddha-display="tv"] .huroof-question h2 {
+    font-size: clamp(30px, 3.1vw, 58px);
+    line-height: 1.35;
+  }
+}
+
+@media (min-width: 1600px) {
+  html[data-qaddha-display="tv"] {
+    font-size: 18px;
+  }
+
+  html[data-qaddha-display="tv"] .lobby-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(18px, 1.5vw, 30px);
+  }
+
+  html[data-qaddha-display="tv"] .game-copy h3 {
+    font-size: clamp(24px, 1.65vw, 32px);
+  }
+
+  html[data-qaddha-display="tv"] .game-copy p,
+  html[data-qaddha-display="tv"] .game-copy span {
+    font-size: clamp(14px, 1vw, 18px);
+  }
+}
