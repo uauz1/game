@@ -66,6 +66,8 @@ export type MultiplayerChallenge = {
   answers: string[];
   points: number;
   choices?: string[];
+  mode?: 'single' | 'sequence';
+  sequenceAnswers?: string[];
 };
 
 const CHALLENGE_KEY = 'qaddha.multiplayer-challenge.v1';
@@ -78,6 +80,8 @@ export function publishMultiplayerChallenge(challenge: MultiplayerChallenge) {
       answers: challenge.answers.filter(Boolean).map(value => value.trim()).filter(Boolean),
       points: Math.max(0, Math.round(challenge.points)),
       choices: challenge.choices?.filter(Boolean).map(value => value.trim()).filter(Boolean),
+      mode: challenge.mode==='sequence'?'sequence':'single',
+      sequenceAnswers: challenge.sequenceAnswers?.filter(Boolean).map(value=>value.trim()).filter(Boolean),
     };
     sessionStorage.setItem(CHALLENGE_KEY, JSON.stringify(clean));
     window.dispatchEvent(new CustomEvent('qaddha:multiplayer-challenge', { detail: clean }));
@@ -105,6 +109,8 @@ export function readMultiplayerChallenge(): MultiplayerChallenge | null {
       answers: parsed.answers.filter((value): value is string => typeof value === 'string'),
       points: Math.max(0, parsed.points),
       choices: Array.isArray(parsed.choices) ? parsed.choices.filter((value): value is string => typeof value === 'string') : undefined,
+      mode: parsed.mode==='sequence'?'sequence':'single',
+      sequenceAnswers: Array.isArray(parsed.sequenceAnswers) ? parsed.sequenceAnswers.filter((value):value is string=>typeof value==='string') : undefined,
     };
   } catch { return null; }
 }
@@ -118,6 +124,12 @@ function normalizeChallengeAnswer(value: string) {
 }
 
 export function judgeMultiplayerChallenge(challenge: MultiplayerChallenge, submittedValue: string) {
+  if(challenge.mode==='sequence'&&challenge.sequenceAnswers?.length){
+    const actualParts=submittedValue.split('\u001f').map(normalizeChallengeAnswer).filter(Boolean);
+    const expectedParts=challenge.sequenceAnswers.map(normalizeChallengeAnswer);
+    const correct=actualParts.length===expectedParts.length&&actualParts.every((value,index)=>value===expectedParts[index]);
+    return {correct,points:challenge.points,canonical:challenge.sequenceAnswers.join(' ← ')};
+  }
   let submitted = submittedValue.trim();
   const numeric = Number(submitted);
   if (challenge.choices && Number.isInteger(numeric) && numeric >= 1 && numeric <= challenge.choices.length) {
