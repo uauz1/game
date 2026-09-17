@@ -47,10 +47,13 @@ export function saveMultiplayerPlayerName(name: string) {
   try { localStorage.setItem(PLAYER_NAME_KEY, name.trim().slice(0, 18)); } catch {/* optional */}
 }
 
+export type MultiplayerTeam = 0 | 1;
+
 export type MultiplayerInput = {
   id: string;
   playerId: string;
   playerName: string;
+  team: MultiplayerTeam;
   kind: 'buzz' | 'answer';
   value?: string;
   sentAt: number;
