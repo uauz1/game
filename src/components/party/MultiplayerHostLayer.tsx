@@ -78,7 +78,7 @@ export default function MultiplayerHostLayer(){
           if(result.supported&&result.correct===true&&!autoScoredRef.current.has(incoming.id)){
             autoScoredRef.current.add(incoming.id);
             const roundKey=activeChallenge?.roundKey||`${gameRef.current}:fallback`;
-            const firstTeamScore=!roundScoredRef.current.has(roundKey);
+            const firstTeamScore=result.points>0&&!roundScoredRef.current.has(roundKey);
             if(firstTeamScore){roundScoredRef.current.add(roundKey);window.dispatchEvent(new CustomEvent('qaddha:multiplayer-team-score',{detail:{gameId:gameRef.current,team:incoming.team===1?1:0,points:result.points,roundKey,inputId:incoming.id,playerName:incoming.playerName}}));}
             sendScore(incoming.playerId,result.points);
             void channel.send({type:'broadcast',event:'host-message',payload:{text:firstTeamScore?`إجابة صحيحة لفريقك +${result.points}`:'إجابة صحيحة، لكن الجولة حُسمت بالفعل'}});
