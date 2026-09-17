@@ -38,7 +38,7 @@ export default function MultiplayerHostLayer(){
   };
 
   useEffect(()=>{
-    const refreshChallenge=()=>{challengeRef.current=readMultiplayerChallenge();};
+    const refreshChallenge=()=>{challengeRef.current=readMultiplayerChallenge();const active=challengeRef.current;if(active)void channelRef.current?.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[]}});};
     window.addEventListener('qaddha:multiplayer-challenge',refreshChallenge);
     return()=>window.removeEventListener('qaddha:multiplayer-challenge',refreshChallenge);
   },[]);
@@ -60,6 +60,7 @@ export default function MultiplayerHostLayer(){
           upsert({id:member.id,name:member.name.slice(0,18),joinedAt:typeof member.joinedAt==='number'?member.joinedAt:Date.now()});
           void channel.send({type:'broadcast',event:'host-message',payload:{text:'تم الاتصال بالمضيف'}});
           if(gameRef.current)void channel.send({type:'broadcast',event:'game',payload:{gameId:gameRef.current}});
+          const active=challengeRef.current;if(active)void channel.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[]}});
         }
       })
       .on('broadcast',{event:'player-input'},({payload})=>{
