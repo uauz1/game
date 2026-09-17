@@ -93,7 +93,7 @@ export default function App() {
   useQaddhaPreferences();
   usePWA();
   const savePlayerData=(next:typeof playerData)=>{setPlayerData(next);try{localStorage.setItem(PLAYER_KEY,JSON.stringify(next))}catch{/* Guest history stays available for this visit. */}};
-  const go=(next:string)=>{if(games.some(game=>game.id===next)){setLastGame(next);const recent=[{gameId:next,playedAt:Date.now()},...playerData.recent.filter(item=>item.gameId!==next)].slice(0,games.length);savePlayerData({...playerData,recent});try{localStorage.setItem('qaddha.last-game',next)}catch{/* Recent game is optional. */}}setHomeConfirm(false);setScreen(next); window.scrollTo({top:0,behavior:'instant'});};
+  const go=(next:string)=>{if(games.some(game=>game.id===next)){window.dispatchEvent(new CustomEvent('qaddha:game-changed',{detail:{gameId:next}}));setLastGame(next);const recent=[{gameId:next,playedAt:Date.now()},...playerData.recent.filter(item=>item.gameId!==next)].slice(0,games.length);savePlayerData({...playerData,recent});try{localStorage.setItem('qaddha.last-game',next)}catch{/* Recent game is optional. */}}setHomeConfirm(false);setScreen(next); window.scrollTo({top:0,behavior:'instant'});};
   const returnTarget=()=>{const pending=readPendingSessionGame();return pending?.gameId===screen?'session':'home';};
   const requestHome=()=>{if(readQaddhaPreferences().confirmExit)setHomeConfirm(true);else go(returnTarget());};
   const toggleFavorite=(gameId:string)=>{const favorites=playerData.favorites.includes(gameId)?playerData.favorites.filter(id=>id!==gameId):[...playerData.favorites,gameId];savePlayerData({...playerData,favorites});};
