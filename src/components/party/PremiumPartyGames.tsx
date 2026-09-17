@@ -179,6 +179,8 @@ export function IntruderGame({ onHome }: { onHome: () => void }) {
     setDeck(next);setRound(0);setTurn(0);setPicked(null);setRevealed(false);setTeams(value=>value.map(team=>({...team,score:0})));setPhase('playing');
   };
 
+  useEffect(()=>{const receive=(event:Event)=>{const detail=(event as CustomEvent<{gameId?:string;team?:number;points?:number}>).detail;if(detail?.gameId!=='intruder'||phase!=='playing'||revealed||!current)return;const team=detail.team===1?1:0;const points=typeof detail.points==='number'?detail.points:(current.difficulty==='hard'?300:current.difficulty==='medium'?200:100);setPicked(current.answer);setRevealed(true);setTeams(value=>value.map((item,index)=>index===team?{...item,score:item.score+points}:item));};window.addEventListener('qaddha:multiplayer-team-score',receive);return()=>window.removeEventListener('qaddha:multiplayer-team-score',receive);},[current,phase,revealed]);
+
   const choose=(index:number)=>{
     if(revealed||!current)return;
     setPicked(index);setRevealed(true);
