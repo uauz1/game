@@ -102,6 +102,7 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
           const incoming = payload as { gameId?: string } | null;
           if (incoming?.gameId && games.some(game => game.id === incoming.gameId)) {
             setRoomMessage(`المضيف اختار: ${games.find(game => game.id === incoming.gameId)?.title}`);
+            if(!host) onPlay(incoming.gameId);
           }
         })
         .subscribe(status => {
