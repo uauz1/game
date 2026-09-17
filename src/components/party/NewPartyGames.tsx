@@ -5,7 +5,7 @@ import { characterCards, connectionCards, feudRounds, photoCards, riddles, speed
 import { drawWithoutRepeats } from '../../utils/newGameRotation';
 import { useNewGameNumber } from '../../utils/newGameSettings';
 import { loadSharedTeams, saveSharedTeams } from '../../utils/sharedTeams';
-import { clearMultiplayerChallenge, publishMultiplayerChallenge } from '../../utils/multiplayerSession';
+import { clearMultiplayerChallenge, publishMultiplayerChallenge, publishMultiplayerTeamNames } from '../../utils/multiplayerSession';
 import Countdown from './Countdown';
 import { HostPairingPanel, useFamilyHostRoom, type FamilyHostCommand, type FamilyHostState } from './HostRoom';
 
@@ -60,6 +60,7 @@ export function CharacterGuessGame({ onHome }: GameProps) {
 }
 
 export function RiddlesGame({ onHome }: GameProps) {
+  useEffect(()=>{publishMultiplayerTeamNames([teams[0].name,teams[1].name]);},[teams]);
   const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useNewGameNumber('riddles','seconds',30); const [rounds,setRounds]=useNewGameNumber('riddles','rounds',6); const [deck,setDeck]=useState(riddles); const [round,setRound]=useState(0); const [revealed,setRevealed]=useState(false); const [timedOut,setTimedOut]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
   const start=()=>{setDeck(drawWithoutRepeats('riddles',riddles,rounds,item=>item[0]));setTeams(prepareTeams(teams));setRound(0);setRevealed(false);setTimedOut(false);setPhase('play');};
   useEffect(()=>{if(phase==='play'&&deck[round]&&!revealed&&!timedOut){publishMultiplayerChallenge({gameId:'riddles',roundKey:`riddle-${round}-${deck[round][0]}`,answers:[deck[round][1]],points:100});return()=>clearMultiplayerChallenge('riddles');}clearMultiplayerChallenge('riddles');},[deck,phase,revealed,round,timedOut]);
@@ -77,6 +78,7 @@ export function PhotoChallengeGame({ onHome }: GameProps) {
 }
 
 export function FastestGame({ onHome }: GameProps) {
+  useEffect(()=>{publishMultiplayerTeamNames([teams[0].name,teams[1].name]);},[teams]);
   const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useNewGameNumber('fast','seconds',20); const [rounds,setRounds]=useNewGameNumber('fast','rounds',6); const [deck,setDeck]=useState(speedQuestions); const [round,setRound]=useState(0); const [buzz,setBuzz]=useState<number|null>(null); const [revealed,setRevealed]=useState(false); const [expired,setExpired]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
   const start=()=>{setDeck(drawWithoutRepeats('speed',speedQuestions,rounds,item=>item[0]));setTeams(prepareTeams(teams));setRound(0);setBuzz(null);setRevealed(false);setExpired(false);setPhase('play');};
   useEffect(()=>{if(phase==='play'&&deck[round]&&!expired&&!revealed){publishMultiplayerChallenge({gameId:'fast',roundKey:`fast-${round}-${deck[round][0]}`,answers:[deck[round][1]],points:100});return()=>clearMultiplayerChallenge('fast');}clearMultiplayerChallenge('fast');},[deck,expired,phase,revealed,round]);
@@ -96,6 +98,7 @@ export function WordBankGame({ onHome }: GameProps) {
 }
 
 export function ConnectionGame({ onHome }: GameProps) {
+  useEffect(()=>{publishMultiplayerTeamNames([teams[0].name,teams[1].name]);},[teams]);
   const [teams,setTeams]=useState(initialTeams);
   const [seconds,setSeconds]=useNewGameNumber('connection','seconds',45);
   const [rounds,setRounds]=useNewGameNumber('connection','rounds',6);
