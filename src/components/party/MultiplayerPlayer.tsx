@@ -66,7 +66,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
         .subscribe(next=>{
           if(next==='SUBSCRIBED'){
             setStatus('connected');
-            const presence={id:playerId.current,name:clean,team,joinedAt:Date.now(),role:'player'} as const;await channel.track(presence);void channel.send({type:'broadcast',event:'hello',payload:presence});
+            const presence={id:playerId.current,name:clean,team,joinedAt:Date.now(),role:'player'} as const;void channel.track(presence);void channel.send({type:'broadcast',event:'hello',payload:presence});
           } else if(next==='CHANNEL_ERROR'||next==='TIMED_OUT'){
             setStatus('error'); setNotice('تعذر الاتصال بالغرفة.');
           }
