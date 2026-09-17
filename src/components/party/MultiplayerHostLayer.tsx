@@ -69,7 +69,7 @@ export default function MultiplayerHostLayer(){
           void channel.send({type:'broadcast',event:'host-message',payload:{text:'تم الاتصال بالمضيف'}});
           if(gameRef.current)void channel.send({type:'broadcast',event:'game',payload:{gameId:gameRef.current}});
           const teams=loadSharedTeams();if(teams)void channel.send({type:'broadcast',event:'team-info',payload:{teams:teams.map(team=>team.name)}});
-          const active=challengeRef.current;if(active)void channel.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[]}});
+          const active=challengeRef.current;if(active)void channel.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[],mode:active.mode||'single',requiredSelections:active.sequenceAnswers?.length||0}});
         }
       })
       .on('broadcast',{event:'team-change'},({payload})=>{const incoming=payload as Partial<Member>;if(typeof incoming.id==='string')setMembers(current=>current.map(member=>member.id===incoming.id?{...member,team:incoming.team===1?1:0}:member));})
