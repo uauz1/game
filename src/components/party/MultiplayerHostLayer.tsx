@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, Minus, Plus, RotateCcw, Users, Wifi, X, Zap } from 'lucide-react';
-import { createPublicLobbyChannel, removeRealtimeChannel } from '../../utils/qaddhaRealtime';
+import { createPublicLobbyPresenceChannel, removeRealtimeChannel } from '../../utils/qaddhaRealtime';
 import { buildMultiplayerJoinUrl, clearActiveHostRoom, judgeMultiplayerChallenge, readActiveHostRoom, readMultiplayerChallenge, type MultiplayerChallenge, type MultiplayerInput } from '../../utils/multiplayerSession';
 import { autoJudgeMultiplayerAnswer, type AutoJudgeResult } from '../../utils/multiplayerAutoJudge';
 import { loadSharedTeams } from '../../utils/sharedTeams';
@@ -20,7 +20,8 @@ export default function MultiplayerHostLayer(){
   const challengeRef=useRef<MultiplayerChallenge|null>(readMultiplayerChallenge());
   const [collapsed,setCollapsed]=useState(true);
   const [copied,setCopied]=useState(false);
-  const channelRef=useRef<ReturnType<typeof createPublicLobbyChannel>|null>(null);
+  const channelRef=useRef<ReturnType<typeof createPublicLobbyPresenceChannel>|null>(null);
+  const hostPresenceId=useRef(`host-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`);
   const gameRef=useRef('');
   const autoScoredRef=useRef(new Set<string>());
   const roundScoredRef=useRef(new Set<string>());
@@ -56,13 +57,21 @@ export default function MultiplayerHostLayer(){
     const code=room?.code;
     if(!code)return;
     let disposed=false;
-    const channel=createPublicLobbyChannel(code);
+    const channel=createPublicLobbyPresenceChannel(code,hostPresenceId.current);
     channelRef.current=channel;
     const upsert=(member:Member)=>setMembers(current=>{
       const next=[...current.filter(item=>item.id!==member.id),member].sort((a,b)=>a.joinedAt-b.joinedAt);
       return next.slice(0,32);
     });
+    const syncPresence=()=>{
+      const state=channel.presenceState<{id:string;name:string;team?:number;joinedAt?:number;role?:string}>();
+      const players=Object.values(state).flat().filter(p=>p?.role==='player'&&typeof p.id==='string'&&typeof p.name==='string').map(p=>({id:p.id,name:p.name.slice(0,18),team:p.team===1?1:0,joinedAt:typeof p.joinedAt==='number'?p.joinedAt:Date.now()} as Member)).sort((a,b)=>a.joinedAt-b.joinedAt).slice(0,32);
+      setMembers(players);
+    };
     channel
+      .on('presence',{event:'sync'},syncPresence)
+      .on('presence',{event:'join'},syncPresence)
+      .on('presence',{event:'leave'},syncPresence)
       .on('broadcast',{event:'hello'},({payload})=>{
         const member=payload as Partial<Member>;
         if(typeof member.id==='string'&&typeof member.name==='string'){
@@ -99,9 +108,9 @@ export default function MultiplayerHostLayer(){
       })
       .subscribe(status=>{
         if(disposed)return;
-        setConnected(status==='SUBSCRIBED');
+        setConnected(status==='SUBSCRIBED');if(status==='SUBSCRIBED')void channel.track({id:hostPresenceId.current,name:'المضيف',role:'host',joinedAt:Date.now()});
       });
-    return()=>{disposed=true;channelRef.current=null;void removeRealtimeChannel(channel);};
+    return()=>{disposed=true;channelRef.current=null;void channel.untrack().catch(()=>undefined);void removeRealtimeChannel(channel);};
   },[room?.code]);
 
   useEffect(()=>{
