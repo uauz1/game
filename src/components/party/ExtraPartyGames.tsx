@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Brain, Check, ChevronDown, ChevronUp, Eye, Gavel, RotateCcw, Sparkles, Trophy, Users, X } from 'lucide-react';
 import { drawWithoutRepeats } from '../../utils/newGameRotation';
 import { loadSharedTeams } from '../../utils/sharedTeams';
+import { clearMultiplayerChallenge, publishMultiplayerChallenge, publishMultiplayerTeamNames } from '../../utils/multiplayerSession';
 
 const auctionRounds = [
   { id:'auction-01', title:'أشياء تلقاها في المطار', answers:['جواز سفر','بوابة','طائرة','حقائب','موظف جوازات','سوق حر','عربة حقائب','شاشة رحلات'], decoys:['مضرب تنس','فرن','خيمة'] },
@@ -123,11 +124,14 @@ export function FlashMemoryGame({ onHome }:{onHome:()=>void}) {
 
 export function MissingGame({ onHome }:{onHome:()=>void}) {
   const [names]=useState(teamNames); const [deck,setDeck]=useState(()=>drawWithoutRepeats('missing',missingRounds,8,x=>x.id)); const [round,setRound]=useState(0); const [active,setActive]=useState(0); const current=deck[round]??missingRounds[0]; const [hidden,setHidden]=useState(false); const [answer,setAnswer]=useState(''); const [score,setScore]=useState<[number,number]>([0,0]); const [finished,setFinished]=useState(false);
+  useEffect(()=>{publishMultiplayerTeamNames(names);},[names]);
+  useEffect(()=>{if(!finished&&hidden&&!answer){publishMultiplayerChallenge({gameId:'missing',roundKey:current.id,answers:[current.missing],choices:current.choices,points:1});return()=>clearMultiplayerChallenge('missing');}clearMultiplayerChallenge('missing');},[answer,current,finished,hidden]);
   const visible=hidden?current.items.filter((x,index)=>x!==current.missing||current.items.indexOf(x)!==index):current.items;
   const choices=useMemo(()=>shuffle(current.choices),[current]);
   const pick=(x:string)=>{if(answer||!hidden)return;setAnswer(x);if(x===current.missing)setScore(s=>s.map((v,i)=>i===active?v+1:v) as [number,number])};
   const next=()=>{if(round+1>=deck.length){setFinished(true);return;}const r=round+1;setRound(r);setActive(r%2);setHidden(false);setAnswer('')};
   const restart=()=>{setDeck(drawWithoutRepeats('missing',missingRounds,8,x=>x.id));setRound(0);setActive(0);setHidden(false);setAnswer('');setScore([0,0]);setFinished(false)};
+  useEffect(()=>{const receive=(event:Event)=>{const detail=(event as CustomEvent<{gameId?:string;team?:number;points?:number}>).detail;if(detail?.gameId!=='missing'||finished||!hidden||answer)return;const team=detail.team===1?1:0;setScore(value=>value.map((item,index)=>index===team?item+1:item) as [number,number]);setAnswer(current.missing);};window.addEventListener('qaddha:multiplayer-team-score',receive);return()=>window.removeEventListener('qaddha:multiplayer-team-score',receive);},[answer,current.missing,finished,hidden]);
   const result=score[0]===score[1]?`تعادل ${score[0]} - ${score[1]}`:`${score[0]>score[1]?names[0]:names[1]} فاز · ${score[0]} - ${score[1]}`;
   return <Shell title="وش الناقص؟" subtitle="ركزوا في العناصر، نخفي واحد… ودور كل فريق يختبر ملاحظته." icon={<Eye/>} onHome={onHome}>{finished?<Finished score={result} total={deck.length} onRestart={restart}/>:<><TeamScore names={names} score={score} active={active} round={round} total={deck.length}/><article className="extra-card"><small>دور {names[active]}</small><h2>{hidden?'وش العنصر اللي اختفى؟':'احفظ العناصر زين'}</h2><div className="memory-strip">{visible.map((x,i)=><span key={`${x}-${i}`}>{x}</span>)}</div>{!hidden?<button className="primary extra-submit" onClick={()=>setHidden(true)}>جاهز · اخفِ عنصر</button>:!answer?<div className="answer-grid">{choices.map(x=><button key={x} onClick={()=>pick(x)}>{x}</button>)}</div>:<div className={`extra-result ${answer===current.missing?'right':'wrong'}`}>{answer===current.missing?<Check/>:<X/>}<b>{answer===current.missing?'صح · نقطة!':`الناقص كان: ${current.missing}`}</b><button className="secondary" onClick={next}>{round+1===deck.length?'عرض النتيجة':'الجولة التالية'}</button></div>}</article></>}</Shell>;
 }
