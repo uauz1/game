@@ -74,6 +74,17 @@ export default function TeamGame({ onHome }: { onHome: () => void }) {
   },[s.current,s.revealed,s.stage]);
 
   useEffect(()=>{
+    const receive=(event:Event)=>{
+      const detail=(event as CustomEvent<{gameId?:string;team?:number}>).detail;
+      if(detail?.gameId!=='teams'||s.stage!=='question'||!s.current||s.revealed)return;
+      dispatch({type:'reveal'});
+      dispatch({type:'award',team:detail.team===1?1:0});
+    };
+    window.addEventListener('qaddha:multiplayer-team-score',receive);
+    return()=>window.removeEventListener('qaddha:multiplayer-team-score',receive);
+  },[s.current,s.revealed,s.stage]);
+
+  useEffect(()=>{
     if(s.stage!=='results')return;
     const signature=[s.teams[0].name,s.teams[1].name,s.teams[0].score,s.teams[1].score,...s.awards.map(a=>`${a.question.id}:${a.team??'x'}`)].join('|');
     if(resultSignatureRef.current===signature)return;
