@@ -5,6 +5,7 @@ import { loadHuroofPreferences } from '../../utils/huroofStorage';
 import { drawWithoutRepeats } from '../../utils/newGameRotation';
 import { useNewGameNumber } from '../../utils/newGameSettings';
 import { loadSharedTeams, saveSharedTeams } from '../../utils/sharedTeams';
+import { clearMultiplayerChallenge, publishMultiplayerChallenge, publishMultiplayerTeamNames } from '../../utils/multiplayerSession';
 import Countdown from './Countdown';
 import WhoAnswerReveal from './WhoAnswerReveal';
 
@@ -32,6 +33,8 @@ export default function RealCharacterGuess({ onHome }: { onHome: () => void }) {
   const [choice, setChoice] = useState('');
   const [phase, setPhase] = useState<Phase>('setup');
   const [portraitReveal, setPortraitReveal] = useState<{ card: RealCharacterCard; teamName: string } | null>(null);
+
+  useEffect(()=>{publishMultiplayerTeamNames([teams[0].name,teams[1].name]);},[teams]);
 
   const card = deck[round];
   const turn = round % 2;
@@ -64,6 +67,8 @@ export default function RealCharacterGuess({ onHome }: { onHome: () => void }) {
     setPhase('play');
   };
 
+  useEffect(()=>{if(phase==='play'&&card&&!choice){publishMultiplayerChallenge({gameId:'character',roundKey:card.id,answers:[card.answer],choices:card.options,points});return()=>clearMultiplayerChallenge('character');}clearMultiplayerChallenge('character');},[card,choice,phase,points]);
+
   const choose = (answer: string) => {
     if (choice || !card) return;
     setChoice(answer);
@@ -72,6 +77,8 @@ export default function RealCharacterGuess({ onHome }: { onHome: () => void }) {
       setPortraitReveal({ card, teamName: teams[turn].name });
     }
   };
+
+  useEffect(()=>{const receive=(event:Event)=>{const detail=(event as CustomEvent<{gameId?:string;team?:number;points?:number}>).detail;if(detail?.gameId!=='character'||phase!=='play'||choice||!card)return;const team=detail.team===1?1:0;const awarded=typeof detail.points==='number'?detail.points:points;setTeams(current=>current.map((item,index)=>index===team?{...item,score:item.score+awarded}:item));setChoice(card.answer);setPortraitReveal({card,teamName:teams[team].name});};window.addEventListener('qaddha:multiplayer-team-score',receive);return()=>window.removeEventListener('qaddha:multiplayer-team-score',receive);},[card,choice,phase,points,teams]);
 
   const next = () => {
     setPortraitReveal(null);
