@@ -41,12 +41,11 @@ for (const file of files) {
   }
 }
 
-// Runtime-like canonicalization: keep one normalized prompt and one stable id.
 const seenIds = new Set();
 const seenPrompts = new Set();
 const unique = [];
 for (const q of all) {
-  if (q.id === 'vp-space-001') continue; // retired changing-fact entry
+  if (q.id === 'vp-space-001') continue;
   const prompt = normalizeArabic(q.text);
   if (seenIds.has(q.id) || seenPrompts.has(prompt)) continue;
   seenIds.add(q.id);
@@ -54,12 +53,8 @@ for (const q of all) {
   unique.push(q);
 }
 
-const competitive = unique.filter((q) => q.difficulty === 'medium' || q.difficulty === 'hard');
-const categories = new Map();
-for (const q of competitive) {
-  if (!categories.has(q.category)) categories.set(q.category, []);
-  categories.get(q.category).push(q);
-}
+const levels = ['easy', 'medium', 'hard'];
+const buckets = Object.fromEntries(levels.map(level => [level, unique.filter(q => q.difficulty === level)]));
 
 function shuffle(items) {
   const copy = [...items];
@@ -70,43 +65,74 @@ function shuffle(items) {
   return copy;
 }
 
-let withinSessionDuplicates = 0;
-let easyLeak = 0;
-let hardShare = 0;
-let totalSelected = 0;
-const history = new Map();
-
-for (let session = 0; session < 1000; session += 1) {
-  const medium = shuffle(competitive.filter((q) => q.difficulty === 'medium'));
-  const hard = shuffle(competitive.filter((q) => q.difficulty === 'hard'));
-  const desired = 20;
-  const candidates = [...medium.slice(0, 9), ...hard.slice(0, 11)]
-    .sort((a, b) => (history.get(a.id) ?? -1) - (history.get(b.id) ?? -1));
-  const picked = candidates.slice(0, desired);
-  const ids = picked.map((q) => q.id);
-  withinSessionDuplicates += ids.length - new Set(ids).size;
-  easyLeak += picked.filter((q) => q.difficulty === 'easy').length;
-  hardShare += picked.filter((q) => q.difficulty === 'hard').length;
-  totalSelected += picked.length;
-  picked.forEach((q) => history.set(q.id, session));
+function assertNoDuplicates(items, label) {
+  const ids = items.map(q => q.id);
+  if (ids.length !== new Set(ids).size) throw new Error(`${label}: duplicate ids inside one session`);
 }
 
-const hardPct = totalSelected ? Math.round((hardShare / totalSelected) * 100) : 0;
-const shallow = [...categories.entries()].filter(([, items]) => items.length < 8).map(([name, items]) => `${name}:${items.length}`);
-
-if (withinSessionDuplicates > 0) {
-  console.error(`Simulation failed: ${withinSessionDuplicates} duplicate picks inside sessions.`);
-  process.exit(1);
-}
-if (easyLeak > 0) {
-  console.error(`Simulation failed: ${easyLeak} easy questions leaked into competitive mixed sessions.`);
-  process.exit(1);
-}
-if (competitive.length < 350) {
-  console.error(`Simulation failed: competitive pool too small (${competitive.length}).`);
-  process.exit(1);
+function simulateExact(level, sessions = 500, size = 20) {
+  const source = buckets[level];
+  if (source.length < Math.min(20, size)) throw new Error(`${level}: pool too small (${source.length})`);
+  for (let i = 0; i < sessions; i += 1) {
+    const picked = shuffle(source).slice(0, Math.min(size, source.length));
+    assertNoDuplicates(picked, `${level} session ${i}`);
+    const leak = picked.find(q => q.difficulty !== level);
+    if (leak) throw new Error(`${level}: leaked ${leak.difficulty} question ${leak.id}`);
+  }
 }
 
-console.log(`Question simulation OK: ${unique.length} canonical usable entries, ${competitive.length} medium/hard.`);
-console.log(`1000 simulated sessions / ${totalSelected} selections / 0 within-session duplicates / ${hardPct}% hard.`);
-if (shallow.length) console.warn(`Competitive pools still shallow (<8): ${shallow.join(', ')}`);
+function simulateMixed(sessions = 1000, size = 20) {
+  const distribution = { easy: 0, medium: 0, hard: 0 };
+  for (let session = 0; session < sessions; session += 1) {
+    const order = shuffle(levels);
+    const base = Math.floor(size / 3);
+    const remainder = size % 3;
+    let picked = [];
+    order.forEach((level, index) => {
+      const quota = base + (index < remainder ? 1 : 0);
+      picked.push(...shuffle(buckets[level]).slice(0, quota));
+    });
+    const ids = new Set(picked.map(q => q.id));
+    if (picked.length < size) {
+      picked.push(...shuffle(unique.filter(q => !ids.has(q.id))).slice(0, size - picked.length));
+    }
+    picked = shuffle(picked).slice(0, size);
+    assertNoDuplicates(picked, `mixed session ${session}`);
+    const present = new Set(picked.map(q => q.difficulty));
+    if (levels.some(level => !present.has(level))) throw new Error(`mixed session ${session}: not all three levels represented`);
+    picked.forEach(q => { distribution[q.difficulty] += 1; });
+  }
+  return distribution;
+}
+
+for (const level of levels) simulateExact(level);
+const mixedDistribution = simulateMixed();
+
+const categories = new Map();
+for (const q of unique) {
+  if (!categories.has(q.category)) categories.set(q.category, { easy: 0, medium: 0, hard: 0, total: 0 });
+  const row = categories.get(q.category);
+  row.total += 1;
+  row[q.difficulty] += 1;
+}
+
+const shallow = [...categories.entries()]
+  .filter(([, row]) => row.total < 12)
+  .map(([name, row]) => `${name}:${row.total}`);
+const missingLevel = [...categories.entries()]
+  .filter(([, row]) => levels.some(level => row[level] === 0))
+  .map(([name, row]) => `${name}(e${row.easy}/m${row.medium}/h${row.hard})`);
+
+if (unique.length < 400) throw new Error(`Question pool too small (${unique.length})`);
+for (const level of levels) {
+  if (buckets[level].length < 60) throw new Error(`${level} pool too small (${buckets[level].length})`);
+}
+
+const totalMixed = Object.values(mixedDistribution).reduce((sum, n) => sum + n, 0);
+const pct = Object.fromEntries(levels.map(level => [level, Math.round((mixedDistribution[level] / totalMixed) * 100)]));
+console.log(`Question simulation OK: ${unique.length} canonical usable entries.`);
+console.log(`Difficulty pools: easy=${buckets.easy.length}, medium=${buckets.medium.length}, hard=${buckets.hard.length}.`);
+console.log(`Exact-level sessions: 500 each, 0 cross-level leaks, 0 within-session duplicates.`);
+console.log(`Random sessions: 1000, mix easy=${pct.easy}% medium=${pct.medium}% hard=${pct.hard}%, all levels represented.`);
+if (shallow.length) console.warn(`Shallow pools (<12): ${shallow.join(', ')}`);
+if (missingLevel.length) console.warn(`Categories missing at least one level: ${missingLevel.join(', ')}`);
