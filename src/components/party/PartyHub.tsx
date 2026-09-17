@@ -3,7 +3,7 @@ import { ArrowLeft, Check, Copy, Crown, Gamepad2, Radio, Search, ShieldCheck, Sp
 import { achievementsFor, levelProgress, readProgression, recordRoomJoined, type ProgressionState } from '../../utils/progression';
 import { createPartyCode, createPublicLobbyPresenceChannel, isValidPartyCode, normalizePartyCode, removeRealtimeChannel } from '../../utils/qaddhaRealtime';
 import { getTournamentStandings, readTournamentHistory } from '../../utils/tournamentHistory';
-import { clearActiveHostRoom, readActiveHostRoom } from '../../utils/multiplayerSession';
+import { clearActiveHostRoom, readActiveHostRoom, saveActiveHostRoom } from '../../utils/multiplayerSession';
 
 type Props = { onBack: () => void; onPlay: (gameId: string) => void; games: { id: string; title: string; tag: string }[] };
 type RoomMember = { id: string; name: string; role: 'host' | 'guest'; joinedAt: number };
@@ -122,7 +122,7 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
     }
   };
 
-  const createRoom = () => void connect(createPartyCode(), true);
+  const createRoom = () => {const code=createPartyCode();saveActiveHostRoom(code);void connect(code,true);};
   const joinRoom = () => void connect(codeInput, false);
   const copyCode = async () => {
     if (!roomCode) return;
@@ -136,6 +136,7 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
     if(roomState==='connected'&&!isHost){setRoomMessage('المضيف هو اللي يختار اللعبة للغرفة.');return;}
     const channel = channelRef.current;
     if (channel && roomState === 'connected') void channel.send({ type: 'broadcast', event: 'game', payload: { gameId } });
+    if(isHost&&roomCode)saveActiveHostRoom(roomCode);
     onPlay(gameId);
   };
 
