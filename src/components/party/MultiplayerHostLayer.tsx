@@ -46,7 +46,7 @@ export default function MultiplayerHostLayer(){
   },[]);
 
   useEffect(()=>{
-    const refreshChallenge=()=>{challengeRef.current=readMultiplayerChallenge();const active=challengeRef.current;if(active)void channelRef.current?.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[],mode:active.mode||'single',requiredSelections:active.sequenceAnswers?.length||0}});};
+    const refreshChallenge=()=>{challengeRef.current=readMultiplayerChallenge();const active=challengeRef.current;if(active)void channelRef.current?.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[],mode:active.mode||'single',requiredSelections:active.requiredSelections||active.sequenceAnswers?.length||0}});};
     window.addEventListener('qaddha:multiplayer-challenge',refreshChallenge);
     return()=>window.removeEventListener('qaddha:multiplayer-challenge',refreshChallenge);
   },[]);
@@ -80,7 +80,7 @@ export default function MultiplayerHostLayer(){
         setCollapsed(false);
         if(incoming.kind==='answer'&&incoming.value){
           const activeChallenge=challengeRef.current;
-          const direct = activeChallenge && activeChallenge.gameId===gameRef.current ? judgeMultiplayerChallenge(activeChallenge,incoming.value) : null;
+          const direct = activeChallenge && activeChallenge.gameId===gameRef.current && (activeChallenge.eligibleTeam===undefined||activeChallenge.eligibleTeam===incoming.team) ? judgeMultiplayerChallenge(activeChallenge,incoming.value) : null;
           const result: AutoJudgeResult = direct ? { supported:true, correct:direct.correct, points:direct.points, canonical:direct.canonical } : autoJudgeMultiplayerAnswer(gameRef.current,incoming.value);
           setJudged(current=>({...current,[incoming.id]:result}));
           if(result.supported&&result.correct===true&&!autoScoredRef.current.has(incoming.id)){
