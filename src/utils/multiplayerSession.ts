@@ -66,8 +66,11 @@ export type MultiplayerChallenge = {
   answers: string[];
   points: number;
   choices?: string[];
-  mode?: 'single' | 'sequence';
+  mode?: 'single' | 'sequence' | 'multi';
   sequenceAnswers?: string[];
+  multiAnswers?: string[];
+  requiredSelections?: number;
+  eligibleTeam?: MultiplayerTeam;
 };
 
 const CHALLENGE_KEY = 'qaddha.multiplayer-challenge.v1';
@@ -80,8 +83,11 @@ export function publishMultiplayerChallenge(challenge: MultiplayerChallenge) {
       answers: challenge.answers.filter(Boolean).map(value => value.trim()).filter(Boolean),
       points: Math.max(0, Math.round(challenge.points)),
       choices: challenge.choices?.filter(Boolean).map(value => value.trim()).filter(Boolean),
-      mode: challenge.mode==='sequence'?'sequence':'single',
+      mode: challenge.mode==='sequence'?'sequence':challenge.mode==='multi'?'multi':'single',
       sequenceAnswers: challenge.sequenceAnswers?.filter(Boolean).map(value=>value.trim()).filter(Boolean),
+      multiAnswers: challenge.multiAnswers?.filter(Boolean).map(value=>value.trim()).filter(Boolean),
+      requiredSelections: typeof challenge.requiredSelections==='number'?Math.max(1,Math.round(challenge.requiredSelections)):undefined,
+      eligibleTeam: challenge.eligibleTeam===1?1:challenge.eligibleTeam===0?0:undefined,
     };
     sessionStorage.setItem(CHALLENGE_KEY, JSON.stringify(clean));
     window.dispatchEvent(new CustomEvent('qaddha:multiplayer-challenge', { detail: clean }));
@@ -109,8 +115,11 @@ export function readMultiplayerChallenge(): MultiplayerChallenge | null {
       answers: parsed.answers.filter((value): value is string => typeof value === 'string'),
       points: Math.max(0, parsed.points),
       choices: Array.isArray(parsed.choices) ? parsed.choices.filter((value): value is string => typeof value === 'string') : undefined,
-      mode: parsed.mode==='sequence'?'sequence':'single',
+      mode: parsed.mode==='sequence'?'sequence':parsed.mode==='multi'?'multi':'single',
       sequenceAnswers: Array.isArray(parsed.sequenceAnswers) ? parsed.sequenceAnswers.filter((value):value is string=>typeof value==='string') : undefined,
+      multiAnswers: Array.isArray(parsed.multiAnswers) ? parsed.multiAnswers.filter((value):value is string=>typeof value==='string') : undefined,
+      requiredSelections: typeof parsed.requiredSelections==='number'?Math.max(1,Math.round(parsed.requiredSelections)):undefined,
+      eligibleTeam: parsed.eligibleTeam===1?1:parsed.eligibleTeam===0?0:undefined,
     };
   } catch { return null; }
 }
@@ -124,6 +133,13 @@ function normalizeChallengeAnswer(value: string) {
 }
 
 export function judgeMultiplayerChallenge(challenge: MultiplayerChallenge, submittedValue: string) {
+  if(challenge.mode==='multi'&&challenge.multiAnswers?.length){
+    const selected=submittedValue.split('\u001f').map(normalizeChallengeAnswer).filter(Boolean);
+    const allowed=new Set(challenge.multiAnswers.map(normalizeChallengeAnswer));
+    const required=challenge.requiredSelections||selected.length;
+    const correct=selected.length===required&&new Set(selected).size===selected.length&&selected.every(value=>allowed.has(value));
+    return {correct,points:challenge.points,canonical:challenge.multiAnswers.join('، ')};
+  }
   if(challenge.mode==='sequence'&&challenge.sequenceAnswers?.length){
     const actualParts=submittedValue.split('\u001f').map(normalizeChallengeAnswer).filter(Boolean);
     const expectedParts=challenge.sequenceAnswers.map(normalizeChallengeAnswer);
