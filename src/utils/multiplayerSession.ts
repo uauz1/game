@@ -135,3 +135,12 @@ export function judgeMultiplayerChallenge(challenge: MultiplayerChallenge, submi
     canonical: challenge.answers[0] || '',
   };
 }
+
+
+export function publishMultiplayerTeamNames(names: [string, string]) {
+  try {
+    const clean = names.map(name => name.trim().slice(0, 22)) as [string, string];
+    if (!clean[0] || !clean[1]) return;
+    window.dispatchEvent(new CustomEvent('qaddha:multiplayer-team-names', { detail: clean }));
+  } catch {/* optional */}
+}
