@@ -4,7 +4,7 @@ import { createPublicLobbyChannel, removeRealtimeChannel } from '../../utils/qad
 import { buildMultiplayerJoinUrl, clearActiveHostRoom, judgeMultiplayerChallenge, readActiveHostRoom, readMultiplayerChallenge, type MultiplayerChallenge, type MultiplayerInput } from '../../utils/multiplayerSession';
 import { autoJudgeMultiplayerAnswer, type AutoJudgeResult } from '../../utils/multiplayerAutoJudge';
 
-type Member={id:string;name:string;joinedAt:number};
+type Member={id:string;name:string;team:0|1;joinedAt:number};
 type ScoreMap=Record<string,number>;
 type JudgeMap=Record<string,AutoJudgeResult>;
 
@@ -21,6 +21,7 @@ export default function MultiplayerHostLayer(){
   const channelRef=useRef<ReturnType<typeof createPublicLobbyChannel>|null>(null);
   const gameRef=useRef('');
   const autoScoredRef=useRef(new Set<string>());
+  const roundScoredRef=useRef(new Set<string>());
   const joinUrl=useMemo(()=>room?buildMultiplayerJoinUrl(room.code):'',[room]);
 
   useEffect(()=>{
@@ -57,12 +58,13 @@ export default function MultiplayerHostLayer(){
       .on('broadcast',{event:'hello'},({payload})=>{
         const member=payload as Partial<Member>;
         if(typeof member.id==='string'&&typeof member.name==='string'){
-          upsert({id:member.id,name:member.name.slice(0,18),joinedAt:typeof member.joinedAt==='number'?member.joinedAt:Date.now()});
+          upsert({id:member.id,name:member.name.slice(0,18),team:member.team===1?1:0,joinedAt:typeof member.joinedAt==='number'?member.joinedAt:Date.now()});
           void channel.send({type:'broadcast',event:'host-message',payload:{text:'تم الاتصال بالمضيف'}});
           if(gameRef.current)void channel.send({type:'broadcast',event:'game',payload:{gameId:gameRef.current}});
           const active=challengeRef.current;if(active)void channel.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[]}});
         }
       })
+      .on('broadcast',{event:'team-change'},({payload})=>{const incoming=payload as Partial<Member>;if(typeof incoming.id==='string')setMembers(current=>current.map(member=>member.id===incoming.id?{...member,team:incoming.team===1?1:0}:member));})
       .on('broadcast',{event:'player-input'},({payload})=>{
         const incoming=payload as MultiplayerInput;
         if(!incoming||typeof incoming.id!=='string'||typeof incoming.playerId!=='string'||typeof incoming.playerName!=='string')return;
@@ -75,8 +77,11 @@ export default function MultiplayerHostLayer(){
           setJudged(current=>({...current,[incoming.id]:result}));
           if(result.supported&&result.correct===true&&!autoScoredRef.current.has(incoming.id)){
             autoScoredRef.current.add(incoming.id);
+            const roundKey=activeChallenge?.roundKey||`${gameRef.current}:fallback`;
+            const firstTeamScore=!roundScoredRef.current.has(roundKey);
+            if(firstTeamScore){roundScoredRef.current.add(roundKey);window.dispatchEvent(new CustomEvent('qaddha:multiplayer-team-score',{detail:{gameId:gameRef.current,team:incoming.team===1?1:0,points:result.points,roundKey,inputId:incoming.id,playerName:incoming.playerName}}));}
             sendScore(incoming.playerId,result.points);
-            void channel.send({type:'broadcast',event:'host-message',payload:{text:`إجابة صحيحة تلقائيًا +${result.points}`}});
+            void channel.send({type:'broadcast',event:'host-message',payload:{text:firstTeamScore?`إجابة صحيحة لفريقك +${result.points}`:'إجابة صحيحة، لكن الجولة حُسمت بالفعل'}});
           }else if(result.supported&&result.correct===false){
             void channel.send({type:'broadcast',event:'host-message',payload:{text:'الإجابة وصلت، لكنها غير صحيحة'}});
           }
@@ -101,6 +106,7 @@ export default function MultiplayerHostLayer(){
           setInputs([]);
           setJudged({});
           autoScoredRef.current.clear();
+          roundScoredRef.current.clear();
           void channelRef.current?.send({type:'broadcast',event:'game',payload:{gameId}});
           void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{gameId}});
         }
@@ -112,16 +118,16 @@ export default function MultiplayerHostLayer(){
   if(!room)return null;
 
   const award=(input:MultiplayerInput,delta:number)=>sendScore(input.playerId,delta);
-  const resetRound=()=>{setInputs([]);setJudged({});autoScoredRef.current.clear();void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{at:Date.now()}});};
+  const resetRound=()=>{setInputs([]);setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{at:Date.now()}});};
   const copy=async()=>{try{await navigator.clipboard.writeText(joinUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1500);}catch{/* url visible through code */}};
-  const close=()=>{clearActiveHostRoom();setRoom(null);setInputs([]);setMembers([]);setScores({});setJudged({});autoScoredRef.current.clear();};
+  const close=()=>{clearActiveHostRoom();setRoom(null);setInputs([]);setMembers([]);setScores({});setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();};
 
   return <aside className={`mp-host ${collapsed?'collapsed':''}`} dir="rtl">
-    <div className="mp-host-head"><button className="mp-host-toggle" onClick={()=>setCollapsed(value=>!value)}><span className={connected?'live':''}><Wifi/></span><b>{room.code}</b><small>{members.length} لاعبين</small></button><button onClick={close} aria-label="إغلاق الغرفة"><X/></button></div>
+    <div className="mp-host-head"><button className="mp-host-toggle" onClick={()=>setCollapsed(value=>!value)}><span className={connected?'live':''}><Wifi/></span><b>{room.code}</b><small>{members.filter(member=>member.team===0).length} / {members.filter(member=>member.team===1).length} فرق</small></button><button onClick={close} aria-label="إغلاق الغرفة"><X/></button></div>
     {!collapsed&&<div className="mp-host-body">
       <div className="mp-host-share"><div><small>دخول اللاعبين</small><strong>{room.code}</strong></div><button onClick={copy}>{copied?<Check/>:<Copy/>}{copied?'تم':'نسخ الرابط'}</button></div>
       <div className="mp-host-actions"><button onClick={resetRound}><RotateCcw/> جولة جديدة</button><span><Users/> {members.length} متصل</span></div>
-      <div className="mp-input-feed">{inputs.length?inputs.map((input,index)=>{const verdict=judged[input.id];return <article key={input.id} className={`${input.kind==='buzz'?'is-buzz':''} ${verdict?.correct===true?'is-auto-correct':''} ${verdict?.correct===false?'is-auto-wrong':''}`}><span className="mp-place">{index+1}</span><div><b>{input.playerName}</b><small>{input.kind==='buzz'?<><Zap/> ضغط أول</>:input.value||'إجابة'}</small>{verdict?.supported&&verdict.correct!==null?<em>{verdict.correct?`✓ صحيحة تلقائيًا +${verdict.points}`:`✕ غير صحيحة${verdict.canonical?` · الحل: ${verdict.canonical}`:''}`}</em>:null}</div><strong>{scores[input.playerId]||0}</strong><div className="mp-score-buttons"><button onClick={()=>award(input,100)}><Plus/></button><button onClick={()=>award(input,-100)}><Minus/></button></div></article>}):<div className="mp-feed-empty"><Zap/><p>بانتظار ضغطات وإجابات اللاعبين…</p></div>}</div>
+      <div className="mp-input-feed">{inputs.length?inputs.map((input,index)=>{const verdict=judged[input.id];return <article key={input.id} className={`${input.kind==='buzz'?'is-buzz':''} ${verdict?.correct===true?'is-auto-correct':''} ${verdict?.correct===false?'is-auto-wrong':''}`}><span className="mp-place">{index+1}</span><div><b>{input.playerName} · فريق {input.team===1?'2':'1'}</b><small>{input.kind==='buzz'?<><Zap/> ضغط أول</>:input.value||'إجابة'}</small>{verdict?.supported&&verdict.correct!==null?<em>{verdict.correct?`✓ صحيحة تلقائيًا +${verdict.points}`:`✕ غير صحيحة${verdict.canonical?` · الحل: ${verdict.canonical}`:''}`}</em>:null}</div><strong>{scores[input.playerId]||0}</strong><div className="mp-score-buttons"><button onClick={()=>award(input,100)}><Plus/></button><button onClick={()=>award(input,-100)}><Minus/></button></div></article>}):<div className="mp-feed-empty"><Zap/><p>بانتظار ضغطات وإجابات اللاعبين…</p></div>}</div>
     </div>}
   </aside>;
 }
