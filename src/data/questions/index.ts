@@ -12,9 +12,11 @@ import { themedQuestions } from './themed';
 import { vaultQuestions } from './vault';
 import { vaultExpansionQuestions } from './vault_expansion';
 import { vaultPlusQuestions } from './vault_plus';
+import { difficultyExpansionQuestions } from './difficulty_expansion';
 
 const extrasFor = (category: string) => extraQuestions.filter((q) => q.category === category);
 const themedFor = (category: string) => themedQuestions.filter((q) => q.category === category);
+const difficultyFor = (category: string) => difficultyExpansionQuestions.filter((q) => q.category === category);
 const activePlusQuestions = vaultPlusQuestions.filter((q) => q.id !== 'vp-space-001');
 const timelessSpaceReplacement: Question = {
   id: 'vp-space-001-stable', category: 'space', difficulty: 'hard', type: 'multiple',
@@ -44,10 +46,22 @@ export const ALL_QUESTIONS: Question[] = [
   ...trueFalseQuestions,
   ...extraQuestions,
   ...themedQuestions,
+  ...difficultyExpansionQuestions,
   ...fullVault,
 ];
 
-const withVault = (category: string, base: Question[]) => [...base, ...extrasFor(category), ...vaultFor(category)];
+const withVault = (category: string, base: Question[]) => [
+  ...base,
+  ...extrasFor(category),
+  ...vaultFor(category),
+  ...difficultyFor(category),
+];
+
+const themedPool = (category: string) => [
+  ...themedFor(category),
+  ...vaultFor(category),
+  ...difficultyFor(category),
+];
 
 export const QUESTIONS_BY_CATEGORY: Record<string, Question[]> = {
   general: withVault('general', generalQuestions),
@@ -65,42 +79,41 @@ export const QUESTIONS_BY_CATEGORY: Record<string, Question[]> = {
   famous: withVault('famous', famousQuestions),
   saudi: withVault('saudi', saudiQuestions),
   world: withVault('world', worldQuestions),
-  truefalse: [...trueFalsePool, ...vaultFor('truefalse')],
-  food: [...themedFor('food'), ...vaultFor('food')],
-  cars: [...themedFor('cars'), ...vaultFor('cars')],
-  space: [...themedFor('space'), ...vaultFor('space')],
-  medicine: [...themedFor('medicine'), ...vaultFor('medicine')],
-  languages: [...themedFor('languages'), ...vaultFor('languages')],
-  books: [...themedFor('books'), ...vaultFor('books')],
-  music: [...themedFor('music'), ...vaultFor('music')],
-  nature: [...themedFor('nature'), ...vaultFor('nature')],
-  inventions: [...themedFor('inventions'), ...vaultFor('inventions')],
-  economy: [...themedFor('economy'), ...vaultFor('economy')],
-  architecture: [...themedFor('architecture'), ...vaultFor('architecture')],
-  flags: [...themedFor('flags'), ...vaultFor('flags')],
+  truefalse: [...trueFalsePool, ...vaultFor('truefalse'), ...difficultyFor('truefalse')],
+  food: themedPool('food'),
+  cars: themedPool('cars'),
+  space: themedPool('space'),
+  medicine: themedPool('medicine'),
+  languages: themedPool('languages'),
+  books: themedPool('books'),
+  music: themedPool('music'),
+  nature: themedPool('nature'),
+  inventions: themedPool('inventions'),
+  economy: themedPool('economy'),
+  architecture: themedPool('architecture'),
+  flags: themedPool('flags'),
 };
 
-const HISTORY_KEY = 'qaddha_question_history_v3';
+const HISTORY_KEY = 'qaddha_question_history_v4';
 const SITE_PREFS_KEY = 'qaddha_site_prefs_v1';
 type HistoryEntry = { id: string; category: string; at: number };
-type QuestionEnginePrefs = {
-  intensity: 'balanced' | 'competitive' | 'hardcore';
-  repeatProtection: 'standard' | 'strict' | 'maximum';
-};
+type RepeatProtection = 'standard' | 'strict' | 'maximum';
 
-function readEnginePrefs(): QuestionEnginePrefs {
+type DifficultyBucket = Exclude<Difficulty, 'mixed'>;
+const DIFFICULTY_BUCKETS: DifficultyBucket[] = ['easy', 'medium', 'hard'];
+
+function readRepeatProtection(): RepeatProtection {
   try {
-    const value = JSON.parse(localStorage.getItem(SITE_PREFS_KEY) || '{}');
-    const intensity = value.questionIntensity === 'balanced' || value.questionIntensity === 'hardcore' ? value.questionIntensity : 'competitive';
-    const repeatProtection = value.repeatProtection === 'standard' || value.repeatProtection === 'maximum' ? value.repeatProtection : 'strict';
-    return { intensity, repeatProtection };
+    const value = JSON.parse(localStorage.getItem(SITE_PREFS_KEY) || '{}')?.repeatProtection;
+    if (value === 'standard' || value === 'maximum') return value;
+    return 'strict';
   } catch {
-    return { intensity: 'competitive', repeatProtection: 'strict' };
+    return 'strict';
   }
 }
 
 function historyLimit() {
-  const protection = readEnginePrefs().repeatProtection;
+  const protection = readRepeatProtection();
   if (protection === 'maximum') return 6000;
   if (protection === 'standard') return 1600;
   return 3000;
@@ -160,32 +173,6 @@ function semanticDedupe(pool: Question[]) {
   });
 }
 
-function mixedDifficultyRatios() {
-  const intensity = readEnginePrefs().intensity;
-  if (intensity === 'balanced') return { medium: 0.62, hard: 0.38 };
-  if (intensity === 'hardcore') return { medium: 0.28, hard: 0.72 };
-  return { medium: 0.46, hard: 0.54 };
-}
-
-function weightedDifficultyPool(pool: Question[], difficulty: Difficulty, targetCount: number) {
-  if (difficulty !== 'mixed') {
-    const exact = pool.filter((q) => q.difficulty === difficulty);
-    return exact.length >= Math.min(targetCount, pool.length) ? exact : pool;
-  }
-
-  const medium = shuffle(pool.filter((q) => q.difficulty === 'medium'));
-  const hard = shuffle(pool.filter((q) => q.difficulty === 'hard'));
-  const easy = shuffle(pool.filter((q) => q.difficulty === 'easy'));
-  const ratios = mixedDifficultyRatios();
-  const desiredMedium = Math.ceil(targetCount * ratios.medium);
-  const desiredHard = Math.max(0, targetCount - desiredMedium);
-  const chosen = [...medium.slice(0, desiredMedium), ...hard.slice(0, desiredHard)];
-  const chosenIds = new Set(chosen.map((q) => q.id));
-  const overflow = [...medium.slice(desiredMedium), ...hard.slice(desiredHard), ...easy]
-    .filter((q) => !chosenIds.has(q.id));
-  return [...chosen, ...overflow];
-}
-
 function rankByHistory(pool: Question[], history: HistoryEntry[]) {
   const lastSeen = new Map<string, number>();
   history.forEach((entry, index) => lastSeen.set(entry.id, index));
@@ -203,7 +190,7 @@ function diversify(pool: Question[], count: number) {
   let categoryStreak = 0;
 
   while (selected.length < count && remaining.length) {
-    const candidateWindow = remaining.slice(0, Math.min(18, remaining.length));
+    const candidateWindow = remaining.slice(0, Math.min(24, remaining.length));
     let candidateIndex = candidateWindow.findIndex((q) => q.category !== previousCategory);
     if (candidateIndex < 0 || categoryStreak < 2) candidateIndex = 0;
     const [picked] = remaining.splice(candidateIndex, 1);
@@ -218,27 +205,51 @@ function diversify(pool: Question[], count: number) {
   return selected;
 }
 
-function paceSession(questions: Question[], difficulty: Difficulty) {
-  if (difficulty !== 'mixed' || questions.length < 4) return questions;
-  const medium = questions.filter((q) => q.difficulty === 'medium');
-  const hard = questions.filter((q) => q.difficulty === 'hard');
-  const easy = questions.filter((q) => q.difficulty === 'easy');
-  const paced: Question[] = [];
-  let mi = 0;
-  let hi = 0;
-  let ei = 0;
-  const intensity = readEnginePrefs().intensity;
+function exactDifficultySelection(
+  pool: Question[],
+  difficulty: DifficultyBucket,
+  count: number,
+  history: HistoryEntry[],
+) {
+  const exact = pool.filter((q) => q.difficulty === difficulty);
+  const needed = Math.min(count, exact.length);
+  return diversify(rankByHistory(exact, history), needed);
+}
 
-  for (let i = 0; i < questions.length; i += 1) {
-    const progress = questions.length <= 1 ? 1 : i / (questions.length - 1);
-    const hardThreshold = intensity === 'hardcore' ? 0.15 : intensity === 'balanced' ? 0.5 : 0.35;
-    const preferHard = progress > hardThreshold && (i % 2 === 1 || progress > (intensity === 'hardcore' ? 0.45 : 0.72));
-    if (preferHard && hi < hard.length) paced.push(hard[hi++]);
-    else if (mi < medium.length) paced.push(medium[mi++]);
-    else if (hi < hard.length) paced.push(hard[hi++]);
-    else if (ei < easy.length) paced.push(easy[ei++]);
+function mixedDifficultySelection(pool: Question[], count: number, history: HistoryEntry[]) {
+  const target = Math.min(count, pool.length);
+  if (target <= 0) return [] as Question[];
+
+  const bucketOrder = shuffle(DIFFICULTY_BUCKETS);
+  const baseQuota = Math.floor(target / DIFFICULTY_BUCKETS.length);
+  const remainder = target % DIFFICULTY_BUCKETS.length;
+  const selected: Question[] = [];
+
+  bucketOrder.forEach((difficulty, index) => {
+    const desired = baseQuota + (index < remainder ? 1 : 0);
+    const bucket = rankByHistory(pool.filter((q) => q.difficulty === difficulty), history);
+    selected.push(...bucket.slice(0, desired));
+  });
+
+  const selectedIds = new Set(selected.map((q) => q.id));
+  if (selected.length < target) {
+    const remaining = rankByHistory(pool.filter((q) => !selectedIds.has(q.id)), history);
+    selected.push(...remaining.slice(0, target - selected.length));
   }
-  return paced;
+
+  // Random means random: no hidden medium/hard bias. We still diversify categories
+  // after shuffling so one topic cannot dominate a session.
+  return diversify(shuffle(selected), target);
+}
+
+function selectQuestionsByDifficulty(
+  pool: Question[],
+  difficulty: Difficulty,
+  count: number,
+  history: HistoryEntry[],
+) {
+  if (difficulty === 'mixed') return mixedDifficultySelection(pool, count, history);
+  return exactDifficultySelection(pool, difficulty, count, history);
 }
 
 export function getQuestions(
@@ -250,7 +261,7 @@ export function getQuestions(
   let pool: Question[] = [];
 
   if (mode === 'truefalse') {
-    pool = [...trueFalsePool, ...vaultFor('truefalse')];
+    pool = [...trueFalsePool, ...vaultFor('truefalse'), ...difficultyFor('truefalse')];
   } else if (mode === 'multiple') {
     pool = ALL_QUESTIONS.filter((q) => q.type === 'multiple');
   } else if (categories.length === 0) {
@@ -262,12 +273,8 @@ export function getQuestions(
   }
 
   pool = semanticDedupe(pool);
-  const needed = Math.min(count, pool.length);
   const history = readHistory();
-  const difficultyRanked = weightedDifficultyPool(pool, difficulty, needed);
-  const historyRanked = rankByHistory(difficultyRanked, history);
-  const diversified = diversify(historyRanked, needed);
-  const selected = paceSession(diversified, difficulty);
+  const selected = selectQuestionsByDifficulty(pool, difficulty, count, history);
 
   const now = Date.now();
   const updated = [...history];
