@@ -67,7 +67,7 @@ export default function TeamGame({ onHome }: { onHome: () => void }) {
 
   useEffect(()=>{
     if(s.stage==='question'&&s.current){
-      publishMultiplayerChallenge({gameId:'teams',roundKey:s.current.id,answers:[s.current.answers[s.current.correct]],points:s.current.points});
+      publishMultiplayerChallenge({gameId:'teams',roundKey:String(s.current.id),answers:[s.current.answers[s.current.correct]],points:s.current.points});
       return ()=>clearMultiplayerChallenge('teams');
     }
     clearMultiplayerChallenge('teams');
