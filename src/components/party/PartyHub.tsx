@@ -86,7 +86,7 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
         const raw = Object.values(state).flat();
         const next: RoomMember[] = raw.filter(member =>
           Boolean(member) && typeof member.id === 'string' && typeof member.name === 'string'
-        ).map(member=>({id:member.id,name:member.name,role:member.role==='host'?'host':'guest',joinedAt:typeof member.joinedAt==='number'?member.joinedAt:Date.now()})).sort((a,b)=>a.joinedAt-b.joinedAt).slice(0,24);
+        ).map(member=>({id:member.id,name:member.name,role:(member.role==='host'?'host':'guest') as RoomMember['role'],joinedAt:typeof member.joinedAt==='number'?member.joinedAt:Date.now()})).sort((a,b)=>a.joinedAt-b.joinedAt).slice(0,24);
         setMembers(next);
       };
       channel
