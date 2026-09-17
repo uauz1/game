@@ -172,3 +172,29 @@ export function publishMultiplayerTeamNames(names: [string, string]) {
     window.dispatchEvent(new CustomEvent('qaddha:multiplayer-team-names', { detail: clean }));
   } catch {/* optional */}
 }
+
+
+const PLAYER_ID_KEY = 'qaddha.multiplayer-player-id.v1';
+
+export function readMultiplayerPlayerId() {
+  try {
+    const saved = localStorage.getItem(PLAYER_ID_KEY)?.trim();
+    if (saved) return saved;
+    const id = `p-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`;
+    localStorage.setItem(PLAYER_ID_KEY, id);
+    return id;
+  } catch {
+    return `p-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
+export function readMultiplayerRoomScores(code: string): Record<string, number> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(`qaddha.multiplayer-scores.${code}`) || '{}') as Record<string, unknown>;
+    return Object.fromEntries(Object.entries(parsed).filter(([,value])=>typeof value==='number').map(([key,value])=>[key,Math.max(0,Number(value))]));
+  } catch { return {}; }
+}
+
+export function saveMultiplayerRoomScores(code: string, scores: Record<string, number>) {
+  try { localStorage.setItem(`qaddha.multiplayer-scores.${code}`, JSON.stringify(scores)); } catch {/* optional */}
+}
