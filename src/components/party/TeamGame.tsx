@@ -6,7 +6,7 @@ import { buildPartyBoard, getPartyQuestionCount } from '../../data/partyBank';
 import { publishSessionGameResult } from '../../utils/sessionBridge';
 import { loadSharedTeams } from '../../utils/sharedTeams';
 import { loadTeamGamePreferences, saveTeamGamePreferences } from '../../utils/teamGameStorage';
-import { clearMultiplayerChallenge, publishMultiplayerChallenge } from '../../utils/multiplayerSession';
+import { clearMultiplayerChallenge, publishMultiplayerChallenge, publishMultiplayerTeamNames } from '../../utils/multiplayerSession';
 import Countdown from './Countdown';
 
 type Team = { name: string; color: string; score: number };
@@ -60,6 +60,8 @@ export default function TeamGame({ onHome }: { onHome: () => void }) {
     .filter(category=>category.name.includes(categorySearch.trim()))
     .filter(category=>categoryFilter==='selected'?s.cats.includes(category.name):categoryFilter==='large'?(categoryCounts.get(category.name)??0)>=20:true)
     .sort((a,b)=>Number(s.cats.includes(b.name))-Number(s.cats.includes(a.name)) || (categoryCounts.get(b.name)??0)-(categoryCounts.get(a.name)??0)),[categoryCounts,categoryFilter,categorySearch,s.cats]);
+
+  useEffect(()=>{publishMultiplayerTeamNames([s.teams[0].name,s.teams[1].name]);},[s.teams]);
 
   useEffect(()=>{
     saveTeamGamePreferences({teamNames:[s.teams[0].name,s.teams[1].name],teamColors:[s.teams[0].color,s.teams[1].color],categories:s.cats,limit:s.limit,seconds:s.seconds});
