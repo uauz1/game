@@ -3,6 +3,7 @@ import { Check, Copy, Minus, Plus, RotateCcw, Users, Wifi, X, Zap } from 'lucide
 import { createPublicLobbyChannel, removeRealtimeChannel } from '../../utils/qaddhaRealtime';
 import { buildMultiplayerJoinUrl, clearActiveHostRoom, judgeMultiplayerChallenge, readActiveHostRoom, readMultiplayerChallenge, type MultiplayerChallenge, type MultiplayerInput } from '../../utils/multiplayerSession';
 import { autoJudgeMultiplayerAnswer, type AutoJudgeResult } from '../../utils/multiplayerAutoJudge';
+import { loadSharedTeams } from '../../utils/sharedTeams';
 
 type Member={id:string;name:string;team:0|1;joinedAt:number};
 type ScoreMap=Record<string,number>;
@@ -61,6 +62,7 @@ export default function MultiplayerHostLayer(){
           upsert({id:member.id,name:member.name.slice(0,18),team:member.team===1?1:0,joinedAt:typeof member.joinedAt==='number'?member.joinedAt:Date.now()});
           void channel.send({type:'broadcast',event:'host-message',payload:{text:'تم الاتصال بالمضيف'}});
           if(gameRef.current)void channel.send({type:'broadcast',event:'game',payload:{gameId:gameRef.current}});
+          const teams=loadSharedTeams();if(teams)void channel.send({type:'broadcast',event:'team-info',payload:{teams:teams.map(team=>team.name)}});
           const active=challengeRef.current;if(active)void channel.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[]}});
         }
       })
@@ -108,6 +110,7 @@ export default function MultiplayerHostLayer(){
           autoScoredRef.current.clear();
           roundScoredRef.current.clear();
           void channelRef.current?.send({type:'broadcast',event:'game',payload:{gameId}});
+          const teams=loadSharedTeams();if(teams)void channelRef.current?.send({type:'broadcast',event:'team-info',payload:{teams:teams.map(team=>team.name)}});
           void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{gameId}});
         }
       }catch{/* optional */}
