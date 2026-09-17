@@ -26,10 +26,10 @@ const readyPresets: ReadyPreset[] = [
 ];
 
 const preferredByVibe: Record<Vibe, string[]> = {
-  balanced:['teams','letters','family','connection','photo','fast','riddles','who','character','words','auction','order','memory','missing','acting','secret'],
-  fast:['fast','letters','photo','memory','missing','connection','teams','family','order','riddles','character','who','words','auction','acting','secret'],
-  brain:['connection','riddles','who','character','letters','order','memory','teams','family','words','photo','missing','auction','fast','secret','acting'],
-  family:['family','teams','photo','riddles','connection','letters','acting','secret','who','character','words','order','memory','missing','auction','fast'],
+  balanced:['teams','letters','family','connection','intruder','pressure','photo','fast','riddles','who','character','words','auction','order','memory','missing','acting','secret'],
+  fast:['fast','pressure','intruder','letters','photo','memory','missing','connection','teams','family','order','riddles','character','who','words','auction','acting','secret'],
+  brain:['connection','intruder','riddles','who','character','letters','order','memory','teams','family','words','photo','missing','auction','fast','pressure','secret','acting'],
+  family:['family','teams','photo','riddles','connection','intruder','letters','acting','secret','who','character','words','order','memory','missing','auction','fast','pressure'],
 };
 
 const gameFit: Record<string, GameFit> = {
@@ -49,6 +49,8 @@ const gameFit: Record<string, GameFit> = {
   missing:{min:2,max:8,pace:'quick',label:'ملاحظة'},
   acting:{min:4,max:16,pace:'full',qr:true,label:'تمثيل'},
   secret:{min:4,max:12,pace:'full',qr:true,label:'نقاش وخداع'},
+  pressure:{min:4,max:14,pace:'quick',label:'سرعة ومعرفة'},
+  intruder:{min:2,max:10,pace:'quick',label:'استنتاج سريع'},
 };
 
 function hashId(value:string){ let hash=0; for(let i=0;i<value.length;i+=1) hash=((hash<<5)-hash+value.charCodeAt(i))|0; return Math.abs(hash); }
