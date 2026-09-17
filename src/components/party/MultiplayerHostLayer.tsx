@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, Minus, Plus, RotateCcw, Users, Wifi, X, Zap } from 'lucide-react';
 import { createPublicLobbyChannel, removeRealtimeChannel } from '../../utils/qaddhaRealtime';
 import { buildMultiplayerJoinUrl, clearActiveHostRoom, readActiveHostRoom, type MultiplayerInput } from '../../utils/multiplayerSession';
+import { autoJudgeMultiplayerAnswer, type AutoJudgeResult } from '../../utils/multiplayerAutoJudge';
 
 type Member={id:string;name:string;joinedAt:number};
 type ScoreMap=Record<string,number>;
+type JudgeMap=Record<string,AutoJudgeResult>;
 
 export default function MultiplayerHostLayer(){
   const [room,setRoom]=useState(readActiveHostRoom);
@@ -12,10 +14,12 @@ export default function MultiplayerHostLayer(){
   const [members,setMembers]=useState<Member[]>([]);
   const [inputs,setInputs]=useState<MultiplayerInput[]>([]);
   const [scores,setScores]=useState<ScoreMap>({});
+  const [judged,setJudged]=useState<JudgeMap>({});
   const [collapsed,setCollapsed]=useState(true);
   const [copied,setCopied]=useState(false);
   const channelRef=useRef<ReturnType<typeof createPublicLobbyChannel>|null>(null);
   const gameRef=useRef('');
+  const autoScoredRef=useRef(new Set<string>());
   const joinUrl=useMemo(()=>room?buildMultiplayerJoinUrl(room.code):'',[room]);
 
   useEffect(()=>{
@@ -23,6 +27,14 @@ export default function MultiplayerHostLayer(){
     window.addEventListener('qaddha:multiplayer-room-changed',refresh);
     return()=>window.removeEventListener('qaddha:multiplayer-room-changed',refresh);
   },[]);
+
+  const sendScore=(playerId:string,delta:number)=>{
+    setScores(current=>{
+      const next=Math.max(0,(current[playerId]||0)+delta);
+      void channelRef.current?.send({type:'broadcast',event:'score',payload:{playerId,score:next,delta}});
+      return {...current,[playerId]:next};
+    });
+  };
 
   useEffect(()=>{
     const code=room?.code;
@@ -48,6 +60,17 @@ export default function MultiplayerHostLayer(){
         if(!incoming||typeof incoming.id!=='string'||typeof incoming.playerId!=='string'||typeof incoming.playerName!=='string')return;
         setInputs(current=>[incoming,...current.filter(item=>item.id!==incoming.id)].slice(0,20));
         setCollapsed(false);
+        if(incoming.kind==='answer'&&incoming.value){
+          const result=autoJudgeMultiplayerAnswer(gameRef.current,incoming.value);
+          setJudged(current=>({...current,[incoming.id]:result}));
+          if(result.supported&&result.correct===true&&!autoScoredRef.current.has(incoming.id)){
+            autoScoredRef.current.add(incoming.id);
+            sendScore(incoming.playerId,result.points);
+            void channel.send({type:'broadcast',event:'host-message',payload:{text:`إجابة صحيحة تلقائيًا +${result.points}`}});
+          }else if(result.supported&&result.correct===false){
+            void channel.send({type:'broadcast',event:'host-message',payload:{text:'الإجابة وصلت، لكنها غير صحيحة'}});
+          }
+        }
       })
       .subscribe(status=>{
         if(disposed)return;
@@ -66,6 +89,8 @@ export default function MultiplayerHostLayer(){
         if(gameId&&gameId!==gameRef.current){
           gameRef.current=gameId;
           setInputs([]);
+          setJudged({});
+          autoScoredRef.current.clear();
           void channelRef.current?.send({type:'broadcast',event:'game',payload:{gameId}});
           void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{gameId}});
         }
@@ -76,21 +101,17 @@ export default function MultiplayerHostLayer(){
 
   if(!room)return null;
 
-  const award=(input:MultiplayerInput,delta:number)=>{
-    const next=Math.max(0,(scores[input.playerId]||0)+delta);
-    setScores(current=>({...current,[input.playerId]:next}));
-    void channelRef.current?.send({type:'broadcast',event:'score',payload:{playerId:input.playerId,score:next,delta}});
-  };
-  const resetRound=()=>{setInputs([]);void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{at:Date.now()}});};
+  const award=(input:MultiplayerInput,delta:number)=>sendScore(input.playerId,delta);
+  const resetRound=()=>{setInputs([]);setJudged({});autoScoredRef.current.clear();void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{at:Date.now()}});};
   const copy=async()=>{try{await navigator.clipboard.writeText(joinUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1500);}catch{/* url visible through code */}};
-  const close=()=>{clearActiveHostRoom();setRoom(null);setInputs([]);setMembers([]);setScores({});};
+  const close=()=>{clearActiveHostRoom();setRoom(null);setInputs([]);setMembers([]);setScores({});setJudged({});autoScoredRef.current.clear();};
 
   return <aside className={`mp-host ${collapsed?'collapsed':''}`} dir="rtl">
     <div className="mp-host-head"><button className="mp-host-toggle" onClick={()=>setCollapsed(value=>!value)}><span className={connected?'live':''}><Wifi/></span><b>{room.code}</b><small>{members.length} لاعبين</small></button><button onClick={close} aria-label="إغلاق الغرفة"><X/></button></div>
     {!collapsed&&<div className="mp-host-body">
       <div className="mp-host-share"><div><small>دخول اللاعبين</small><strong>{room.code}</strong></div><button onClick={copy}>{copied?<Check/>:<Copy/>}{copied?'تم':'نسخ الرابط'}</button></div>
       <div className="mp-host-actions"><button onClick={resetRound}><RotateCcw/> جولة جديدة</button><span><Users/> {members.length} متصل</span></div>
-      <div className="mp-input-feed">{inputs.length?inputs.map((input,index)=><article key={input.id} className={input.kind==='buzz'?'is-buzz':''}><span className="mp-place">{index+1}</span><div><b>{input.playerName}</b><small>{input.kind==='buzz'?<><Zap/> ضغط أول</>:input.value||'إجابة'}</small></div><strong>{scores[input.playerId]||0}</strong><div className="mp-score-buttons"><button onClick={()=>award(input,100)}><Plus/></button><button onClick={()=>award(input,-100)}><Minus/></button></div></article>):<div className="mp-feed-empty"><Zap/><p>بانتظار ضغطات وإجابات اللاعبين…</p></div>}</div>
+      <div className="mp-input-feed">{inputs.length?inputs.map((input,index)=>{const verdict=judged[input.id];return <article key={input.id} className={`${input.kind==='buzz'?'is-buzz':''} ${verdict?.correct===true?'is-auto-correct':''} ${verdict?.correct===false?'is-auto-wrong':''}`}><span className="mp-place">{index+1}</span><div><b>{input.playerName}</b><small>{input.kind==='buzz'?<><Zap/> ضغط أول</>:input.value||'إجابة'}</small>{verdict?.supported&&verdict.correct!==null?<em>{verdict.correct?`✓ صحيحة تلقائيًا +${verdict.points}`:`✕ غير صحيحة${verdict.canonical?` · الحل: ${verdict.canonical}`:''}`}</em>:null}</div><strong>{scores[input.playerId]||0}</strong><div className="mp-score-buttons"><button onClick={()=>award(input,100)}><Plus/></button><button onClick={()=>award(input,-100)}><Minus/></button></div></article>}):<div className="mp-feed-empty"><Zap/><p>بانتظار ضغطات وإجابات اللاعبين…</p></div>}</div>
     </div>}
   </aside>;
 }
