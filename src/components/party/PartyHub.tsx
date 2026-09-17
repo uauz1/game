@@ -3,6 +3,7 @@ import { ArrowLeft, Check, Copy, Crown, Gamepad2, Radio, Search, ShieldCheck, Sp
 import { achievementsFor, levelProgress, readProgression, recordRoomJoined, type ProgressionState } from '../../utils/progression';
 import { createPartyCode, createPublicLobbyPresenceChannel, isValidPartyCode, normalizePartyCode, removeRealtimeChannel } from '../../utils/qaddhaRealtime';
 import { getTournamentStandings, readTournamentHistory } from '../../utils/tournamentHistory';
+import { clearActiveHostRoom, readActiveHostRoom } from '../../utils/multiplayerSession';
 
 type Props = { onBack: () => void; onPlay: (gameId: string) => void; games: { id: string; title: string; tag: string }[] };
 type RoomMember = { id: string; name: string; role: 'host' | 'guest'; joinedAt: number };
@@ -36,7 +37,7 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
   const standings = useMemo(() => getTournamentStandings(history).slice(0, 6), [history]);
   const visibleGames=useMemo(()=>{const q=gameQuery.trim();return q?games.filter(game=>`${game.title} ${game.tag}`.includes(q)):games;},[gameQuery,games]);
 
-  useEffect(()=>{const params=new URLSearchParams(window.location.search);const invited=normalizePartyCode(params.get('room')||'');if(invited&&isValidPartyCode(invited)){setCodeInput(invited);void connect(invited,false);}},[]);
+  useEffect(()=>{const params=new URLSearchParams(window.location.search);const invited=normalizePartyCode(params.get('room')||'');if(invited&&isValidPartyCode(invited)){const active=readActiveHostRoom();const resumeHost=active?.code===invited;setCodeInput(invited);void connect(invited,resumeHost);}},[]);
 
   useEffect(() => {
     const refresh = () => setProgress(readProgression());
@@ -58,6 +59,7 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
     setRoomCode('');
     setMembers([]);
     setRoomMessage('');
+    if(isHost) clearActiveHostRoom();
     setIsHost(false);
     const url=new URL(window.location.href);url.searchParams.delete('room');window.history.replaceState({},'',url);
   };
