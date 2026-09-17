@@ -60,31 +60,26 @@ export default function MultiplayerHostLayer(){
     let disposed=false;
     const channel=createPublicLobbyPresenceChannel(code,hostPresenceId.current);
     channelRef.current=channel;
-    const upsert=(member:Member)=>setMembers(current=>{
-      const next=[...current.filter(item=>item.id!==member.id),member].sort((a,b)=>a.joinedAt-b.joinedAt);
-      return next.slice(0,32);
-    });
     const syncPresence=()=>{
       const state=channel.presenceState<{id:string;name:string;team?:number;joinedAt?:number;role?:string}>();
       const players=Object.values(state).flat().filter(p=>p?.role==='player'&&typeof p.id==='string'&&typeof p.name==='string').map(p=>({id:p.id,name:p.name.slice(0,18),team:p.team===1?1:0,joinedAt:typeof p.joinedAt==='number'?p.joinedAt:Date.now()} as Member)).sort((a,b)=>a.joinedAt-b.joinedAt).slice(0,32);
       setMembers(players);
     };
+    const syncNewPlayers=(newPresences: unknown[])=>{
+      for(const raw of newPresences){
+        const member=raw as Partial<Member>&{role?:string};
+        if(member.role!=='player'||typeof member.id!=='string')continue;
+        void channel.send({type:'broadcast',event:'host-message',payload:{text:'تم الاتصال بالمضيف'}});
+        void channel.send({type:'broadcast',event:'score',payload:{playerId:member.id,score:scoresRef.current[member.id]||0,delta:0}});
+        if(gameRef.current)void channel.send({type:'broadcast',event:'game',payload:{gameId:gameRef.current}});
+        const teams=loadSharedTeams();if(teams)void channel.send({type:'broadcast',event:'team-info',payload:{teams:teams.map(team=>team.name)}});
+        const active=challengeRef.current;if(active)void channel.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[],mode:active.mode||'single',requiredSelections:active.requiredSelections||active.sequenceAnswers?.length||0}});
+      }
+    };
     channel
       .on('presence',{event:'sync'},syncPresence)
-      .on('presence',{event:'join'},syncPresence)
+      .on('presence',{event:'join'},({newPresences})=>{syncPresence();syncNewPlayers(newPresences);})
       .on('presence',{event:'leave'},syncPresence)
-      .on('broadcast',{event:'hello'},({payload})=>{
-        const member=payload as Partial<Member>;
-        if(typeof member.id==='string'&&typeof member.name==='string'){
-          upsert({id:member.id,name:member.name.slice(0,18),team:member.team===1?1:0,joinedAt:typeof member.joinedAt==='number'?member.joinedAt:Date.now()});
-          void channel.send({type:'broadcast',event:'host-message',payload:{text:'تم الاتصال بالمضيف'}});
-          void channel.send({type:'broadcast',event:'score',payload:{playerId:member.id,score:scoresRef.current[member.id]||0,delta:0}});
-          if(gameRef.current)void channel.send({type:'broadcast',event:'game',payload:{gameId:gameRef.current}});
-          const teams=loadSharedTeams();if(teams)void channel.send({type:'broadcast',event:'team-info',payload:{teams:teams.map(team=>team.name)}});
-          const active=challengeRef.current;if(active)void channel.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[],mode:active.mode||'single',requiredSelections:active.requiredSelections||active.sequenceAnswers?.length||0}});
-        }
-      })
-      .on('broadcast',{event:'team-change'},({payload})=>{const incoming=payload as Partial<Member>;if(typeof incoming.id==='string')setMembers(current=>current.map(member=>member.id===incoming.id?{...member,team:incoming.team===1?1:0}:member));})
       .on('broadcast',{event:'player-input'},({payload})=>{
         const incoming=payload as MultiplayerInput;
         if(!incoming||typeof incoming.id!=='string'||typeof incoming.playerId!=='string'||typeof incoming.playerName!=='string')return;
