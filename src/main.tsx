@@ -16,13 +16,13 @@ import './player-progress.css';
 import './team-standings.css';
 import './quick-play.css';
 import './responsive.css';
-import './tv-mode.css';
 import './home-fix.css';
 import './private-play.css';
 import './qr-game-badges.css';
 import './header-polish.css';
 import './hero-background-polish.css';
 import './site-premium-polish.css';
+import './tv-mode.css';
 
 const WhoAmIPhone = lazy(() => import('./components/party/WhoAmIPrivate.tsx').then(module => ({ default: module.WhoAmIPhone })));
 const QaddhaAdminDashboard = lazy(() => import('./components/admin/QaddhaAdminDashboard.tsx'));
