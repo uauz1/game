@@ -40,6 +40,12 @@ export default function MultiplayerHostLayer(){
   };
 
   useEffect(()=>{
+    const refreshTeams=(event:Event)=>{const detail=(event as CustomEvent<[string,string]>).detail;if(Array.isArray(detail)&&detail.length===2)void channelRef.current?.send({type:'broadcast',event:'team-info',payload:{teams:detail}});};
+    window.addEventListener('qaddha:multiplayer-team-names',refreshTeams);
+    return()=>window.removeEventListener('qaddha:multiplayer-team-names',refreshTeams);
+  },[]);
+
+  useEffect(()=>{
     const refreshChallenge=()=>{challengeRef.current=readMultiplayerChallenge();const active=challengeRef.current;if(active)void channelRef.current?.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[]}});};
     window.addEventListener('qaddha:multiplayer-challenge',refreshChallenge);
     return()=>window.removeEventListener('qaddha:multiplayer-challenge',refreshChallenge);
