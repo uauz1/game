@@ -28,6 +28,7 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
   const [roomMessage, setRoomMessage] = useState('');
   const [isHost,setIsHost]=useState(false);
   const [gameQuery,setGameQuery]=useState('');
+  const hostGraceTimer=useRef<number|undefined>(undefined);
   const channelRef = useRef<ReturnType<typeof createPublicLobbyPresenceChannel> | null>(null);
   const memberId = useRef(`m-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`);
   const progression = useMemo(() => levelProgress(progress.xp), [progress.xp]);
@@ -46,6 +47,7 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
   }, []);
 
   useEffect(() => () => {
+    if(hostGraceTimer.current)window.clearTimeout(hostGraceTimer.current);
     if (channelRef.current) {
       void channelRef.current.untrack().catch(()=>undefined);
       void removeRealtimeChannel(channelRef.current);
@@ -53,7 +55,7 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
   }, []);
 
   const disconnect = async () => {
-    if (channelRef.current) await removeRealtimeChannel(channelRef.current);
+    if(hostGraceTimer.current){window.clearTimeout(hostGraceTimer.current);hostGraceTimer.current=undefined;}if (channelRef.current){await channelRef.current.untrack().catch(()=>undefined);await removeRealtimeChannel(channelRef.current);}
     channelRef.current = null;
     setRoomState('idle');
     setRoomCode('');
@@ -88,6 +90,9 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
           Boolean(member) && typeof member.id === 'string' && typeof member.name === 'string'
         ).map(member=>({id:member.id,name:member.name,role:(member.role==='host'?'host':'guest') as RoomMember['role'],joinedAt:typeof member.joinedAt==='number'?member.joinedAt:Date.now()})).sort((a,b)=>a.joinedAt-b.joinedAt).slice(0,24);
         setMembers(next);
+        const hostOnline=next.some(member=>member.role==='host');
+        if(host||hostOnline){if(hostGraceTimer.current)window.clearTimeout(hostGraceTimer.current);hostGraceTimer.current=undefined;setRoomState('connected');if(!host)setRoomMessage('');}
+        else if(!hostGraceTimer.current){hostGraceTimer.current=window.setTimeout(()=>{setRoomState('error');setRoomMessage('الغرفة غير موجودة أو المضيف غير متصل.');hostGraceTimer.current=undefined;},4500);}
       };
       channel
         .on('presence', { event: 'sync' }, syncPresence)
@@ -101,7 +106,7 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
         })
         .subscribe(status => {
           if (status === 'SUBSCRIBED') {
-            setRoomState('connected');
+            if(host)setRoomState('connected');else setRoomState('connecting');
             void channel.track(self);
             recordRoomJoined();
             try { localStorage.setItem('qaddha.party-name.v1', self.name); } catch {/* optional */}
