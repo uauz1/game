@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, Minus, Plus, RotateCcw, Users, Wifi, X, Zap } from 'lucide-react';
 import { createPublicLobbyPresenceChannel, removeRealtimeChannel } from '../../utils/qaddhaRealtime';
-import { buildMultiplayerJoinUrl, clearActiveHostRoom, judgeMultiplayerChallenge, readActiveHostRoom, readMultiplayerChallenge, type MultiplayerChallenge, type MultiplayerInput } from '../../utils/multiplayerSession';
+import { buildMultiplayerJoinUrl, clearActiveHostRoom, judgeMultiplayerChallenge, readActiveHostRoom, readMultiplayerChallenge, readMultiplayerRoomScores, saveMultiplayerRoomScores, type MultiplayerChallenge, type MultiplayerInput } from '../../utils/multiplayerSession';
 import { autoJudgeMultiplayerAnswer, type AutoJudgeResult } from '../../utils/multiplayerAutoJudge';
 import { loadSharedTeams } from '../../utils/sharedTeams';
 
@@ -14,8 +14,8 @@ export default function MultiplayerHostLayer(){
   const [connected,setConnected]=useState(false);
   const [members,setMembers]=useState<Member[]>([]);
   const [inputs,setInputs]=useState<MultiplayerInput[]>([]);
-  const [scores,setScores]=useState<ScoreMap>({});
-  const scoresRef=useRef<ScoreMap>({});
+  const [scores,setScores]=useState<ScoreMap>(()=>readActiveHostRoom()?.code?readMultiplayerRoomScores(readActiveHostRoom()!.code):{});
+  const scoresRef=useRef<ScoreMap>(scores);
   const [judged,setJudged]=useState<JudgeMap>({});
   const challengeRef=useRef<MultiplayerChallenge|null>(readMultiplayerChallenge());
   const [collapsed,setCollapsed]=useState(true);
@@ -37,7 +37,7 @@ export default function MultiplayerHostLayer(){
     setScores(current=>{
       const next=Math.max(0,(current[playerId]||0)+delta);
       void channelRef.current?.send({type:'broadcast',event:'score',payload:{playerId,score:next,delta}});
-      const updated={...current,[playerId]:next};scoresRef.current=updated;return updated;
+      const updated={...current,[playerId]:next};scoresRef.current=updated;if(room?.code)saveMultiplayerRoomScores(room.code,updated);return updated;
     });
   };
 
@@ -56,6 +56,7 @@ export default function MultiplayerHostLayer(){
   useEffect(()=>{
     const code=room?.code;
     if(!code)return;
+    const savedScores=readMultiplayerRoomScores(code);scoresRef.current=savedScores;setScores(savedScores);
     let disposed=false;
     const channel=createPublicLobbyPresenceChannel(code,hostPresenceId.current);
     channelRef.current=channel;
