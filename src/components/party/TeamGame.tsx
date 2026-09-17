@@ -6,6 +6,7 @@ import { buildPartyBoard, getPartyQuestionCount } from '../../data/partyBank';
 import { publishSessionGameResult } from '../../utils/sessionBridge';
 import { loadSharedTeams } from '../../utils/sharedTeams';
 import { loadTeamGamePreferences, saveTeamGamePreferences } from '../../utils/teamGameStorage';
+import { clearMultiplayerChallenge, publishMultiplayerChallenge } from '../../utils/multiplayerSession';
 import Countdown from './Countdown';
 
 type Team = { name: string; color: string; score: number };
@@ -63,6 +64,14 @@ export default function TeamGame({ onHome }: { onHome: () => void }) {
   useEffect(()=>{
     saveTeamGamePreferences({teamNames:[s.teams[0].name,s.teams[1].name],teamColors:[s.teams[0].color,s.teams[1].color],categories:s.cats,limit:s.limit,seconds:s.seconds});
   },[s.cats,s.limit,s.seconds,s.teams]);
+
+  useEffect(()=>{
+    if(s.stage==='question'&&s.current){
+      publishMultiplayerChallenge({gameId:'teams',roundKey:s.current.id,answers:[s.current.answers[s.current.correct]],points:s.current.points});
+      return ()=>clearMultiplayerChallenge('teams');
+    }
+    clearMultiplayerChallenge('teams');
+  },[s.current,s.stage]);
 
   useEffect(()=>{
     if(s.stage!=='results')return;
