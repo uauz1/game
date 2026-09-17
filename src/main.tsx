@@ -4,7 +4,6 @@ import App from './App.tsx';
 import { AuthProvider } from './contexts/AuthContext.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import QaddhaRemoteControl from './components/admin/QaddhaRemoteControl.tsx';
-import { TVRemoteBridge, TVRemotePhone } from './components/party/TVRemote.tsx';
 import './utils/sessionResultObserver.ts';
 import './utils/autoTvMode.ts';
 import './index.css';
@@ -30,20 +29,17 @@ const QaddhaAdminDashboard = lazy(() => import('./components/admin/QaddhaAdminDa
 const params = new URLSearchParams(window.location.search);
 const host = params.get('host');
 const isWhoHost = host === 'who';
-const isTvRemote = host === 'tv';
 const isAdmin = params.get('admin') === '1' || window.location.pathname === '/admin' || window.location.pathname === '/admin/' || window.location.pathname === '/admin.html';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      {isTvRemote
-        ? <TVRemotePhone roomId={params.get('room') || ''} token={params.get('token') || ''}/>
-        : isWhoHost
-          ? <Suspense fallback={<main className="mobile-host" dir="rtl"><section className="host-wait"><h1>نربطك بشاشة اللعبة…</h1></section></main>}><WhoAmIPhone roomId={params.get('room') || ''} token={params.get('token') || ''}/></Suspense>
-          : <AuthProvider>{isAdmin
-            ? <Suspense fallback={<main dir="rtl" style={{minHeight:'100vh',display:'grid',placeItems:'center',background:'#080808',color:'#fff'}}>جاري فتح لوحة قدّها…</main>}><QaddhaAdminDashboard /></Suspense>
-            : <TVRemoteBridge><QaddhaRemoteControl><App /></QaddhaRemoteControl></TVRemoteBridge>}
-          </AuthProvider>}
+      {isWhoHost
+        ? <Suspense fallback={<main className="mobile-host" dir="rtl"><section className="host-wait"><h1>نربطك بشاشة اللعبة…</h1></section></main>}><WhoAmIPhone roomId={params.get('room') || ''} token={params.get('token') || ''}/></Suspense>
+        : <AuthProvider>{isAdmin
+          ? <Suspense fallback={<main dir="rtl" style={{minHeight:'100vh',display:'grid',placeItems:'center',background:'#080808',color:'#fff'}}>جاري فتح لوحة قدّها…</main>}><QaddhaAdminDashboard /></Suspense>
+          : <QaddhaRemoteControl><App /></QaddhaRemoteControl>}
+        </AuthProvider>}
     </ErrorBoundary>
   </StrictMode>
 );
