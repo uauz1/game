@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, Copy, Crown, Gamepad2, Radio, ShieldCheck, Sparkles, Trophy, Users, Wifi, WifiOff, X } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Crown, Gamepad2, Radio, Search, ShieldCheck, Sparkles, Trophy, Users, Wifi, WifiOff, X } from 'lucide-react';
 import { achievementsFor, levelProgress, readProgression, recordRoomJoined, type ProgressionState } from '../../utils/progression';
 import { createPartyCode, createPublicLobbyChannel, isValidPartyCode, normalizePartyCode, removeRealtimeChannel } from '../../utils/qaddhaRealtime';
 import { getTournamentStandings, readTournamentHistory } from '../../utils/tournamentHistory';
@@ -25,6 +25,7 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
   const [members, setMembers] = useState<RoomMember[]>([]);
   const [copied, setCopied] = useState(false);
   const [roomMessage, setRoomMessage] = useState('');
+  const [gameQuery,setGameQuery]=useState('');
   const channelRef = useRef<ReturnType<typeof createPublicLobbyChannel> | null>(null);
   const memberId = useRef(`m-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`);
   const progression = useMemo(() => levelProgress(progress.xp), [progress.xp]);
@@ -32,6 +33,7 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
   const unlocked = achievements.filter(item => item.unlocked).length;
   const history = useMemo(() => readTournamentHistory(), [progress.tournamentsFinished]);
   const standings = useMemo(() => getTournamentStandings(history).slice(0, 6), [history]);
+  const visibleGames=useMemo(()=>{const q=gameQuery.trim();return q?games.filter(game=>`${game.title} ${game.tag}`.includes(q)):games;},[gameQuery,games]);
 
   useEffect(() => {
     const refresh = () => setProgress(readProgression());
@@ -145,6 +147,6 @@ export default function PartyHub({ onBack, onPlay, games }: Props) {
       <section className="hub-card hub-standings"><div className="hub-card-title"><Trophy/><div><small>سجل البطولات</small><h2>ترتيب الفرق</h2></div></div>{standings.length?<div className="standings-list">{standings.map((team,index)=><div key={team.team}><span>{index+1}</span><b>{team.team}</b><small>{team.wins} فوز</small><strong>{team.differential>0?'+':''}{team.differential}</strong></div>)}</div>:<div className="hub-empty"><Trophy/><p>أكمل أول بطولة وبيظهر ترتيب الفرق هنا.</p></div>}</section>
     </div>
 
-    <section className="hub-play"><div><Gamepad2/><span><small>{roomState==='connected'?'شغّلها لكل الغرفة':'تشغيل سريع'}</small><h2>اختار لعبة وابدأ</h2></span></div><div>{games.slice(0,8).map(game=><button key={game.id} onClick={()=>launchForRoom(game.id)}><b>{game.title}</b><small>{game.tag}</small></button>)}</div></section>
+    <section className="hub-play"><div><Gamepad2/><span><small>{roomState==='connected'?'شغّلها لكل الغرفة':'تشغيل سريع'}</small><h2>كل الـ18 لعبة</h2></span></div><label className="hub-game-search"><Search/><input value={gameQuery} onChange={event=>setGameQuery(event.target.value)} placeholder="ابحث عن لعبة…"/></label><div>{visibleGames.map(game=><button key={game.id} onClick={()=>launchForRoom(game.id)}><b>{game.title}</b><small>{game.tag}</small></button>)}</div></section>
   </section>;
 }
