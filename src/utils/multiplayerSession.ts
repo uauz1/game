@@ -20,6 +20,10 @@ export function readActiveHostRoom(): ActiveMultiplayerRoom | null {
     const parsed = JSON.parse(localStorage.getItem(ACTIVE_ROOM_KEY) || 'null') as Partial<ActiveMultiplayerRoom> | null;
     if (!parsed || typeof parsed.code !== 'string' || typeof parsed.createdAt !== 'number') return null;
     if (!/^[A-HJ-NP-Z2-9]{6}$/.test(parsed.code)) return null;
+    if (Date.now() - parsed.createdAt > 6 * 60 * 60 * 1000) {
+      localStorage.removeItem(ACTIVE_ROOM_KEY);
+      return null;
+    }
     return { code: parsed.code, createdAt: parsed.createdAt };
   } catch { return null; }
 }
