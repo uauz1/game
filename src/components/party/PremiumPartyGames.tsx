@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Brain, Check, ChevronLeft, Clock3, Flame, RefreshCw, RotateCcw, ShieldQuestion, Sparkles, Trophy, Users, X, Zap } from 'lucide-react';
+import { clearMultiplayerChallenge, publishMultiplayerChallenge } from '../../utils/multiplayerSession';
 
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 type Team = { name: string; score: number };
