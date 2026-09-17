@@ -72,6 +72,19 @@ export function createPublicLobbyChannel(code: string): RealtimeChannel {
   });
 }
 
+export function createPublicLobbyPresenceChannel(code: string, presenceKey: string): RealtimeChannel {
+  const normalized = normalizePartyCode(code);
+  if (!isValidPartyCode(normalized)) throw new Error('INVALID_PARTY_CODE');
+  installReconnectLifecycle();
+  ensureRealtimeConnected();
+  return client.channel(`qaddha:lobby:${normalized}`, {
+    config: {
+      broadcast: { self: true, ack: false },
+      presence: { key: presenceKey },
+    },
+  });
+}
+
 export function createRealtimeRoomId(game: string) {
   return `qd-${game}-${randomCode(12)}`;
 }
