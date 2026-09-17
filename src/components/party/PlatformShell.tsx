@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Crown, Sparkles } from 'lucide-react';
 import App from '../../App';
 import PartyHub from './PartyHub';
+import MultiplayerHostLayer from './MultiplayerHostLayer';
 import { readProgression, recordGameStarted, recordTournamentFinished } from '../../utils/progression';
 
 const HUB_GAMES = [
@@ -91,6 +92,6 @@ export default function PlatformShell() {
     else window.setTimeout(() => (document.querySelector(`.game-${CSS.escape(gameId)}`) as HTMLButtonElement | null)?.click(), 80);
   };
 
-  if (hubOpen) return <PartyHub games={HUB_GAMES} onBack={closeHub} onPlay={playFromHub}/>;
-  return <><App/><button className="global-hub-launch" onClick={openHub} aria-label="فتح مركز قدّها"><span><Crown/></span><b>مركز قدّها</b><small>LV {level}</small><Sparkles/></button></>;
+  if (hubOpen) return <><PartyHub games={HUB_GAMES} onBack={closeHub} onPlay={playFromHub}/><MultiplayerHostLayer/></>;
+  return <><App/><MultiplayerHostLayer/><button className="global-hub-launch" onClick={openHub} aria-label="فتح مركز قدّها"><span><Crown/></span><b>مركز قدّها</b><small>LV {level}</small><Sparkles/></button></>;
 }
