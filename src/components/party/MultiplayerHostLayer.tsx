@@ -15,6 +15,7 @@ export default function MultiplayerHostLayer(){
   const [members,setMembers]=useState<Member[]>([]);
   const [inputs,setInputs]=useState<MultiplayerInput[]>([]);
   const [scores,setScores]=useState<ScoreMap>({});
+  const scoresRef=useRef<ScoreMap>({});
   const [judged,setJudged]=useState<JudgeMap>({});
   const challengeRef=useRef<MultiplayerChallenge|null>(readMultiplayerChallenge());
   const [collapsed,setCollapsed]=useState(true);
@@ -35,7 +36,7 @@ export default function MultiplayerHostLayer(){
     setScores(current=>{
       const next=Math.max(0,(current[playerId]||0)+delta);
       void channelRef.current?.send({type:'broadcast',event:'score',payload:{playerId,score:next,delta}});
-      return {...current,[playerId]:next};
+      const updated={...current,[playerId]:next};scoresRef.current=updated;return updated;
     });
   };
 
@@ -67,9 +68,10 @@ export default function MultiplayerHostLayer(){
         if(typeof member.id==='string'&&typeof member.name==='string'){
           upsert({id:member.id,name:member.name.slice(0,18),team:member.team===1?1:0,joinedAt:typeof member.joinedAt==='number'?member.joinedAt:Date.now()});
           void channel.send({type:'broadcast',event:'host-message',payload:{text:'تم الاتصال بالمضيف'}});
+          void channel.send({type:'broadcast',event:'score',payload:{playerId:member.id,score:scoresRef.current[member.id]||0,delta:0}});
           if(gameRef.current)void channel.send({type:'broadcast',event:'game',payload:{gameId:gameRef.current}});
           const teams=loadSharedTeams();if(teams)void channel.send({type:'broadcast',event:'team-info',payload:{teams:teams.map(team=>team.name)}});
-          const active=challengeRef.current;if(active)void channel.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[],mode:active.mode||'single',requiredSelections:active.sequenceAnswers?.length||0}});
+          const active=challengeRef.current;if(active)void channel.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[],mode:active.mode||'single',requiredSelections:active.requiredSelections||active.sequenceAnswers?.length||0}});
         }
       })
       .on('broadcast',{event:'team-change'},({payload})=>{const incoming=payload as Partial<Member>;if(typeof incoming.id==='string')setMembers(current=>current.map(member=>member.id===incoming.id?{...member,team:incoming.team===1?1:0}:member));})
@@ -104,24 +106,18 @@ export default function MultiplayerHostLayer(){
 
   useEffect(()=>{
     if(!room)return;
+    const syncGame=(gameId:string)=>{if(!gameId||gameId===gameRef.current)return;gameRef.current=gameId;setInputs([]);setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();void channelRef.current?.send({type:'broadcast',event:'game',payload:{gameId}});const teams=loadSharedTeams();if(teams)void channelRef.current?.send({type:'broadcast',event:'team-info',payload:{teams:teams.map(team=>team.name)}});void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{gameId}});};
+    const onGame=(event:Event)=>{const detail=(event as CustomEvent<{gameId?:string}>).detail;if(detail?.gameId)syncGame(detail.gameId);};
+    window.addEventListener('qaddha:game-changed',onGame);
     const detect=()=>{
       try{
         const player=JSON.parse(localStorage.getItem('qaddha.player.v1')||'{}');
         const latest=Array.isArray(player.recent)?player.recent[0]:null;
         const gameId=typeof latest?.gameId==='string'?latest.gameId:'';
-        if(gameId&&gameId!==gameRef.current){
-          gameRef.current=gameId;
-          setInputs([]);
-          setJudged({});
-          autoScoredRef.current.clear();
-          roundScoredRef.current.clear();
-          void channelRef.current?.send({type:'broadcast',event:'game',payload:{gameId}});
-          const teams=loadSharedTeams();if(teams)void channelRef.current?.send({type:'broadcast',event:'team-info',payload:{teams:teams.map(team=>team.name)}});
-          void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{gameId}});
-        }
+        syncGame(gameId);
       }catch{/* optional */}
     };
-    detect(); const timer=window.setInterval(detect,900); return()=>window.clearInterval(timer);
+    detect(); const timer=window.setInterval(detect,3000); return()=>{window.clearInterval(timer);window.removeEventListener('qaddha:game-changed',onGame);};
   },[room]);
 
   if(!room)return null;
@@ -129,7 +125,7 @@ export default function MultiplayerHostLayer(){
   const award=(input:MultiplayerInput,delta:number)=>sendScore(input.playerId,delta);
   const resetRound=()=>{setInputs([]);setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{at:Date.now()}});};
   const copy=async()=>{try{await navigator.clipboard.writeText(joinUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1500);}catch{/* url visible through code */}};
-  const close=()=>{clearActiveHostRoom();setRoom(null);setInputs([]);setMembers([]);setScores({});setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();};
+  const close=()=>{clearActiveHostRoom();setRoom(null);setInputs([]);setMembers([]);setScores({});scoresRef.current={};setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();};
 
   return <aside className={`mp-host ${collapsed?'collapsed':''}`} dir="rtl">
     <div className="mp-host-head"><button className="mp-host-toggle" onClick={()=>setCollapsed(value=>!value)}><span className={connected?'live':''}><Wifi/></span><b>{room.code}</b><small>{members.filter(member=>member.team===0).length} / {members.filter(member=>member.team===1).length} فرق</small></button><button onClick={close} aria-label="إغلاق الغرفة"><X/></button></div>
