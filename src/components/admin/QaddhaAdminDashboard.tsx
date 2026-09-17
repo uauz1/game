@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Activity, AlertTriangle, BadgeCheck, Gamepad2, Gauge, Globe2, LockKeyhole, Megaphone, Power, QrCode, RefreshCw, Save, Settings2, ShieldCheck, Swords, UsersRound, Wrench } from 'lucide-react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { Activity, AlertTriangle, BadgeCheck, Gamepad2, Gauge, Globe2, KeyRound, LockKeyhole, LogIn, Megaphone, Power, QrCode, RefreshCw, Save, Settings2, ShieldCheck, Swords, UsersRound, Wrench } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ALL_GAME_IDS, DEFAULT_QADDHA_CONFIG, QaddhaRemoteConfig, fetchQaddhaRemoteConfig, isCurrentUserQaddhaAdmin, saveQaddhaRemoteConfig } from '../../utils/adminConfig';
 
@@ -21,16 +21,30 @@ export default function QaddhaAdminDashboard(){
   const [checking,setChecking]=useState(true);
   const [message,setMessage]=useState('');
   const [saving,setSaving]=useState(false);
+  const [email,setEmail]=useState('');
+  const [password,setPassword]=useState('');
+  const [signingIn,setSigningIn]=useState(false);
   const [health,setHealth]=useState<{site:Health;supabase:Health;content:Health;sessions:Health}>({site:'idle',supabase:'idle',content:'idle',sessions:'idle'});
   const changed=useMemo(()=>JSON.stringify(config)!==JSON.stringify(saved),[config,saved]);
 
   useEffect(()=>{void (async()=>{
+    if(!auth.session){setAllowed(false);setChecking(false);return;}
     setChecking(true);
     const ok=await isCurrentUserQaddhaAdmin();
     setAllowed(ok);
     if(ok){const remote=await fetchQaddhaRemoteConfig();setConfig(remote);setSaved(remote);}
     setChecking(false);
   })()},[auth.session?.user.id]);
+
+  const login=async(event:FormEvent)=>{
+    event.preventDefault();
+    if(!email.trim()||!password){setMessage('اكتب البريد وكلمة المرور.');return;}
+    setSigningIn(true);setMessage('');
+    const result=await auth.signIn(email.trim(),password);
+    setMessage(result.message);
+    setSigningIn(false);
+  };
+  const loginGoogle=async()=>{setSigningIn(true);setMessage('');const result=await auth.signInWithGoogle();setMessage(result.message);setSigningIn(false);};
 
   const save=async()=>{setSaving(true);setMessage('');try{const next=await saveQaddhaRemoteConfig(config);setConfig(next);setSaved(next);setMessage('تم حفظ التغييرات ونشرها على قدّها ✅');}catch{setMessage('تعذر الحفظ. تحقق من اتصال Supabase وصلاحية الإدارة.');}finally{setSaving(false)}};
   const setBool=(key:keyof QaddhaRemoteConfig,value:boolean)=>setConfig(prev=>({...prev,[key]:value}));
@@ -46,8 +60,8 @@ export default function QaddhaAdminDashboard(){
 
   if(checking||auth.loading)return <main dir="rtl" className="min-h-screen bg-[#080808] text-white grid place-items-center"><div className="text-center"><RefreshCw className="mx-auto mb-3 animate-spin text-amber-300"/><p>جاري تجهيز لوحة قدّها…</p></div></main>;
 
-  if(!auth.session)return <main dir="rtl" className="min-h-screen bg-[#080808] text-white grid place-items-center p-5"><section className="w-full max-w-md rounded-[28px] border border-amber-400/20 bg-[#111] p-7 text-center"><LockKeyhole className="mx-auto mb-4 text-amber-300" size={34}/><h1 className="text-2xl font-black mb-2">لوحة تحكم قدّها</h1><p className="text-sm text-zinc-400 mb-5">سجّل دخولك بحساب الإدارة أولًا.</p><a href="/" className="inline-flex rounded-xl bg-amber-400 px-5 py-3 font-black text-black">العودة إلى قدّها</a></section></main>;
-  if(!allowed)return <main dir="rtl" className="min-h-screen bg-[#080808] text-white grid place-items-center p-5"><section className="w-full max-w-md rounded-[28px] border border-red-500/20 bg-[#111] p-7 text-center"><ShieldCheck className="mx-auto mb-4 text-red-300" size={34}/><h1 className="text-2xl font-black mb-2">غير مصرح</h1><p className="text-sm text-zinc-400">الحساب الحالي ليس ضمن مديري قدّها.</p></section></main>;
+  if(!auth.session)return <main dir="rtl" className="min-h-screen bg-[#080808] text-white grid place-items-center p-5"><section className="w-full max-w-md rounded-[28px] border border-amber-400/20 bg-[#111] p-7 shadow-2xl"><div className="text-center"><LockKeyhole className="mx-auto mb-4 text-amber-300" size={34}/><h1 className="text-2xl font-black mb-2">لوحة تحكم قدّها</h1><p className="text-sm text-zinc-400 mb-6">سجّل دخولك بحساب الإدارة.</p></div><form onSubmit={login} className="space-y-3"><label className="block text-sm font-bold text-zinc-300">البريد الإلكتروني<input dir="ltr" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-left text-white outline-none focus:border-amber-400/50" placeholder="name@example.com"/></label><label className="block text-sm font-bold text-zinc-300">كلمة المرور<input dir="ltr" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-left text-white outline-none focus:border-amber-400/50" placeholder="••••••••"/></label><button disabled={signingIn} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 px-5 py-3.5 font-black text-black disabled:opacity-50"><LogIn size={18}/>{signingIn?'جاري الدخول…':'دخول لوحة التحكم'}</button></form><div className="my-4 flex items-center gap-3 text-xs text-zinc-600"><span className="h-px flex-1 bg-white/10"/><span>أو</span><span className="h-px flex-1 bg-white/10"/></div><button disabled={signingIn} onClick={loginGoogle} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 font-bold"><KeyRound size={17}/>الدخول بحساب Google</button>{message&&<p className="mt-4 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-center text-sm">{message}</p>}<a href="/" className="mt-5 block text-center text-sm text-zinc-500 hover:text-amber-300">العودة إلى قدّها</a></section></main>;
+  if(!allowed)return <main dir="rtl" className="min-h-screen bg-[#080808] text-white grid place-items-center p-5"><section className="w-full max-w-md rounded-[28px] border border-red-500/20 bg-[#111] p-7 text-center"><ShieldCheck className="mx-auto mb-4 text-red-300" size={34}/><h1 className="text-2xl font-black mb-2">غير مصرح</h1><p className="text-sm text-zinc-400 mb-4">الحساب الحالي ليس ضمن مديري قدّها.</p><button onClick={()=>void auth.signOut()} className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold">تسجيل الخروج وتجربة حساب آخر</button></section></main>;
 
   const cards=[['الموقع',health.site,Globe2],['Supabase',health.supabase,ShieldCheck],['المحتوى',health.content,Swords],['الجلسات',health.sessions,UsersRound]] as const;
   return <main dir="rtl" className="min-h-screen bg-[#070707] text-white pb-28">
