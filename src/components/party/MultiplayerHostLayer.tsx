@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, Minus, Plus, RotateCcw, Users, Wifi, X, Zap } from 'lucide-react';
 import { createPublicLobbyChannel, removeRealtimeChannel } from '../../utils/qaddhaRealtime';
-import { buildMultiplayerJoinUrl, clearActiveHostRoom, readActiveHostRoom, type MultiplayerInput } from '../../utils/multiplayerSession';
+import { buildMultiplayerJoinUrl, clearActiveHostRoom, judgeMultiplayerChallenge, readActiveHostRoom, readMultiplayerChallenge, type MultiplayerChallenge, type MultiplayerInput } from '../../utils/multiplayerSession';
 import { autoJudgeMultiplayerAnswer, type AutoJudgeResult } from '../../utils/multiplayerAutoJudge';
 
 type Member={id:string;name:string;joinedAt:number};
@@ -15,6 +15,7 @@ export default function MultiplayerHostLayer(){
   const [inputs,setInputs]=useState<MultiplayerInput[]>([]);
   const [scores,setScores]=useState<ScoreMap>({});
   const [judged,setJudged]=useState<JudgeMap>({});
+  const [challenge,setChallenge]=useState<MultiplayerChallenge|null>(readMultiplayerChallenge);
   const [collapsed,setCollapsed]=useState(true);
   const [copied,setCopied]=useState(false);
   const channelRef=useRef<ReturnType<typeof createPublicLobbyChannel>|null>(null);
@@ -35,6 +36,12 @@ export default function MultiplayerHostLayer(){
       return {...current,[playerId]:next};
     });
   };
+
+  useEffect(()=>{
+    const refreshChallenge=()=>setChallenge(readMultiplayerChallenge());
+    window.addEventListener('qaddha:multiplayer-challenge',refreshChallenge);
+    return()=>window.removeEventListener('qaddha:multiplayer-challenge',refreshChallenge);
+  },[]);
 
   useEffect(()=>{
     const code=room?.code;
@@ -61,7 +68,8 @@ export default function MultiplayerHostLayer(){
         setInputs(current=>[incoming,...current.filter(item=>item.id!==incoming.id)].slice(0,20));
         setCollapsed(false);
         if(incoming.kind==='answer'&&incoming.value){
-          const result=autoJudgeMultiplayerAnswer(gameRef.current,incoming.value);
+          const direct = challenge && challenge.gameId===gameRef.current ? judgeMultiplayerChallenge(challenge,incoming.value) : null;
+          const result: AutoJudgeResult = direct ? { supported:true, correct:direct.correct, points:direct.points, canonical:direct.canonical } : autoJudgeMultiplayerAnswer(gameRef.current,incoming.value);
           setJudged(current=>({...current,[incoming.id]:result}));
           if(result.supported&&result.correct===true&&!autoScoredRef.current.has(incoming.id)){
             autoScoredRef.current.add(incoming.id);
@@ -77,7 +85,7 @@ export default function MultiplayerHostLayer(){
         setConnected(status==='SUBSCRIBED');
       });
     return()=>{disposed=true;channelRef.current=null;void removeRealtimeChannel(channel);};
-  },[room?.code]);
+  },[room?.code,challenge]);
 
   useEffect(()=>{
     if(!room)return;
