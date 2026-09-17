@@ -108,6 +108,7 @@ export function ConnectionGame({ onHome }: GameProps) {
   const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
   const card=deck[round];
   const points=[400,300,200,100][clueCount-1];
+  useEffect(()=>{if(phase==='play'&&card){publishMultiplayerChallenge({gameId:'connection',roundKey:card.id,answers:[card.answer,...card.aliases],points:timedOut?0:points});return()=>clearMultiplayerChallenge('connection');}clearMultiplayerChallenge('connection');},[card,phase,points,timedOut]);
 
   const resetRound=(nextRound:number)=>{
     setRound(nextRound);
