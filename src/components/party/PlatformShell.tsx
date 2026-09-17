@@ -89,6 +89,6 @@ export default function PlatformShell() {
     window.setTimeout(()=>window.dispatchEvent(new CustomEvent('qaddha:hub-launch', { detail: { gameId } })),0);
   };
 
-  if (hubOpen) return <><PartyHub games={HUB_GAMES} onBack={closeHub} onPlay={playFromHub}/><MultiplayerHostLayer/></>;
+  if (hubOpen) return <PartyHub games={HUB_GAMES} onBack={closeHub} onPlay={playFromHub}/>;
   return <><App/><MultiplayerHostLayer/><button className="global-hub-launch" onClick={openHub} aria-label="فتح مركز قدّها"><span><Crown/></span><b>مركز قدّها</b><small>LV {level}</small><Sparkles/></button></>;
 }
