@@ -66,12 +66,12 @@ export default function TeamGame({ onHome }: { onHome: () => void }) {
   },[s.cats,s.limit,s.seconds,s.teams]);
 
   useEffect(()=>{
-    if(s.stage==='question'&&s.current){
+    if(s.stage==='question'&&s.current&&!s.revealed){
       publishMultiplayerChallenge({gameId:'teams',roundKey:String(s.current.id),answers:[s.current.answers[s.current.correct]],points:s.current.points});
       return ()=>clearMultiplayerChallenge('teams');
     }
     clearMultiplayerChallenge('teams');
-  },[s.current,s.stage]);
+  },[s.current,s.revealed,s.stage]);
 
   useEffect(()=>{
     if(s.stage!=='results')return;
