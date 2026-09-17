@@ -11,6 +11,15 @@ function readDisplayPreference(): DisplayPreference {
   }
 }
 
+function readForcedDisplayFromUrl(): DisplayPreference | null {
+  const params = new URLSearchParams(window.location.search);
+  const tv = params.get('tv');
+  const display = params.get('display');
+  if (tv === '1' || tv === 'true' || display === 'tv') return 'tv';
+  if (display === 'mobile') return 'mobile';
+  return null;
+}
+
 function isTvLayout() {
   const width = Math.max(window.innerWidth, document.documentElement.clientWidth || 0);
   const height = Math.max(window.innerHeight, document.documentElement.clientHeight || 0);
@@ -19,14 +28,18 @@ function isTvLayout() {
 }
 
 function resolveDisplayMode() {
-  const preference = readDisplayPreference();
+  const forced = readForcedDisplayFromUrl();
+  const preference = forced ?? readDisplayPreference();
   const root = document.documentElement;
-  root.dataset.qaddhaDisplayPreference = preference;
+  root.dataset.qaddhaDisplayPreference = forced ? 'url' : preference;
+  root.dataset.qaddhaTvDirect = forced === 'tv' ? 'on' : 'off';
+
   if (preference !== 'auto') {
     root.dataset.qaddhaDisplay = preference;
-    root.dataset.qaddhaAutoTv = 'off';
+    root.dataset.qaddhaAutoTv = forced === 'tv' ? 'direct' : 'off';
     return;
   }
+
   const tv = isTvLayout();
   root.dataset.qaddhaDisplay = tv ? 'tv' : 'auto';
   root.dataset.qaddhaAutoTv = tv ? 'on' : 'off';
@@ -42,6 +55,7 @@ resolveDisplayMode();
 window.addEventListener('resize', scheduleResolve, { passive: true });
 window.addEventListener('orientationchange', scheduleResolve, { passive: true });
 window.addEventListener('qaddha:preferences-changed', scheduleResolve);
+window.addEventListener('popstate', scheduleResolve);
 document.addEventListener('fullscreenchange', scheduleResolve);
 window.setTimeout(resolveDisplayMode, 0);
 window.setTimeout(resolveDisplayMode, 250);
