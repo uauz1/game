@@ -159,7 +159,7 @@ export function IntruderGame({ onHome }: { onHome: () => void }) {
   const [revealed,setRevealed]=useState(false);
   const current=deck[round];
   useEffect(()=>{
-    if(phase==='playing'&&current){
+    if(phase==='playing'&&current&&!revealed){
       publishMultiplayerChallenge({
         gameId:'intruder',
         roundKey:current.id,
@@ -170,7 +170,7 @@ export function IntruderGame({ onHome }: { onHome: () => void }) {
       return()=>clearMultiplayerChallenge('intruder');
     }
     clearMultiplayerChallenge('intruder');
-  },[current,phase]);
+  },[current,phase,revealed]);
 
   const startGame=()=>{
     const pool=pickPool(INTRUDER_ROUNDS,difficulty);
