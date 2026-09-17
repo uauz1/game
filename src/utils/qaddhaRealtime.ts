@@ -3,8 +3,9 @@ import QRCode from 'qrcode';
 
 const SUPABASE_URL = 'https://uhbtcjlapgpsohbkotpd.supabase.co';
 // Public browser anon key. Never replace this with a service-role/private key.
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoYnRjamxhcGdwc29oYmtvdHBkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0MDgyNjMsImV4cCI6MjEwNDk4NDI2M30.9T3YTqtQ3kjV4wHjuUsamK_DOgRqBel53t51dYGpIOc';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InVoYnRjamxhcGdwc29oYmtvdHBkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0MDgyNjMsImV4cCI6MjEwNDk4NDI2M30.9T3YTqtQ3kjV4wHjuUsamK_DOgRqBel53t51dYGpIOc';
 const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789';
+const roomAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
@@ -42,6 +43,31 @@ function randomCode(length: number) {
   let value = '';
   for (const byte of bytes) value += alphabet[byte % alphabet.length];
   return value;
+}
+
+export function createPartyCode(length = 6) {
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  let value = '';
+  for (const byte of bytes) value += roomAlphabet[byte % roomAlphabet.length];
+  return value;
+}
+
+export function normalizePartyCode(value: string) {
+  return value.toUpperCase().replace(/[^A-Z2-9]/g, '').slice(0, 6);
+}
+
+export function isValidPartyCode(value: string) {
+  return /^[A-HJ-NP-Z2-9]{6}$/.test(normalizePartyCode(value));
+}
+
+export function createPublicLobbyChannel(code: string): RealtimeChannel {
+  const normalized = normalizePartyCode(code);
+  if (!isValidPartyCode(normalized)) throw new Error('INVALID_PARTY_CODE');
+  installReconnectLifecycle();
+  ensureRealtimeConnected();
+  return client.channel(`qaddha:lobby:${normalized}`, {
+    config: { broadcast: { self: true, ack: false } },
+  });
 }
 
 export function createRealtimeRoomId(game: string) {
