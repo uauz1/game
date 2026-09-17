@@ -20,6 +20,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
   const [notice,setNotice] = useState('');
   const [score,setScore] = useState<ScoreState>({ score: 0 });
   const [buzzed,setBuzzed] = useState(false);
+  const [choices,setChoices] = useState<string[]>([]);
   const channelRef = useRef<ReturnType<typeof createPublicLobbyChannel> | null>(null);
   const playerId = useRef(`p-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`);
 
@@ -42,7 +43,8 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
           const incoming = payload as { gameId?: string } | null;
           if (incoming?.gameId) { setGameId(incoming.gameId); setBuzzed(false); setNotice(''); }
         })
-        .on('broadcast',{event:'round-reset'},()=>{ setBuzzed(false); setAnswer(''); setNotice('جولة جديدة'); window.setTimeout(()=>setNotice(''),1400); })
+        .on('broadcast',{event:'round-reset'},()=>{ setBuzzed(false); setAnswer(''); setChoices([]); setNotice('جولة جديدة'); window.setTimeout(()=>setNotice(''),1400); })
+        .on('broadcast',{event:'round-ui'},({payload})=>{const incoming=payload as {gameId?:string;choices?:unknown}|null;if(incoming?.gameId)setGameId(incoming.gameId);if(Array.isArray(incoming?.choices))setChoices(incoming.choices.filter((value):value is string=>typeof value==='string').slice(0,6));})
         .on('broadcast',{event:'score'},({payload})=>{
           const incoming = payload as { playerId?: string; score?: number; delta?: number } | null;
           if (incoming?.playerId===playerId.current && typeof incoming.score==='number') {
@@ -91,7 +93,8 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
     <header><div><span>{status==='connected'?<Wifi/>:<WifiOff/>}{status==='connected'?'متصل بالغرفة':'جاري الاتصال'}</span><strong>{roomCode}</strong></div><div className="mp-score"><small>نقاطك</small><b>{score.score}</b></div></header>
     <div className="mp-game-now"><small>اللعبة الحالية</small><h1>{gameId?GAME_NAMES[gameId]||'اللعبة الحالية':'بانتظار المضيف…'}</h1><p>{gameId?'اضغط بسرعة أو أرسل إجابتك من هنا.':'خلك جاهز، المضيف بيبدأ اللعبة.'}</p></div>
     <button className={`mp-buzzer ${buzzed?'buzzed':''}`} disabled={status!=='connected'||buzzed} onClick={()=>sendInput('buzz')}><Zap/><b>{buzzed?'تم!':'أنا أول!'}</b><span>زر السرعة</span></button>
-    <form className="mp-answer" onSubmit={event=>{event.preventDefault(); if(answer.trim())sendInput('answer',answer);}}><label>إجابتك<input maxLength={120} value={answer} onChange={e=>setAnswer(e.target.value)} placeholder="اكتب الإجابة هنا…"/></label><button disabled={!answer.trim()||status!=='connected'}><Send/> إرسال</button></form>
+    {choices.length>0&&<div className="mp-choice-grid">{choices.map((choice,index)=><button key={`${choice}-${index}`} disabled={status!=='connected'} onClick={()=>sendInput('answer',String(index+1))}><span>{index+1}</span><b>{choice}</b></button>)}</div>}
+    <form className="mp-answer" onSubmit={event=>{event.preventDefault(); if(answer.trim())sendInput('answer',answer);}}><label>إجابتك<input maxLength={120} value={answer} onChange={e=>setAnswer(e.target.value)} placeholder={choices.length?'أو اكتب الإجابة هنا…':'اكتب الإجابة هنا…'}/></label><button disabled={!answer.trim()||status!=='connected'}><Send/> إرسال</button></form>
     {notice&&<div className="mp-notice"><CheckCircle2/>{notice}</div>}
     <footer><span>{name}</span><small>الغرفة {roomCode}</small></footer>
   </section></main>;
