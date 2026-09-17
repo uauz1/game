@@ -22,6 +22,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
   const [buzzed,setBuzzed] = useState(false);
   const [choices,setChoices] = useState<string[]>([]);
   const [team,setTeam] = useState<MultiplayerTeam>(()=>{try{return localStorage.getItem('qaddha.multiplayer-team.v1')==='1'?1:0}catch{return 0}});
+  const [teamNames,setTeamNames] = useState<[string,string]>(['الفريق 1','الفريق 2']);
   const channelRef = useRef<ReturnType<typeof createPublicLobbyChannel> | null>(null);
   const playerId = useRef(`p-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`);
 
@@ -46,6 +47,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
         })
         .on('broadcast',{event:'round-reset'},()=>{ setBuzzed(false); setAnswer(''); setChoices([]); setNotice('جولة جديدة'); window.setTimeout(()=>setNotice(''),1400); })
         .on('broadcast',{event:'round-ui'},({payload})=>{const incoming=payload as {gameId?:string;choices?:unknown}|null;if(incoming?.gameId)setGameId(incoming.gameId);if(Array.isArray(incoming?.choices))setChoices(incoming.choices.filter((value):value is string=>typeof value==='string').slice(0,6));})
+        .on('broadcast',{event:'team-info'},({payload})=>{const incoming=payload as {teams?:unknown}|null;if(Array.isArray(incoming?.teams)&&incoming.teams.length>=2){const names=incoming.teams.filter((value):value is string=>typeof value==='string').slice(0,2);if(names.length===2)setTeamNames([names[0],names[1]]);}})
         .on('broadcast',{event:'score'},({payload})=>{
           const incoming = payload as { playerId?: string; score?: number; delta?: number } | null;
           if (incoming?.playerId===playerId.current && typeof incoming.score==='number') {
@@ -94,7 +96,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
 
   return <main className="mp-player" dir="rtl"><section className="mp-controller">
     <header><div><span>{status==='connected'?<Wifi/>:<WifiOff/>}{status==='connected'?'متصل بالغرفة':'جاري الاتصال'}</span><strong>{roomCode}</strong></div><div className="mp-score"><small>نقاطك</small><b>{score.score}</b></div></header>
-    <div className="mp-team-picker" role="group" aria-label="اختيار الفريق"><button className={team===0?'active':''} aria-pressed={team===0} onClick={()=>changeTeam(0)}>الفريق 1</button><button className={team===1?'active':''} aria-pressed={team===1} onClick={()=>changeTeam(1)}>الفريق 2</button></div>
+    <div className="mp-team-picker" role="group" aria-label="اختيار الفريق"><button className={team===0?'active':''} aria-pressed={team===0} onClick={()=>changeTeam(0)}>{teamNames[0]}</button><button className={team===1?'active':''} aria-pressed={team===1} onClick={()=>changeTeam(1)}>{teamNames[1]}</button></div>
     <div className="mp-game-now"><small>اللعبة الحالية</small><h1>{gameId?GAME_NAMES[gameId]||'اللعبة الحالية':'بانتظار المضيف…'}</h1><p>{gameId?'اضغط بسرعة أو أرسل إجابتك من هنا.':'خلك جاهز، المضيف بيبدأ اللعبة.'}</p></div>
     <button className={`mp-buzzer ${buzzed?'buzzed':''}`} disabled={status!=='connected'||buzzed} onClick={()=>sendInput('buzz')}><Zap/><b>{buzzed?'تم!':'أنا أول!'}</b><span>زر السرعة</span></button>
     {choices.length>0&&<div className="mp-choice-grid">{choices.map((choice,index)=><button key={`${choice}-${index}`} disabled={status!=='connected'} onClick={()=>sendInput('answer',String(index+1))}><span>{index+1}</span><b>{choice}</b></button>)}</div>}
