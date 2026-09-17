@@ -71,7 +71,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
         .subscribe(next=>{
           if(next==='SUBSCRIBED'){
             setStatus('connecting');
-            const presence={id:playerId.current,name:clean,team,joinedAt:Date.now(),role:'player'} as const;void channel.track(presence);void channel.send({type:'broadcast',event:'hello',payload:presence});
+            const presence={id:playerId.current,name:clean,team,joinedAt:Date.now(),role:'player'} as const;void channel.track(presence);
           } else if(next==='CHANNEL_ERROR'||next==='TIMED_OUT'){
             setStatus('error'); setNotice('تعذر الاتصال بالغرفة.');
           }
@@ -99,7 +99,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
     window.setTimeout(()=>setNotice(''),1500);
   };
 
-  const changeTeam=(next:MultiplayerTeam)=>{setTeam(next);try{localStorage.setItem('qaddha.multiplayer-team.v1',String(next));}catch{/* optional */}const channel=channelRef.current;if(channel){void channel.track({id:playerId.current,name,team:next,joinedAt:Date.now(),role:'player'});void channel.send({type:'broadcast',event:'team-change',payload:{id:playerId.current,name,team:next}});}setBuzzed(false);};
+  const changeTeam=(next:MultiplayerTeam)=>{setTeam(next);try{localStorage.setItem('qaddha.multiplayer-team.v1',String(next));}catch{/* optional */}const channel=channelRef.current;if(channel){void channel.track({id:playerId.current,name,team:next,joinedAt:Date.now(),role:'player'});}setBuzzed(false);};
 
   if(!name) return <main className="mp-player" dir="rtl"><section className="mp-join-card"><div className="mp-logo"><Gamepad2/></div><span>قدّها أونلاين</span><h1>ادخل الغرفة</h1><p>الكود <b>{roomCode}</b></p><form onSubmit={join}><input autoFocus maxLength={18} placeholder="اسمك" value={draftName} onChange={e=>setDraftName(e.target.value)}/><button className="primary" type="submit"><Sparkles/> دخول</button></form></section></main>;
 
