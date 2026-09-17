@@ -117,6 +117,7 @@ export default function App() {
   const randomGame=(pool=games)=>{const choices=pool.length?pool:games;go(choices[Math.floor(Math.random()*choices.length)].id);};
   const hostParams=useMemo(()=>new URLSearchParams(window.location.search),[]);
   const returningToSession=isGame&&returnTarget()==='session';
+  useEffect(()=>{const launch=(event:Event)=>{const detail=(event as CustomEvent<{gameId?:string}>).detail;if(detail?.gameId&&games.some(game=>game.id===detail.gameId))go(detail.gameId);};window.addEventListener('qaddha:hub-launch',launch);return()=>window.removeEventListener('qaddha:hub-launch',launch);},[playerData]);
 
   if(hostParams.get('host')==='who')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><WhoAmIPhone roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
   if(hostParams.get('host')==='secret')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><SecretWordPhone roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
