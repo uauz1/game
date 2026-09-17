@@ -46,7 +46,7 @@ export default function MultiplayerHostLayer(){
   },[]);
 
   useEffect(()=>{
-    const refreshChallenge=()=>{challengeRef.current=readMultiplayerChallenge();const active=challengeRef.current;if(active)void channelRef.current?.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[]}});};
+    const refreshChallenge=()=>{challengeRef.current=readMultiplayerChallenge();const active=challengeRef.current;if(active)void channelRef.current?.send({type:'broadcast',event:'round-ui',payload:{gameId:active.gameId,roundKey:active.roundKey,choices:active.choices||[],mode:active.mode||'single',requiredSelections:active.sequenceAnswers?.length||0}});};
     window.addEventListener('qaddha:multiplayer-challenge',refreshChallenge);
     return()=>window.removeEventListener('qaddha:multiplayer-challenge',refreshChallenge);
   },[]);
