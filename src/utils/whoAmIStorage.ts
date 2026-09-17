@@ -29,7 +29,7 @@ export function loadWhoAmIPreferences(): WhoAmIPreferences {
       teamNames: Array.isArray(stored.teamNames) && stored.teamNames.length === 2 ? stored.teamNames : defaults.teamNames,
       teamColors: Array.isArray(stored.teamColors) && stored.teamColors.length === 2 ? stored.teamColors : defaults.teamColors,
       seconds: [30, 45, 60].includes(stored.seconds ?? 0) ? stored.seconds! : defaults.seconds,
-      difficulty: ['easy', 'medium', 'hard'].includes(stored.difficulty ?? '') ? stored.difficulty! : defaults.difficulty,
+      difficulty: ['easy', 'medium', 'hard', 'mixed'].includes(stored.difficulty ?? '') ? stored.difficulty! : defaults.difficulty,
       roundCount: [6, 8, 10].includes(stored.roundCount ?? 0) ? stored.roundCount! : defaults.roundCount,
     };
   } catch {
