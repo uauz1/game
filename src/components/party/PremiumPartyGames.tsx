@@ -194,7 +194,7 @@ export function IntruderGame({ onHome }: { onHome: () => void }) {
   };
 
   const winner=teams[0].score===teams[1].score?null:teams[0].score>teams[1].score?0:1;
-  const shuffledItems=useMemo(()=>current?current.items.map((text,index)=>({text,index})):[],[current]);
+  const shuffledItems=useMemo(()=>current?shuffle(current.items.map((text,index)=>({text,index}))):[],[current]);
 
   return <section className="arena premium-game intruder-game" aria-label="لعبة الدخيل">
     <div className="arena-heading"><div><span className="eyebrow"><ShieldQuestion/> الدخيل</span><h1>{phase==='setup'?'أربع كلمات… وحدة منها ما تنتمي للباقي.':phase==='result'?'خلصت الجولات. مين عينه أقوى؟':`الجولة ${round+1} من ${deck.length}`}</h1></div><button className="quiet" onClick={onHome}>الألعاب <ArrowLeft/></button></div>
