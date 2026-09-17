@@ -76,6 +76,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
 
   useEffect(()=>()=>{ void disconnect(); },[]);
   useEffect(()=>{ if(name) void connect(name); },[]);
+  useEffect(()=>{if(!name)return;const retry=()=>{if(navigator.onLine&&status==='error')void connect(name);};window.addEventListener('online',retry);const visible=()=>{if(document.visibilityState==='visible')retry();};document.addEventListener('visibilitychange',visible);return()=>{window.removeEventListener('online',retry);document.removeEventListener('visibilitychange',visible);};},[name,status]);
 
   const join = (event:FormEvent) => {
     event.preventDefault();
@@ -98,13 +99,14 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
   if(!name) return <main className="mp-player" dir="rtl"><section className="mp-join-card"><div className="mp-logo"><Gamepad2/></div><span>قدّها أونلاين</span><h1>ادخل الغرفة</h1><p>الكود <b>{roomCode}</b></p><form onSubmit={join}><input autoFocus maxLength={18} placeholder="اسمك" value={draftName} onChange={e=>setDraftName(e.target.value)}/><button className="primary" type="submit"><Sparkles/> دخول</button></form></section></main>;
 
   return <main className="mp-player" dir="rtl"><section className="mp-controller">
-    <header><div><span>{status==='connected'?<Wifi/>:<WifiOff/>}{status==='connected'?'متصل بالغرفة':'جاري الاتصال'}</span><strong>{roomCode}</strong></div><div className="mp-score"><small>نقاطك</small><b>{score.score}</b></div></header>
+    <header><div><span>{status==='connected'?<Wifi/>:<WifiOff/>}{status==='connected'?'متصل بالغرفة':status==='error'?'الاتصال متوقف':'جاري الاتصال'}</span><strong>{roomCode}</strong></div><div className="mp-score"><small>نقاطك</small><b>{score.score}</b></div></header>
     <div className="mp-team-picker" role="group" aria-label="اختيار الفريق"><button className={team===0?'active':''} aria-pressed={team===0} onClick={()=>changeTeam(0)}>{teamNames[0]}</button><button className={team===1?'active':''} aria-pressed={team===1} onClick={()=>changeTeam(1)}>{teamNames[1]}</button></div>
     <div className="mp-game-now"><small>اللعبة الحالية</small><h1>{gameId?GAME_NAMES[gameId]||'اللعبة الحالية':'بانتظار المضيف…'}</h1><p>{gameId?'اضغط بسرعة أو أرسل إجابتك من هنا.':'خلك جاهز، المضيف بيبدأ اللعبة.'}</p></div>
     <button className={`mp-buzzer ${buzzed?'buzzed':''}`} disabled={status!=='connected'||buzzed} onClick={()=>sendInput('buzz')}><Zap/><b>{buzzed?'تم!':'أنا أول!'}</b><span>زر السرعة</span></button>
     {choices.length>0&&choiceMode==='single'&&<div className="mp-choice-grid">{choices.map((choice,index)=><button key={`${choice}-${index}`} disabled={status!=='connected'} onClick={()=>sendInput('answer',String(index+1))}><span>{index+1}</span><b>{choice}</b></button>)}</div>}
     {choices.length>0&&(choiceMode==='sequence'||choiceMode==='multi')&&<><div className="mp-sequence-preview">{Array.from({length:requiredSelections||choices.length}).map((_,index)=><span key={index}>{sequence[index]||'؟'}</span>)}</div><div className="mp-choice-grid">{choices.map((choice,index)=><button key={`${choice}-${index}`} disabled={status!=='connected'||sequence.includes(choice)||sequence.length>=(requiredSelections||choices.length)} onClick={()=>setSequence(current=>[...current,choice])}><span>{index+1}</span><b>{choice}</b></button>)}</div><div className="mp-sequence-actions"><button type="button" onClick={()=>setSequence([])} disabled={!sequence.length}>مسح الترتيب</button><button type="button" className="primary" disabled={status!=='connected'||sequence.length!==(requiredSelections||choices.length)} onClick={()=>{sendInput('answer',sequence.join('\u001f'));setSequence([]);}}>إرسال الترتيب</button></div></>}
-    {choiceMode!=='sequence'&&<form className="mp-answer" onSubmit={event=>{event.preventDefault(); if(answer.trim())sendInput('answer',answer);}}><label>إجابتك<input maxLength={120} value={answer} onChange={e=>setAnswer(e.target.value)} placeholder={choices.length?'أو اكتب الإجابة هنا…':'اكتب الإجابة هنا…'}/></label><button disabled={!answer.trim()||status!=='connected'}><Send/> إرسال</button></form>}
+    {choiceMode==='single'&&<form className="mp-answer" onSubmit={event=>{event.preventDefault(); if(answer.trim())sendInput('answer',answer);}}><label>إجابتك<input maxLength={120} value={answer} onChange={e=>setAnswer(e.target.value)} placeholder={choices.length?'أو اكتب الإجابة هنا…':'اكتب الإجابة هنا…'}/></label><button disabled={!answer.trim()||status!=='connected'}><Send/> إرسال</button></form>}
+    {status==='error'&&<button className="mp-retry" onClick={()=>void connect(name)}><Wifi/> إعادة الاتصال</button>}
     {notice&&<div className="mp-notice"><CheckCircle2/>{notice}</div>}
     <footer><span>{name}</span><small>الغرفة {roomCode}</small></footer>
   </section></main>;
