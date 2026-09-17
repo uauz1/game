@@ -1,10 +1,11 @@
-import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { ArrowLeft, Check, Eye, FastForward, Flag, Image, Lightbulb, Link2, RotateCcw, Send, Sparkles, Trophy, Users, X, Zap } from 'lucide-react';
 import { loadHuroofPreferences } from '../../utils/huroofStorage';
 import { characterCards, connectionCards, feudRounds, photoCards, riddles, speedQuestions, wordCards } from '../../data/newPartyGames';
 import { drawWithoutRepeats } from '../../utils/newGameRotation';
 import { useNewGameNumber } from '../../utils/newGameSettings';
 import { loadSharedTeams, saveSharedTeams } from '../../utils/sharedTeams';
+import { clearMultiplayerChallenge, publishMultiplayerChallenge } from '../../utils/multiplayerSession';
 import Countdown from './Countdown';
 import { HostPairingPanel, useFamilyHostRoom, type FamilyHostCommand, type FamilyHostState } from './HostRoom';
 
@@ -61,6 +62,7 @@ export function CharacterGuessGame({ onHome }: GameProps) {
 export function RiddlesGame({ onHome }: GameProps) {
   const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useNewGameNumber('riddles','seconds',30); const [rounds,setRounds]=useNewGameNumber('riddles','rounds',6); const [deck,setDeck]=useState(riddles); const [round,setRound]=useState(0); const [revealed,setRevealed]=useState(false); const [timedOut,setTimedOut]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
   const start=()=>{setDeck(drawWithoutRepeats('riddles',riddles,rounds,item=>item[0]));setTeams(prepareTeams(teams));setRound(0);setRevealed(false);setTimedOut(false);setPhase('play');};
+  useEffect(()=>{if(phase==='play'&&deck[round]){publishMultiplayerChallenge({gameId:'riddles',roundKey:`riddle-${round}-${deck[round][0]}`,answers:[deck[round][1]],points:100});return()=>clearMultiplayerChallenge('riddles');}clearMultiplayerChallenge('riddles');},[deck,phase,round]);
   const award=(team:number|null)=>{if(team!==null&&!timedOut)setTeams(value=>value.map((item,index)=>index===team?{...item,score:item.score+100}:item));if(round+1>=deck.length)setPhase('result');else{setRound(round+1);setRevealed(false);setTimedOut(false);}};
   return <section className="arena new-game riddle-game"><GameHeader eyebrow="فوازير" title={phase==='setup'?'فكّوها قبل ما يفوت الوقت.':phase==='result'?'العقول حسمتها!':`الفزورة ${round+1} من ${deck.length}`} onHome={onHome}/>{phase==='setup'?<TeamSetup {...{teams,setTeams,seconds,setSeconds,rounds,setRounds}} onStart={start}/>:phase==='result'?<GameResult title="أذكى فريق" teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Scorebar teams={teams} turn={round%2} round={round} total={deck.length}/><div className="new-stage riddle-stage"><span className="riddle-mark">؟</span><h2>{deck[round][0]}</h2><Countdown key={deck[round][0]} seconds={seconds} stopped={revealed} onExpire={()=>{setTimedOut(true);setRevealed(true);}}/>{!revealed?<button className="primary" onClick={()=>setRevealed(true)}><Eye/> كشف الحل</button>:<div className={`answer-feedback ${timedOut?'wrong':'correct'}`}><small>{timedOut?'انتهى الوقت · بلا نقاط':'الحل'}</small><h2>{deck[round][1]}</h2><div className="judge-row">{timedOut?<button className="primary" onClick={()=>award(null)}>{round+1===deck.length?'عرض النتيجة':'الفزورة التالية'}</button>:<>{teams.map((team,index)=><button key={team.name} style={{'--team':team.color} as CSSProperties} onClick={()=>award(index)}>+100 · {team.name}</button>)}<button onClick={()=>award(null)}>لا أحد</button></>}</div></div>}</div></>}</section>;
 }
@@ -76,6 +78,7 @@ export function PhotoChallengeGame({ onHome }: GameProps) {
 export function FastestGame({ onHome }: GameProps) {
   const [teams,setTeams]=useState(initialTeams); const [seconds,setSeconds]=useNewGameNumber('fast','seconds',20); const [rounds,setRounds]=useNewGameNumber('fast','rounds',6); const [deck,setDeck]=useState(speedQuestions); const [round,setRound]=useState(0); const [buzz,setBuzz]=useState<number|null>(null); const [revealed,setRevealed]=useState(false); const [expired,setExpired]=useState(false); const [phase,setPhase]=useState<'setup'|'play'|'result'>('setup');
   const start=()=>{setDeck(drawWithoutRepeats('speed',speedQuestions,rounds,item=>item[0]));setTeams(prepareTeams(teams));setRound(0);setBuzz(null);setRevealed(false);setExpired(false);setPhase('play');};
+  useEffect(()=>{if(phase==='play'&&deck[round]){publishMultiplayerChallenge({gameId:'fast',roundKey:`fast-${round}-${deck[round][0]}`,answers:[deck[round][1]],points:100});return()=>clearMultiplayerChallenge('fast');}clearMultiplayerChallenge('fast');},[deck,phase,round]);
   const buzzer=(index:number)=>{if(buzz!==null)return;setBuzz(index);try{navigator.vibrate?.(35);}catch{/* Haptics are optional. */}};
   const judge=(correct:boolean)=>{if(buzz===null)return;if(correct){setTeams(value=>value.map((team,index)=>index===buzz?{...team,score:team.score+100}:team));next();}else{setBuzz(1-buzz);setRevealed(false);}};
   const next=()=>{if(round+1>=deck.length)setPhase('result');else{setRound(round+1);setBuzz(null);setRevealed(false);setExpired(false);}};
