@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { CheckCircle2, Gamepad2, Send, Sparkles, Wifi, WifiOff, Zap } from 'lucide-react';
-import { createPublicLobbyChannel, isValidPartyCode, normalizePartyCode, removeRealtimeChannel } from '../../utils/qaddhaRealtime';
+import { createPublicLobbyPresenceChannel, isValidPartyCode, normalizePartyCode, removeRealtimeChannel } from '../../utils/qaddhaRealtime';
 import { readMultiplayerPlayerName, saveMultiplayerPlayerName, type MultiplayerInput, type MultiplayerTeam } from '../../utils/multiplayerSession';
 
 type Status = 'idle' | 'connecting' | 'connected' | 'error';
@@ -26,11 +26,11 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
   const [sequence,setSequence] = useState<string[]>([]);
   const [team,setTeam] = useState<MultiplayerTeam>(()=>{try{return localStorage.getItem('qaddha.multiplayer-team.v1')==='1'?1:0}catch{return 0}});
   const [teamNames,setTeamNames] = useState<[string,string]>(['الفريق 1','الفريق 2']);
-  const channelRef = useRef<ReturnType<typeof createPublicLobbyChannel> | null>(null);
+  const channelRef = useRef<ReturnType<typeof createPublicLobbyPresenceChannel> | null>(null);
   const playerId = useRef(`p-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`);
 
   const disconnect = async () => {
-    if (channelRef.current) await removeRealtimeChannel(channelRef.current);
+    if (channelRef.current) { await channelRef.current.untrack().catch(()=>undefined); await removeRealtimeChannel(channelRef.current); }
     channelRef.current = null;
   };
 
@@ -41,7 +41,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
     const clean = playerName.trim().slice(0,18);
     if (!clean) return;
     try {
-      const channel = createPublicLobbyChannel(roomCode);
+      const channel = createPublicLobbyPresenceChannel(roomCode, playerId.current);
       channelRef.current = channel;
       channel
         .on('broadcast',{event:'game'},({payload})=>{
@@ -66,7 +66,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
         .subscribe(next=>{
           if(next==='SUBSCRIBED'){
             setStatus('connected');
-            void channel.send({type:'broadcast',event:'hello',payload:{id:playerId.current,name:clean,team,joinedAt:Date.now(),role:'player'}});
+            const presence={id:playerId.current,name:clean,team,joinedAt:Date.now(),role:'player'} as const;await channel.track(presence);void channel.send({type:'broadcast',event:'hello',payload:presence});
           } else if(next==='CHANNEL_ERROR'||next==='TIMED_OUT'){
             setStatus('error'); setNotice('تعذر الاتصال بالغرفة.');
           }
@@ -94,7 +94,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
     window.setTimeout(()=>setNotice(''),1500);
   };
 
-  const changeTeam=(next:MultiplayerTeam)=>{setTeam(next);try{localStorage.setItem('qaddha.multiplayer-team.v1',String(next));}catch{/* optional */}void channelRef.current?.send({type:'broadcast',event:'team-change',payload:{id:playerId.current,name,team:next}});setBuzzed(false);};
+  const changeTeam=(next:MultiplayerTeam)=>{setTeam(next);try{localStorage.setItem('qaddha.multiplayer-team.v1',String(next));}catch{/* optional */}const channel=channelRef.current;if(channel){void channel.track({id:playerId.current,name,team:next,joinedAt:Date.now(),role:'player'});void channel.send({type:'broadcast',event:'team-change',payload:{id:playerId.current,name,team:next}});}setBuzzed(false);};
 
   if(!name) return <main className="mp-player" dir="rtl"><section className="mp-join-card"><div className="mp-logo"><Gamepad2/></div><span>قدّها أونلاين</span><h1>ادخل الغرفة</h1><p>الكود <b>{roomCode}</b></p><form onSubmit={join}><input autoFocus maxLength={18} placeholder="اسمك" value={draftName} onChange={e=>setDraftName(e.target.value)}/><button className="primary" type="submit"><Sparkles/> دخول</button></form></section></main>;
 
