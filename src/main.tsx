@@ -1,6 +1,6 @@
 import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
+import PlatformShell from './components/party/PlatformShell.tsx';
 import { AuthProvider } from './contexts/AuthContext.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import QaddhaRemoteControl from './components/admin/QaddhaRemoteControl.tsx';
@@ -22,6 +22,7 @@ import './qr-game-badges.css';
 import './header-polish.css';
 import './hero-background-polish.css';
 import './site-premium-polish.css';
+import './party-hub.css';
 import './tv-mode.css';
 
 const WhoAmIPhone = lazy(() => import('./components/party/WhoAmIPrivate.tsx').then(module => ({ default: module.WhoAmIPhone })));
@@ -38,7 +39,7 @@ createRoot(document.getElementById('root')!).render(
         ? <Suspense fallback={<main className="mobile-host" dir="rtl"><section className="host-wait"><h1>نربطك بشاشة اللعبة…</h1></section></main>}><WhoAmIPhone roomId={params.get('room') || ''} token={params.get('token') || ''}/></Suspense>
         : <AuthProvider>{isAdmin
           ? <Suspense fallback={<main dir="rtl" style={{minHeight:'100vh',display:'grid',placeItems:'center',background:'#080808',color:'#fff'}}>جاري فتح لوحة قدّها…</main>}><QaddhaAdminDashboard /></Suspense>
-          : <QaddhaRemoteControl><App /></QaddhaRemoteControl>}
+          : <QaddhaRemoteControl><PlatformShell /></QaddhaRemoteControl>}
         </AuthProvider>}
     </ErrorBoundary>
   </StrictMode>
