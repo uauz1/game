@@ -8,6 +8,7 @@ const count = (text, pattern) => [...text.matchAll(pattern)].length;
 const app = read('src/App.tsx');
 const extra = read('src/components/party/ExtraPartyGames.tsx');
 const newGames = read('src/components/party/NewPartyGames.tsx');
+const premium = read('src/components/party/PremiumPartyGames.tsx');
 const data = read('src/data/newPartyGames.ts');
 const who = read('src/data/whoAmIQuestions.ts');
 const whoExpansion = read('src/data/whoAmIExpansion.ts');
@@ -17,11 +18,11 @@ const words = read('src/components/party/WordBankPrivate.tsx');
 const acting = read('src/components/party/ActingPrivate.tsx');
 const host = read('src/components/party/HostRoom.tsx');
 
-const gameIds = ['teams','letters','who','photo','words','fast','character','riddles','family','connection','auction','order','memory','missing','acting','secret'];
+const gameIds = ['teams','letters','who','photo','words','fast','character','riddles','family','connection','auction','order','memory','missing','acting','secret','pressure','intruder'];
 for (const id of gameIds) {
   if (!app.includes(`id:'${id}'`) && !app.includes(`id: '${id}'`)) fail(`Game registry is missing ${id}`);
 }
-if (gameIds.every(id => app.includes(`id:'${id}'`) || app.includes(`id: '${id}'`))) pass('All 16 games are registered');
+if (gameIds.every(id => app.includes(`id:'${id}'`) || app.includes(`id: '${id}'`))) pass('All 18 games are registered');
 
 const hostRoutes = ['who','secret','acting','words','family'];
 for (const route of hostRoutes) {
@@ -37,6 +38,15 @@ const extraMinimums = [
 ];
 for (const [name, actual, minimum] of extraMinimums) actual >= minimum ? pass(`${name}: ${actual} curated rounds`) : fail(`${name} only has ${actual} rounds; expected at least ${minimum}`);
 
+const pressureCount = count(premium, /id:'p-[emh]-/g);
+pressureCount >= 24 ? pass(`Pressure bank: ${pressureCount} prompts`) : fail(`Pressure bank is too small: ${pressureCount}`);
+const intruderCount = count(premium, /id:'i-[emh]-/g);
+intruderCount >= 24 ? pass(`Intruder bank: ${intruderCount} rounds`) : fail(`Intruder bank is too small: ${intruderCount}`);
+for (const difficulty of ['easy','medium','hard','mixed']) {
+  if (!premium.includes(`id:'${difficulty}'`) && !premium.includes(`id: '${difficulty}'`)) fail(`Premium games difficulty selector is missing ${difficulty}`);
+}
+if (['easy','medium','hard','mixed'].every(difficulty => premium.includes(`id:'${difficulty}'`) || premium.includes(`id: '${difficulty}'`))) pass('Premium games expose truthful easy/medium/hard/random levels');
+
 const feudCount = count(data, /id:'feud-/g);
 feudCount >= 8 ? pass(`Family Feud bank: ${feudCount} rounds`) : fail(`Family Feud bank is too small: ${feudCount}`);
 
@@ -46,7 +56,7 @@ connectionCount >= 30 ? pass(`Connection bank: ${connectionCount} rounds`) : fai
 const whoCount = count(who, /id:\s*['"](?:easy|medium|hard)-/g) + count(whoExpansion, /id:\s*['"]exp-/g);
 whoCount >= 40 ? pass(`Who Am I bank: ${whoCount} characters`) : fail(`Who Am I bank is too small: ${whoCount}`);
 
-if (/coming soon|قريبًا فقط|لعبة غير متاحة/i.test([extra,newGames,photo,words,acting,secret].join('\n'))) fail('A playable game still contains coming-soon/unavailable copy');
+if (/coming soon|قريبًا فقط|لعبة غير متاحة/i.test([extra,newGames,premium,photo,words,acting,secret].join('\n'))) fail('A playable game still contains coming-soon/unavailable copy');
 else pass('No coming-soon gameplay remains in core party games');
 
 const qrFiles = [secret, words, acting, host];
