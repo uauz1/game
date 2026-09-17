@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { CheckCircle2, Gamepad2, Send, Sparkles, Wifi, WifiOff, Zap } from 'lucide-react';
 import { createPublicLobbyPresenceChannel, isValidPartyCode, normalizePartyCode, removeRealtimeChannel } from '../../utils/qaddhaRealtime';
-import { readMultiplayerPlayerName, saveMultiplayerPlayerName, type MultiplayerInput, type MultiplayerTeam } from '../../utils/multiplayerSession';
+import { readMultiplayerPlayerId, readMultiplayerPlayerName, saveMultiplayerPlayerName, type MultiplayerInput, type MultiplayerTeam } from '../../utils/multiplayerSession';
 
 type Status = 'idle' | 'connecting' | 'connected' | 'error';
 type ScoreState = { score: number; delta?: number };
@@ -27,7 +27,8 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
   const [team,setTeam] = useState<MultiplayerTeam>(()=>{try{return localStorage.getItem('qaddha.multiplayer-team.v1')==='1'?1:0}catch{return 0}});
   const [teamNames,setTeamNames] = useState<[string,string]>(['الفريق 1','الفريق 2']);
   const channelRef = useRef<ReturnType<typeof createPublicLobbyPresenceChannel> | null>(null);
-  const playerId = useRef(`p-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`);
+  const playerId = useRef(readMultiplayerPlayerId());
+  const hostMissingTimer=useRef<number|undefined>(undefined);
 
   const disconnect = async () => {
     if (channelRef.current) { await channelRef.current.untrack().catch(()=>undefined); await removeRealtimeChannel(channelRef.current); }
@@ -43,7 +44,11 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
     try {
       const channel = createPublicLobbyPresenceChannel(roomCode, playerId.current);
       channelRef.current = channel;
+      const syncHost=()=>{const state=channel.presenceState<{role?:string}>();const hostOnline=Object.values(state).flat().some(member=>member?.role==='host');if(hostOnline){if(hostMissingTimer.current)window.clearTimeout(hostMissingTimer.current);hostMissingTimer.current=undefined;setStatus('connected');setNotice(current=>current==='الغرفة غير موجودة أو المضيف غير متصل.'?'':current);}else if(!hostMissingTimer.current){hostMissingTimer.current=window.setTimeout(()=>{setStatus('error');setNotice('الغرفة غير موجودة أو المضيف غير متصل.');hostMissingTimer.current=undefined;},4500);}};
       channel
+        .on('presence',{event:'sync'},syncHost)
+        .on('presence',{event:'join'},syncHost)
+        .on('presence',{event:'leave'},syncHost)
         .on('broadcast',{event:'game'},({payload})=>{
           const incoming = payload as { gameId?: string } | null;
           if (incoming?.gameId) { setGameId(incoming.gameId); setBuzzed(false); setNotice(''); }
@@ -65,7 +70,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
         })
         .subscribe(next=>{
           if(next==='SUBSCRIBED'){
-            setStatus('connected');
+            setStatus('connecting');
             const presence={id:playerId.current,name:clean,team,joinedAt:Date.now(),role:'player'} as const;void channel.track(presence);void channel.send({type:'broadcast',event:'hello',payload:presence});
           } else if(next==='CHANNEL_ERROR'||next==='TIMED_OUT'){
             setStatus('error'); setNotice('تعذر الاتصال بالغرفة.');
@@ -74,7 +79,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
     } catch { setStatus('error'); setNotice('تعذر الاتصال بالغرفة.'); }
   };
 
-  useEffect(()=>()=>{ void disconnect(); },[]);
+  useEffect(()=>()=>{if(hostMissingTimer.current)window.clearTimeout(hostMissingTimer.current);void disconnect();},[]);
   useEffect(()=>{ if(name) void connect(name); },[]);
   useEffect(()=>{if(!name)return;const retry=()=>{if(navigator.onLine&&status==='error')void connect(name);};window.addEventListener('online',retry);const visible=()=>{if(document.visibilityState==='visible')retry();};document.addEventListener('visibilitychange',visible);return()=>{window.removeEventListener('online',retry);document.removeEventListener('visibilitychange',visible);};},[name,status]);
 
