@@ -63,9 +63,13 @@ export function subscribeQaddhaRemoteConfig(onChange: (config: QaddhaRemoteConfi
   return () => { active = false; cleanup(); };
 }
 
-export async function saveQaddhaRemoteConfig(config: QaddhaRemoteConfig) {
+export async function saveQaddhaRemoteConfig(config: QaddhaRemoteConfig): Promise<QaddhaRemoteConfig> {
   const client = await getAuthClient();
-  const next = { ...config, id: 'global', updated_at: new Date().toISOString() };
+  const next: QaddhaRemoteConfig = {
+    ...config,
+    id: 'global',
+    updated_at: new Date().toISOString(),
+  };
   const { error } = await client.from('qaddha_remote_config').upsert(next, { onConflict: 'id' });
   if (error) throw error;
   return next;
