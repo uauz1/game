@@ -60,7 +60,7 @@ if (exists(onlineLobbyFile) && exists(onlineClientFile) && exists(authClientFile
   const onlineClient = read(onlineClientFile);
   const authClient = read(authClientFile);
   const onlineChecks = [
-    [app.includes("screen==='online'"), 'Online screen route is wired'],
+    [app.includes('onlineOpen') && app.includes('online-integrated-overlay'), 'Online mode is integrated inside the Qaddha shell'],
     [app.includes("initialParams.get('online')"), 'Invite-code deep link is wired'],
     [onlineLobby.includes('findQuickOnlineMatch'), 'Quick Match UI is wired'],
     [onlineLobby.includes('createPrivateOnlineRoom'), 'Private-room UI is wired'],
