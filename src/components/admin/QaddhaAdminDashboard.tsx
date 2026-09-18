@@ -10,6 +10,7 @@ import {
   ALL_GAME_IDS, DEFAULT_QADDHA_CONFIG, QaddhaRemoteConfig, fetchQaddhaRemoteConfig,
   isCurrentUserQaddhaAdmin, saveQaddhaRemoteConfig, fetchQaddhaAdminOverview,
   fetchQaddhaAdminPlayers, fetchQaddhaAdminAudit, cancelQaddhaOnlineRoom,
+  isQaddhaAdminBootstrapAvailable, bootstrapFirstQaddhaAdmin,
   type QaddhaAdminOverview, type QaddhaAdminPlayer, type QaddhaAdminAuditEntry
 } from '../../utils/adminConfig';
 
@@ -57,6 +58,10 @@ export default function QaddhaAdminDashboard(){
   const [refreshing,setRefreshing]=useState(false);
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
+  const [displayName,setDisplayName]=useState('');
+  const [confirmPassword,setConfirmPassword]=useState('');
+  const [authMode,setAuthMode]=useState<'signin'|'setup'>('signin');
+  const [bootstrapAvailable,setBootstrapAvailable]=useState(false);
   const [signingIn,setSigningIn]=useState(false);
   const siteBaseUrl=new URL(import.meta.env.BASE_URL,window.location.origin).href;
   const [health,setHealth]=useState<{site:Health;supabase:Health;content:Health;sessions:Health}>({
@@ -77,9 +82,25 @@ export default function QaddhaAdminDashboard(){
   };
 
   useEffect(()=>{void (async()=>{
-    if(!auth.session){setAllowed(false);setChecking(false);return;}
     setChecking(true);
-    const ok=await isCurrentUserQaddhaAdmin();
+    if(!auth.session){
+      setAllowed(false);
+      try{
+        const available=await isQaddhaAdminBootstrapAvailable();
+        setBootstrapAvailable(available);
+        if(available)setAuthMode('setup');
+      }catch{setBootstrapAvailable(false);}
+      setChecking(false);
+      return;
+    }
+    let ok=await isCurrentUserQaddhaAdmin();
+    if(!ok){
+      try{
+        const available=await isQaddhaAdminBootstrapAvailable();
+        setBootstrapAvailable(available);
+        if(available)ok=await bootstrapFirstQaddhaAdmin();
+      }catch{/* Existing non-admin users stay blocked once an owner exists. */}
+    }
     setAllowed(ok);
     if(ok){
       const [remote,stats,nextPlayers,nextAudit]=await Promise.all([fetchQaddhaRemoteConfig(),fetchQaddhaAdminOverview().catch(()=>null),fetchQaddhaAdminPlayers(50).catch(()=>[]),fetchQaddhaAdminAudit(30).catch(()=>[])]);
@@ -97,6 +118,16 @@ export default function QaddhaAdminDashboard(){
   const login=async(event:FormEvent)=>{
     event.preventDefault();
     if(!email.trim()||!password){setMessage('اكتب البريد وكلمة المرور.');return;}
+    if(authMode==='setup'){
+      if(!displayName.trim()){setMessage('اكتب اسمك.');return;}
+      if(password.length<8){setMessage('كلمة المرور لازم تكون 8 أحرف على الأقل.');return;}
+      if(password!==confirmPassword){setMessage('كلمتا المرور غير متطابقتين.');return;}
+      setSigningIn(true);setMessage('');
+      const result=await auth.signUp(email.trim(),password,displayName.trim());
+      setMessage(result.message);
+      setSigningIn(false);
+      return;
+    }
     setSigningIn(true);setMessage('');
     const result=await auth.signIn(email.trim(),password);
     setMessage(result.message);setSigningIn(false);
@@ -167,14 +198,16 @@ export default function QaddhaAdminDashboard(){
       </aside>
       <section className="admin-auth-card">
         <div className="admin-auth-lock"><LockKeyhole size={24}/></div>
-        <div className="admin-auth-heading"><small>ADMIN ACCESS</small><h2>تسجيل دخول الإدارة</h2><p>استخدم حساب الإدارة المصرح له للدخول إلى مركز التحكم.</p></div>
+        <div className="admin-auth-heading"><small>{authMode==='setup'?'FIRST OWNER SETUP':'ADMIN ACCESS'}</small><h2>{authMode==='setup'?'إنشاء حساب المالك':'تسجيل دخول الإدارة'}</h2><p>{authMode==='setup'?'ما فيه حساب إدارة حتى الآن. أنشئ حسابك هنا، وبيصير حساب المالك الأول تلقائيًا.':'استخدم حساب الإدارة المصرح له للدخول إلى مركز التحكم.'}</p></div>
+        {bootstrapAvailable&&<div className="admin-auth-mode"><button type="button" aria-pressed={authMode==='setup'} onClick={()=>{setAuthMode('setup');setMessage('');}}>إنشاء حساب المالك</button><button type="button" aria-pressed={authMode==='signin'} onClick={()=>{setAuthMode('signin');setMessage('');}}>عندي حساب</button></div>}
         <form onSubmit={login} className="admin-auth-form">
+          {authMode==='setup'&&<label>اسم المالك<input value={displayName} onChange={e=>setDisplayName(e.target.value)} autoComplete="name" placeholder="نواف"/></label>}
           <label>البريد الإلكتروني<input dir="ltr" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@example.com"/></label>
-          <label>كلمة المرور<input dir="ltr" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••"/></label>
-          <button disabled={signingIn} className="admin-auth-primary"><LogIn size={18}/>{signingIn?'جاري الدخول…':'دخول لوحة التحكم'}</button>
+          <label>كلمة المرور<input dir="ltr" type="password" autoComplete={authMode==='setup'?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••"/></label>
+          {authMode==='setup'&&<label>تأكيد كلمة المرور<input dir="ltr" type="password" autoComplete="new-password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="••••••••"/></label>}
+          <button disabled={signingIn} className="admin-auth-primary"><LogIn size={18}/>{signingIn?'جاري التنفيذ…':authMode==='setup'?'إنشاء حساب المالك':'دخول لوحة التحكم'}</button>
         </form>
-        <div className="admin-auth-divider"><span/>أو<span/></div>
-        <button disabled={signingIn} onClick={loginGoogle} className="admin-auth-google"><KeyRound size={17}/>الدخول بحساب Google</button>
+        {authMode==='signin'&&<><div className="admin-auth-divider"><span/>أو<span/></div><button disabled={signingIn} onClick={loginGoogle} className="admin-auth-google"><KeyRound size={17}/>الدخول بحساب Google</button></>}
         {message&&<p className="admin-auth-message">{message}</p>}
         <a href={siteBaseUrl} className="admin-auth-back">العودة إلى قدّها</a>
       </section>
