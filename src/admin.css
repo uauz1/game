@@ -136,3 +136,14 @@ body.admin-page::after{
   .admin-auth-brand{display:none}
   .admin-auth-card{padding:34px 20px;min-height:100svh}
 }
+
+.admin-auth-screen{
+  max-width:none!important;
+  margin:0!important;
+}
+.admin-dashboard-root{
+  max-width:none!important;
+  margin:0!important;
+  padding:0 0 7rem!important;
+  width:100%;
+}
