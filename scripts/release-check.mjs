@@ -11,7 +11,7 @@ const app = read('src/App.tsx');
 const session = read('src/components/party/SmartPartySession.tsx');
 const realtime = read('src/utils/qaddhaRealtime.ts');
 
-const games = ['teams','letters','who','photo','words','fast','character','riddles','family','connection','auction','order','memory','missing','acting','secret'];
+const games = ['teams','letters','who','photo','words','fast','character','riddles','family','connection','auction','order','memory','missing','acting','secret','pressure','intruder'];
 const hostRoutes = ['who','secret','acting','words','family'];
 
 const registered = games.filter(id => app.includes(`id:'${id}'`) || app.includes(`id: '${id}'`));
