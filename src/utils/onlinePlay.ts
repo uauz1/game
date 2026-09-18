@@ -194,3 +194,11 @@ export async function findMyActiveOnlineRoom(): Promise<OnlineRoomSnapshot | nul
   }
   return null;
 }
+
+
+export async function recordOnlineDuelResult(roomId: string) {
+  const client = await getAuthClient();
+  const { data, error } = await client.rpc('qaddha_record_duel_result', { p_room_id: roomId });
+  if (error) throw error;
+  return data === true;
+}
