@@ -153,6 +153,15 @@ export default function OnlineLobby({ onBack, onRequireAuth, initialCode = '' }:
   },[snapshot?.room.id,userId,persist,refresh]);
 
   useEffect(()=>{
+    if(snapshot?.room.status!=='cancelled')return;
+    void closeOnlineRoomChannel(channelRef.current);
+    channelRef.current=null;
+    setSnapshot(null);
+    setOnlineIds([]);
+    setNotice('تم إنهاء الغرفة من الإدارة. تقدر تبدأ غرفة جديدة الآن.');
+  },[snapshot?.room.status]);
+
+  useEffect(()=>{
     if(!snapshot||!isHost||snapshot.members.length<2||duel)return;
     const scores=Object.fromEntries(snapshot.members.map(member=>[member.user_id,0]));
     void persist({round:0,questionIndex:seedIndex(snapshot.room.id,0),scores,buzzUserId:null,reveal:false,feedback:'بدأت المواجهة',answer:'',finished:false});
