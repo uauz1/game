@@ -80,7 +80,7 @@ export const vaultQuestions: Question[] = [
   { id:'vault-nature-005', category:'nature', text:'ما الظاهرة المناخية المرتبطة بارتفاع دوري لحرارة سطح المحيط الهادئ الاستوائي الأوسط والشرقي؟', choices:['النينيو','المد الأحمر','الإعصار القطبي','المونسون'], correctAnswer:0, difficulty:'hard', type:'multiple' },
   { id:'vault-nature-006', category:'nature', text:'أي غاز دفيئة ينتج طبيعيًا وبشريًا ويملك تأثيرًا أقوى لكل جزيء من ثاني أكسيد الكربون على المدى القصير؟', choices:['الأكسجين','الميثان','النيون','الأرجون'], correctAnswer:1, difficulty:'hard', type:'multiple' },
 
-  { id:'vault-books-001', category:'books', text:'من مؤلف رواية "1984"؟', choices:['جورج أورويل','ألدوس هكسلي','فرانز كافكا','إرنست همنغواي'], correctAnswer:0, difficulty:'medium', type:'multiple' },
+  { id:'vault-books-001', category:'books', text:'من مؤلف رواية «فرانكنشتاين»؟', choices:['ماري شيلي','جين أوستن','فرجينيا وولف','إميلي برونتي'], correctAnswer:0, difficulty:'medium', type:'multiple' },
   { id:'vault-books-002', category:'books', text:'من كتب "دون كيشوت"؟', choices:['دانتي','ميغيل دي ثيربانتس','تولستوي','غوته'], correctAnswer:1, difficulty:'hard', type:'multiple' },
   { id:'vault-books-003', category:'books', text:'أي شاعر عربي لُقّب بأمير الشعراء؟', choices:['أحمد شوقي','المتنبي','محمود درويش','أبو تمام'], correctAnswer:0, difficulty:'medium', type:'multiple' },
   { id:'vault-books-004', category:'books', text:'من صاحب "رسالة الغفران"؟', choices:['الجاحظ','أبو العلاء المعري','ابن المقفع','ابن خلدون'], correctAnswer:1, difficulty:'hard', type:'multiple' },
@@ -89,7 +89,7 @@ export const vaultQuestions: Question[] = [
 
   { id:'vault-general-001', category:'general', text:'أي معدن سائل في درجة حرارة الغرفة استُخدم تاريخيًا في موازين الحرارة؟', choices:['الزئبق','الألومنيوم','الفضة','الزنك'], correctAnswer:0, difficulty:'medium', type:'multiple' },
   { id:'vault-general-002', category:'general', text:'أي مقياس يُستخدم للتعبير عن صلادة المعادن من التلك حتى الألماس؟', choices:['موهس','ريختر','بوفورت','ديسيبل'], correctAnswer:0, difficulty:'hard', type:'multiple' },
-  { id:'vault-general-003', category:'general', text:'ما اللغة الرسمية الأساسية في البرازيل؟', choices:['الإسبانية','البرتغالية','الفرنسية','الإيطالية'], correctAnswer:1, difficulty:'medium', type:'multiple' },
+  { id:'vault-general-003', category:'general', text:'ما وحدة قياس شدة الإضاءة الأساسية في النظام الدولي؟', choices:['الكانديلا','اللومن','الواط','اللوكس'], correctAnswer:0, difficulty:'medium', type:'multiple' },
   { id:'vault-general-004', category:'general', text:'أي وحدة دولية تقيس التردد؟', choices:['واط','هرتز','نيوتن','باسكال'], correctAnswer:1, difficulty:'medium', type:'multiple' },
   { id:'vault-general-005', category:'general', text:'أي عنصر كيميائي يحمل الرمز W؟', choices:['التنغستن','القصدير','التيتانيوم','التيلوريوم'], correctAnswer:0, difficulty:'hard', type:'multiple' },
   { id:'vault-general-006', category:'general', text:'ما اسم الجهاز المستخدم لقياس الضغط الجوي؟', choices:['بارومتر','هيدرومتر','فولتميتر','كالوريمتر'], correctAnswer:0, difficulty:'medium', type:'multiple' },
