@@ -20,6 +20,8 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
   const [notice,setNotice] = useState('');
   const [score,setScore] = useState<ScoreState>({ score: 0 });
   const [buzzed,setBuzzed] = useState(false);
+  const [buzzLocked,setBuzzLocked] = useState(false);
+  const [buzzWinner,setBuzzWinner] = useState('');
   const [choices,setChoices] = useState<string[]>([]);
   const [choiceMode,setChoiceMode] = useState<'single'|'sequence'|'multi'>('single');
   const [requiredSelections,setRequiredSelections] = useState(0);
@@ -53,8 +55,10 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
           const incoming = payload as { gameId?: string } | null;
           if (incoming?.gameId) { setGameId(incoming.gameId); setBuzzed(false); setNotice(''); }
         })
-        .on('broadcast',{event:'round-reset'},()=>{ setBuzzed(false); setAnswer(''); setChoices([]); setChoiceMode('single'); setRequiredSelections(0); setSequence([]); setNotice('جولة جديدة'); window.setTimeout(()=>setNotice(''),1400); })
+        .on('broadcast',{event:'round-reset'},()=>{ setBuzzed(false); setBuzzLocked(false); setBuzzWinner(''); setAnswer(''); setChoices([]); setChoiceMode('single'); setRequiredSelections(0); setSequence([]); setNotice('جولة جديدة'); window.setTimeout(()=>setNotice(''),1400); })
         .on('broadcast',{event:'round-ui'},({payload})=>{const incoming=payload as {gameId?:string;choices?:unknown;mode?:unknown;requiredSelections?:unknown}|null;if(incoming?.gameId)setGameId(incoming.gameId);if(Array.isArray(incoming?.choices))setChoices(incoming.choices.filter((value):value is string=>typeof value==='string').slice(0,12));setChoiceMode(incoming?.mode==='sequence'?'sequence':incoming?.mode==='multi'?'multi':'single');setRequiredSelections(typeof incoming?.requiredSelections==='number'?incoming.requiredSelections:0);setSequence([]);})
+        .on('broadcast',{event:'buzz-lock'},({payload})=>{const incoming=payload as {playerId?:string;playerName?:string}|null;setBuzzLocked(true);setBuzzed(incoming?.playerId===playerId.current);setBuzzWinner(incoming?.playerName||'');})
+        .on('broadcast',{event:'buzz-unlock'},()=>{setBuzzLocked(false);setBuzzed(false);setBuzzWinner('');})
         .on('broadcast',{event:'team-info'},({payload})=>{const incoming=payload as {teams?:unknown}|null;if(Array.isArray(incoming?.teams)&&incoming.teams.length>=2){const names=incoming.teams.filter((value):value is string=>typeof value==='string').slice(0,2);if(names.length===2)setTeamNames([names[0],names[1]]);}})
         .on('broadcast',{event:'score'},({payload})=>{
           const incoming = payload as { playerId?: string; score?: number; delta?: number } | null;
@@ -107,7 +111,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
     <header><div><span>{status==='connected'?<Wifi/>:<WifiOff/>}{status==='connected'?'متصل بالغرفة':status==='error'?'الاتصال متوقف':'جاري الاتصال'}</span><strong>{roomCode}</strong></div><div className="mp-score"><small>نقاطك</small><b>{score.score}</b></div></header>
     <div className="mp-team-picker" role="group" aria-label="اختيار الفريق"><button className={team===0?'active':''} aria-pressed={team===0} onClick={()=>changeTeam(0)}>{teamNames[0]}</button><button className={team===1?'active':''} aria-pressed={team===1} onClick={()=>changeTeam(1)}>{teamNames[1]}</button></div>
     <div className="mp-game-now"><small>اللعبة الحالية</small><h1>{gameId?GAME_NAMES[gameId]||'اللعبة الحالية':'بانتظار المضيف…'}</h1><p>{gameId?'اضغط بسرعة أو أرسل إجابتك من هنا.':'خلك جاهز، المضيف بيبدأ اللعبة.'}</p></div>
-    <button className={`mp-buzzer ${buzzed?'buzzed':''}`} disabled={status!=='connected'||buzzed||gameId!=='fast'} onClick={()=>sendInput('buzz')}><Zap/><b>{buzzed?'تم!':'أنا أول!'}</b><span>{gameId==='fast'?'زر السرعة':'يتفعل في مين أسرع؟'}</span></button>
+    <button className={`mp-buzzer ${buzzed?'buzzed':''}`} disabled={status!=='connected'||buzzLocked||gameId!=='fast'} onClick={()=>sendInput('buzz')}><Zap/><b>{buzzed?'تم!':'أنا أول!'}</b><span>{gameId!=='fast'?'يتفعل في مين أسرع؟':buzzLocked?(buzzed?'أنت ضغطت أول':`${buzzWinner||'لاعب'} ضغط أول`):'زر السرعة'}</span></button>
     {choices.length>0&&choiceMode==='single'&&<div className="mp-choice-grid">{choices.map((choice,index)=><button key={`${choice}-${index}`} disabled={status!=='connected'} onClick={()=>sendInput('answer',String(index+1))}><span>{index+1}</span><b>{choice}</b></button>)}</div>}
     {choices.length>0&&(choiceMode==='sequence'||choiceMode==='multi')&&<><div className="mp-sequence-preview">{Array.from({length:requiredSelections||choices.length}).map((_,index)=><span key={index}>{sequence[index]||'؟'}</span>)}</div><div className="mp-choice-grid">{choices.map((choice,index)=><button key={`${choice}-${index}`} disabled={status!=='connected'||sequence.includes(choice)||sequence.length>=(requiredSelections||choices.length)} onClick={()=>setSequence(current=>[...current,choice])}><span>{index+1}</span><b>{choice}</b></button>)}</div><div className="mp-sequence-actions"><button type="button" onClick={()=>setSequence([])} disabled={!sequence.length}>مسح الترتيب</button><button type="button" className="primary" disabled={status!=='connected'||sequence.length!==(requiredSelections||choices.length)} onClick={()=>{sendInput('answer',sequence.join('\u001f'));setSequence([]);}}>إرسال الترتيب</button></div></>}
     {choiceMode==='single'&&<form className="mp-answer" onSubmit={event=>{event.preventDefault(); if(answer.trim())sendInput('answer',answer);}}><label>إجابتك<input maxLength={120} value={answer} onChange={e=>setAnswer(e.target.value)} placeholder={choices.length?'أو اكتب الإجابة هنا…':'اكتب الإجابة هنا…'}/></label><button disabled={!answer.trim()||status!=='connected'}><Send/> إرسال</button></form>}
