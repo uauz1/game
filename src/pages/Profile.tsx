@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, Gamepad2, Star, Target, TrendingUp, Award,
@@ -11,6 +11,8 @@ import { CATEGORIES } from '@/data/categories';
 import { GAME_MODES } from '@/types';
 import { formatDate, cn, getBestCategory } from '@/utils/helpers';
 import type { GameResult } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { getQaddhaAccountSummary, type QaddhaAccountSummary } from '@/utils/onlinePlay';
 
 interface Achievement {
   id: string;
@@ -32,6 +34,15 @@ const ACHIEVEMENTS: Achievement[] = [
 
 export function Profile() {
   const navigate = useNavigate();
+  const auth = useAuth();
+  const [cloud,setCloud]=useState<QaddhaAccountSummary|null>(null);
+
+  useEffect(()=>{
+    if(!auth.session){setCloud(null);return;}
+    let active=true;
+    void getQaddhaAccountSummary().then(data=>{if(active)setCloud(data);}).catch(()=>{});
+    return()=>{active=false;};
+  },[auth.session?.user.id]);
 
   const gameHistory = useMemo(() => loadFromStorage<GameResult[]>('gameHistory', []), []);
   const stats = useMemo(() => {
@@ -91,8 +102,9 @@ export function Profile() {
         <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple to-turquoise flex items-center justify-center mx-auto mb-3 shadow-glow-purple">
           <User className="w-10 h-10 text-white" />
         </div>
-        <h1 className="text-2xl font-cairo font-black">لاعب تحدّي</h1>
-        <p className="text-sm text-off-white/60 mt-1">{stats.totalGames} لعبة مكتملة</p>
+        <h1 className="text-2xl font-cairo font-black">{cloud?.profile.display_name || auth.session?.user.user_metadata?.display_name || 'لاعب تحدّي'}</h1>
+        <p className="text-sm text-off-white/60 mt-1">{auth.session?.user.email || (cloud ? 'حساب قدّها محفوظ' : `${stats.totalGames} لعبة مكتملة`)}</p>
+        {cloud && <div className="mt-4 grid grid-cols-3 gap-2 text-center"><div><b>{cloud.profile.xp}</b><small className="block text-off-white/50">XP</small></div><div><b>{cloud.profile.games_played}</b><small className="block text-off-white/50">أونلاين</small></div><div><b>{cloud.profile.wins}</b><small className="block text-off-white/50">فوز</small></div></div>
       </Card>
 
       {/* Stats */}
