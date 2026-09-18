@@ -32,7 +32,7 @@ export const themedQuestions: Question[] = [
   { id:'languages-5', category:'languages', difficulty:'hard', type:'multiple', text:'أي لغة تنتمي إلى عائلة اللغات الرومانسية؟', choices:['الإسبانية','العربية','اليابانية','الفنلندية'], correctAnswer:0, explanation:'الإسبانية من اللغات الرومانسية.' },
 
   { id:'books-1', category:'books', difficulty:'easy', type:'multiple', text:'من كتب مسرحية هاملت؟', choices:['وليام شكسبير','تشارلز ديكنز','فيكتور هوغو','تولستوي'], correctAnswer:0, explanation:'هاملت من أشهر مسرحيات وليام شكسبير.' },
-  { id:'books-2', category:'books', difficulty:'medium', type:'multiple', text:'من مؤلف رواية الشيخ والبحر؟', choices:['إرنست همنغواي','جون شتاينبك','ويليام فوكنر','مارك توين'], correctAnswer:0, explanation:'إرنست همنغواي هو مؤلف رواية الشيخ والبحر.' },
+  { id:'books-2', category:'books', difficulty:'medium', type:'multiple', text:'من مؤلف رواية الأمير الصغير؟', choices:['أنطوان دو سانت-إكزوبيري','فيكتور هوغو','ألبير كامو','جول فيرن'], correctAnswer:0, explanation:'أنطوان دو سانت-إكزوبيري هو مؤلف رواية الأمير الصغير.' },
   { id:'books-3', category:'books', difficulty:'medium', type:'multiple', text:'من مؤلف رواية 1984؟', choices:['جورج أورويل','جول فيرن','فرانز كافكا','مارك توين'], correctAnswer:0, explanation:'رواية 1984 كتبها جورج أورويل.' },
   { id:'books-4', category:'books', difficulty:'hard', type:'multiple', text:'من كتب رواية الحرب والسلام؟', choices:['تولستوي','دوستويفسكي','تشيخوف','غوغول'], correctAnswer:0, explanation:'الحرب والسلام من أعمال ليو تولستوي.' },
   { id:'books-5', category:'books', difficulty:'hard', type:'multiple', text:'من مؤلف رواية الشيخ والبحر؟', choices:['إرنست همنغواي','جون شتاينبك','جورج أورويل','ألبير كامو'], correctAnswer:0, explanation:'الشيخ والبحر من أشهر أعمال إرنست همنغواي.' },
