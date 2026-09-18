@@ -147,3 +147,28 @@ body.admin-page::after{
   padding:0 0 7rem!important;
   width:100%;
 }
+
+.admin-auth-mode{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  margin:0 0 18px;
+  padding:5px;
+  border:1px solid rgba(255,255,255,.08);
+  background:#080809;
+  border-radius:14px;
+}
+.admin-auth-mode button{
+  min-height:38px;
+  border:0;
+  border-radius:10px;
+  background:transparent;
+  color:#77777f;
+  font:800 11px 'Tajawal',system-ui,sans-serif;
+  cursor:pointer;
+}
+.admin-auth-mode button[aria-pressed="true"]{
+  background:rgba(223,185,81,.12);
+  color:#e8c666;
+  box-shadow:inset 0 0 0 1px rgba(223,185,81,.18);
+}
