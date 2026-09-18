@@ -2,7 +2,7 @@ import '../../admin.css';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   Activity, AlertTriangle, BadgeCheck, BarChart3, CircleDot, Gamepad2, Gauge, Globe2,
-  KeyRound, LockKeyhole, LogIn, Megaphone, Power, QrCode, RefreshCw, Save, Settings2,
+  LockKeyhole, LogIn, Megaphone, Power, QrCode, RefreshCw, Save, Settings2,
   ShieldCheck, Swords, Users, UsersRound, Wifi, Wrench
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -139,12 +139,6 @@ export default function QaddhaAdminDashboard(){
     const result=await auth.signIn(email.trim(),password);
     setMessage(result.message);setSigningIn(false);
   };
-  const loginGoogle=async()=>{
-    setSigningIn(true);setMessage('');
-    const result=await auth.signInWithGoogle();
-    setMessage(result.message);setSigningIn(false);
-  };
-
   const save=async()=>{
     setSaving(true);setMessage('');
     try{
