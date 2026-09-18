@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html.admin-page,
+  body.admin-page {
+    background: #070707;
+    color: #fff;
+    min-height: 100%;
+  }
+  body.admin-page {
+    margin: 0;
+    min-width: 320px;
+    overflow-x: hidden;
+    font-family: 'Tajawal', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .admin-page #root {
+    min-height: 100vh;
+  }
+}
