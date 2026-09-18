@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { ArrowRight, Check, Copy, Gamepad2, LogIn, Radio, RefreshCw, Send, ShieldCheck, Swords, UserRound, Users, Wifi, WifiOff, Zap } from 'lucide-react';
+import { ArrowRight, Check, Copy, Gamepad2, LogIn, Radio, RefreshCw, Send, ShieldCheck, Swords, UserPlus, UserRound, Users, Wifi, WifiOff, Zap } from 'lucide-react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuth } from '../../contexts/AuthContext';
 import { speedQuestions } from '../../data/newPartyGames';
@@ -17,6 +17,12 @@ import {
   saveOnlineGameState,
   recordOnlineDuelResult,
   touchOnlinePresence,
+  acceptFriendRequest,
+  findOnlinePlayers,
+  getMyFriends,
+  removeFriend,
+  sendFriendRequest,
+  type QaddhaFriend,
   type OnlineRoomSnapshot,
 } from '../../utils/onlinePlay';
 
@@ -71,6 +77,11 @@ export default function OnlineLobby({ onBack, onRequireAuth, initialCode = '' }:
   const [connection,setConnection]=useState('CLOSED');
   const [answer,setAnswer]=useState('');
   const [copied,setCopied]=useState(false);
+  const [socialOpen,setSocialOpen]=useState(false);
+  const [friends,setFriends]=useState<QaddhaFriend[]>([]);
+  const [playerQuery,setPlayerQuery]=useState('');
+  const [players,setPlayers]=useState<{user_id:string;display_name:string;avatar_url:string|null;last_seen:string}[]>([]);
+  const [socialBusy,setSocialBusy]=useState(false);
   const channelRef=useRef<RealtimeChannel|null>(null);
   const snapshotRef=useRef<OnlineRoomSnapshot|null>(null);
   const duelRef=useRef<DuelState|null>(null);
@@ -201,10 +212,15 @@ export default function OnlineLobby({ onBack, onRequireAuth, initialCode = '' }:
     const url=new URL(window.location.href);url.search='';url.hash='';url.searchParams.set('online',snapshot.room.code);return url.toString();
   },[snapshot?.room.code]);
   const copy=async()=>{try{await navigator.clipboard.writeText(shareUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1400);}catch{/* code remains visible */}};
+  const loadFriends=useCallback(async()=>{if(!auth.session)return;try{setFriends(await getMyFriends());}catch{}},[auth.session?.user.id]);
+  useEffect(()=>{if(socialOpen)void loadFriends();},[socialOpen,loadFriends]);
+  const searchPlayers=async(event:FormEvent)=>{event.preventDefault();if(playerQuery.trim().length<2)return;setSocialBusy(true);try{setPlayers(await findOnlinePlayers(playerQuery));}finally{setSocialBusy(false);}};
+  const socialAction=async(action:()=>Promise<void>)=>{setSocialBusy(true);try{await action();await loadFriends();}finally{setSocialBusy(false);}};
+  const socialPanel=<>{socialOpen&&<div className="online-social-backdrop" onClick={()=>setSocialOpen(false)}><aside className="online-social" onClick={e=>e.stopPropagation()}><header><div><small>مجتمع قدّها</small><h2>الأصدقاء واللاعبون</h2></div><button onClick={()=>setSocialOpen(false)}>×</button></header><form onSubmit={searchPlayers}><input value={playerQuery} onChange={e=>setPlayerQuery(e.target.value)} placeholder="ابحث باسم اللاعب…"/><button disabled={socialBusy||playerQuery.trim().length<2}><UserPlus/> بحث</button></form>{players.length>0&&<section><b>نتائج البحث</b>{players.map(p=><article key={p.user_id}><UserRound/><span><strong>{p.display_name}</strong><small>{new Date(p.last_seen).getTime()>Date.now()-120000?'متصل الآن':'غير متصل'}</small></span><button disabled={socialBusy} onClick={()=>void socialAction(()=>sendFriendRequest(p.user_id))}>إضافة</button></article>)}</section>}<section><b>أصدقائي وطلباتي</b>{friends.length===0?<p>ما عندك أصدقاء مضافين للحين. ابحث عن لاعب وأضفه.</p>:friends.map(f=><article key={f.user_id}><UserRound/><span><strong>{f.display_name}</strong><small>{f.status==='accepted'?'صديق':f.incoming?'طلب صداقة وارد':'الطلب مرسل'}</small></span>{f.status==='pending'&&f.incoming?<button disabled={socialBusy} onClick={()=>void socialAction(()=>acceptFriendRequest(f.user_id))}>قبول</button>:<button className="ghost" disabled={socialBusy} onClick={()=>void socialAction(()=>removeFriend(f.user_id))}>{f.status==='accepted'?'حذف':'إلغاء'}</button>}</article>)}</section></aside></div>}</>;
 
   if(!auth.session)return <section className="online-page" dir="rtl"><button className="online-back" onClick={onBack}><ArrowRight/> رجوع لقدّها</button><div className="online-auth-gate"><ShieldCheck/><span>قدّها أونلاين</span><h1>حسابك هو مفتاح اللعب الأونلاين.</h1><p>سجّل دخولك بالبريد أو Google. بعدها نحفظ اسمك، سجلّك، وروماتك بحيث تقدر ترجع للمواجهة حتى لو حدّثت الصفحة.</p><button className="primary" onClick={onRequireAuth}><LogIn/> تسجيل الدخول أو إنشاء حساب</button></div></section>;
 
-  if(!snapshot)return <section className="online-page" dir="rtl"><div className="online-top"><button className="online-back" onClick={onBack}><ArrowRight/> رجوع لقدّها</button><span className="online-secure"><ShieldCheck/> حساب موثّق · بيانات محفوظة</span></div><div className="online-hero"><div><span><Radio/> قدّها أونلاين</span><h1>خصم حقيقي.<br/>غرفة حقيقية.<br/><em>والجولة ما تضيع.</em></h1><p>ابدأ بحثًا سريعًا عن لاعب، أو افتح غرفة خاصة وأرسل الكود لصاحبك. النسخة الأولى من المواجهات مبنية على «مين أسرع؟» لأنها الأنسب لتزامن سريع وعادل بين جهازين.</p></div><div className="online-player-chip"><UserRound/><small>داخل باسم</small><b>{profile?.display_name||auth.session.user.email?.split('@')[0]||'لاعب'}</b><span><Check/> محفوظ على الحساب</span></div></div><div className="online-actions-grid"><button className="online-primary-card" disabled={busy} onClick={()=>void run(()=>findQuickOnlineMatch('fast'))}><Zap/><div><small>مطابقة تلقائية</small><h2>{busy?'نبحث…':'ابحث عن خصم الآن'}</h2><p>نضعك مع أول لاعب مناسب ونجهز المواجهة تلقائيًا.</p></div></button><button disabled={busy} onClick={()=>void run(()=>createPrivateOnlineRoom('fast'))}><Users/><div><small>غرفة خاصة</small><h2>العب مع شخص تعرفه</h2><p>ينشئ لك قدّها كودًا ورابطًا خاصًا للمواجهة.</p></div></button><form onSubmit={join}><Gamepad2/><div><small>عندك كود؟</small><h2>ادخل غرفة</h2><input value={code} onChange={e=>setCode(e.target.value.toUpperCase().replace(/[^A-Z2-9]/g,'').slice(0,6))} placeholder="ABC234" maxLength={6}/></div><button disabled={busy||code.length!==6}>دخول</button></form></div>{notice&&<div className="online-notice">{notice}</div>}</section>;
+  if(!snapshot)return <section className="online-page" dir="rtl"><div className="online-top"><button className="online-back" onClick={onBack}><ArrowRight/> رجوع لقدّها</button><div className="online-top-actions"><button className="online-friends-btn" onClick={()=>setSocialOpen(true)}><Users/> الأصدقاء</button><span className="online-secure"><ShieldCheck/> حساب موثّق · بيانات محفوظة</span></div></div><div className="online-hero"><div><span><Radio/> قدّها أونلاين</span><h1>خصم حقيقي.<br/>غرفة حقيقية.<br/><em>والجولة ما تضيع.</em></h1><p>ابدأ بحثًا سريعًا عن لاعب، أو افتح غرفة خاصة وأرسل الكود لصاحبك. النسخة الأولى من المواجهات مبنية على «مين أسرع؟» لأنها الأنسب لتزامن سريع وعادل بين جهازين.</p></div><div className="online-player-chip"><UserRound/><small>داخل باسم</small><b>{profile?.display_name||auth.session.user.email?.split('@')[0]||'لاعب'}</b><span><Check/> محفوظ على الحساب</span></div></div><div className="online-actions-grid"><button className="online-primary-card" disabled={busy} onClick={()=>void run(()=>findQuickOnlineMatch('fast'))}><Zap/><div><small>مطابقة تلقائية</small><h2>{busy?'نبحث…':'ابحث عن خصم الآن'}</h2><p>نضعك مع أول لاعب مناسب ونجهز المواجهة تلقائيًا.</p></div></button><button disabled={busy} onClick={()=>void run(()=>createPrivateOnlineRoom('fast'))}><Users/><div><small>غرفة خاصة</small><h2>العب مع شخص تعرفه</h2><p>ينشئ لك قدّها كودًا ورابطًا خاصًا للمواجهة.</p></div></button><form onSubmit={join}><Gamepad2/><div><small>عندك كود؟</small><h2>ادخل غرفة</h2><input value={code} onChange={e=>setCode(e.target.value.toUpperCase().replace(/[^A-Z2-9]/g,'').slice(0,6))} placeholder="ABC234" maxLength={6}/></div><button disabled={busy||code.length!==6}>دخول</button></form></div>{notice&&<div className="online-notice">{notice}</div>}{socialPanel}</section>;
 
   const connected=connection==='SUBSCRIBED';
   if(snapshot.members.length<2)return <section className="online-page" dir="rtl"><div className="online-top"><button className="online-back" onClick={leave}><ArrowRight/> خروج</button><span className={connected?'online-live':'online-off'}>{connected?<Wifi/>:<WifiOff/>}{connected?'متصل بالخادم':'نعيد الاتصال…'}</span></div><div className="online-wait"><div className="online-code"><small>كود الغرفة</small><strong>{snapshot.room.code}</strong><button onClick={copy}>{copied?<Check/>:<Copy/>}{copied?'تم النسخ':'نسخ الرابط'}</button></div><div className="online-radar"><span/><Users/><b>بانتظار الخصم</b><small>الغرفة محفوظة حتى لو حدّثت الصفحة</small></div><div className="online-seats"><article className="ready"><UserRound/><b>{me?.display_name||profile?.display_name}</b><span><Check/> جاهز</span></article><article><RefreshCw className="spin"/><b>المقعد الثاني</b><span>بانتظار لاعب…</span></article></div></div>{notice&&<div className="online-notice">{notice}</div>}</section>;
