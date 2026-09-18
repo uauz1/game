@@ -219,10 +219,10 @@ export const animalsQuestions: Question[] = [
 export const famousQuestions: Question[] = [
   {
     id: 'fam-1', category: 'famous', difficulty: 'easy', type: 'multiple',
-    text: 'من هو مخترع المصباح الكهربائي؟',
-    choices: ['توماس إديسون', 'ألبرت أينشتاين', 'نيكولا تسلا', 'إسحاق نيوتن'],
+    text: 'من رسم لوحة «ليلة النجوم»؟',
+    choices: ['فنسنت فان غوخ', 'بابلو بيكاسو', 'كلود مونيه', 'سلفادور دالي'],
     correctAnswer: 0,
-    explanation: 'توماس إديسون هو مخترع المصباح الكهربائي العملي.',
+    explanation: 'فنسنت فان غوخ رسم لوحة «ليلة النجوم» عام 1889.',
   },
   {
     id: 'fam-2', category: 'famous', difficulty: 'easy', type: 'multiple',
@@ -233,10 +233,10 @@ export const famousQuestions: Question[] = [
   },
   {
     id: 'fam-3', category: 'famous', difficulty: 'easy', type: 'multiple',
-    text: 'من هو مؤسس شركة مايكروسوفت؟',
-    choices: ['ستيف جوبز', 'بيل غيتس', 'إيلون ماسك', 'مارك زوكربيرغ'],
-    correctAnswer: 1,
-    explanation: 'بيل غيتس هو مؤسس مايكروسوفت.',
+    text: 'من شارك بيل غيتس في تأسيس شركة مايكروسوفت؟',
+    choices: ['بول ألن', 'ستيف وزنياك', 'لاري بيج', 'جيف بيزوس'],
+    correctAnswer: 0,
+    explanation: 'أسس بيل غيتس وبول ألن شركة مايكروسوفت معًا.',
   },
   {
     id: 'fam-4', category: 'famous', difficulty: 'medium', type: 'multiple',
