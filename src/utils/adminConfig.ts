@@ -88,3 +88,32 @@ export async function isCurrentUserQaddhaAdmin(): Promise<boolean> {
     return false;
   }
 }
+
+
+export type QaddhaAdminOverview = {
+  users: number;
+  profiles: number;
+  active_24h: number;
+  active_rooms: number;
+  matches_total: number;
+  online_players: number;
+  top_games: { game_id: string; played: number; wins: number; draws: number }[];
+  recent_rooms: { id:string; code:string; game_id:string; mode:'private'|'quick'; status:string; created_at:string; updated_at:string; expires_at:string; members:number }[];
+};
+
+export async function fetchQaddhaAdminOverview(): Promise<QaddhaAdminOverview> {
+  const client = await getAuthClient();
+  const { data, error } = await client.rpc('qaddha_admin_overview');
+  if (error) throw error;
+  const value = (data || {}) as Partial<QaddhaAdminOverview>;
+  return {
+    users: Number(value.users || 0),
+    profiles: Number(value.profiles || 0),
+    active_24h: Number(value.active_24h || 0),
+    active_rooms: Number(value.active_rooms || 0),
+    matches_total: Number(value.matches_total || 0),
+    online_players: Number(value.online_players || 0),
+    top_games: Array.isArray(value.top_games) ? value.top_games : [],
+    recent_rooms: Array.isArray(value.recent_rooms) ? value.recent_rooms : [],
+  };
+}
