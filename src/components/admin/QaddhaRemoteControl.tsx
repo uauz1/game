@@ -18,6 +18,8 @@ const GAME_LABELS: Record<string, string[]> = {
   missing: ['وش الناقص؟'],
   acting: ['مثّلها'],
   secret: ['الكلمة السرّية'],
+  pressure: ['تحت الضغط'],
+  intruder: ['الدخيل'],
 };
 
 export default function QaddhaRemoteControl({ children }: { children: ReactNode }) {
@@ -40,7 +42,7 @@ export default function QaddhaRemoteControl({ children }: { children: ReactNode 
       if (!clickable) return;
       const text = (clickable.textContent || '').replace(/\s+/g, ' ').trim();
 
-      if (!config.sessions_enabled && ['رتّب لنا جلسة', 'رتّب كل الجلسة', 'خلّ قدّها يرتب الجلسة'].some((label) => text.includes(label))) {
+      if (!config.sessions_enabled && ['رتّب لنا جلسة', 'رتّب كل الجلسة', 'خلّ قدّها يرتب الجلسة', 'مواجهة أونلاين', 'لعب أونلاين'].some((label) => text.includes(label))) {
         event.preventDefault();
         event.stopPropagation();
         setBlockedMessage('الجلسات الجماعية موقوفة مؤقتًا من لوحة التحكم.');
@@ -63,7 +65,7 @@ export default function QaddhaRemoteControl({ children }: { children: ReactNode 
 
   const hiddenCss = useMemo(() => {
     const selectors = disabledGames.map((id) => `.game-card-shell:has(.game-${id})`).join(',');
-    const sessionSelectors = config.sessions_enabled ? '' : '.smart-session-cta,.quick-session';
+    const sessionSelectors = config.sessions_enabled ? '' : '.smart-session-cta,.quick-session,.quick-online';
     const joined = [selectors, sessionSelectors].filter(Boolean).join(',');
     return joined ? `${joined}{display:none!important}` : '';
   }, [disabledGames, config.sessions_enabled]);
