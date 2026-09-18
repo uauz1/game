@@ -40,8 +40,8 @@ export const puzzlesQuestions: Question[] = [
     id: 'puz-6', category: 'puzzles', difficulty: 'medium', type: 'multiple',
     text: 'كلمة تقرأها من اليمين واليسار بنفس الطريقة؟',
     choices: ['كتاب', 'سبحان', 'توت', 'ورد'],
-    correctAnswer: 1,
-    explanation: 'كلمة "سبحان" تُقرأ من الجهتين بنفس الطريقة (palindrome).',
+    correctAnswer: 2,
+    explanation: 'كلمة «توت» تُقرأ من اليمين واليسار بالطريقة نفسها.',
   },
   {
     id: 'puz-7', category: 'puzzles', difficulty: 'hard', type: 'multiple',
@@ -54,7 +54,7 @@ export const puzzlesQuestions: Question[] = [
     id: 'puz-8', category: 'puzzles', difficulty: 'hard', type: 'multiple',
     text: 'ما الرقم الذي إذا أضفته لنفسه وضربته في نفسه يعطي نفس النتيجة؟',
     choices: ['0', '1', '2', '3'],
-    correctAnswer: 1,
+    correctAnswer: 2,
     explanation: 'الرقم 2: 2+2=4 و2×2=4، نفس النتيجة.',
   },
   {
