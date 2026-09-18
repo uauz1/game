@@ -171,3 +171,15 @@ export async function bootstrapFirstQaddhaAdmin(): Promise<boolean> {
   if (error) throw error;
   return data === true;
 }
+
+
+export async function setupFirstQaddhaOwner(email: string, password: string, displayName: string): Promise<boolean> {
+  const client = await getAuthClient();
+  const { data, error } = await client.rpc('qaddha_setup_first_owner', {
+    p_email: email.trim().toLowerCase(),
+    p_password: password,
+    p_display_name: displayName.trim(),
+  });
+  if (error) throw error;
+  return data === true;
+}
