@@ -172,3 +172,11 @@ body.admin-page::after{
   color:#e8c666;
   box-shadow:inset 0 0 0 1px rgba(223,185,81,.18);
 }
+
+.admin-auth-google-note{
+  margin:16px 0 0;
+  text-align:center;
+  color:#686870;
+  font-size:10px;
+  line-height:1.6;
+}
