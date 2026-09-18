@@ -162,6 +162,8 @@ export default function SiteSettings({ open, onClose }: { open: boolean; onClose
 
   if (!open) return null;
 
+  const siteUrl = new URL(import.meta.env.BASE_URL, window.location.origin).href;
+
   const share = async () => {
     const canShare = typeof navigator.share === 'function';
     try {
