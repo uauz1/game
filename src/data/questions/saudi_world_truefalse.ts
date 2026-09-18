@@ -209,10 +209,10 @@ export const worldQuestions: Question[] = [
   },
   {
     id: 'wor-15', category: 'world', difficulty: 'medium', type: 'multiple',
-    text: 'ما هي أكبر جزيرة في العالم؟',
-    choices: ['مدغشقر', 'بورنيو', 'جرينلاند', 'أيسلندا'],
-    correctAnswer: 2,
-    explanation: 'جرينلاند هي أكبر جزيرة في العالم.',
+    text: 'جزيرة تسمانيا تتبع أي دولة؟',
+    choices: ['نيوزيلندا', 'أستراليا', 'إندونيسيا', 'فيجي'],
+    correctAnswer: 1,
+    explanation: 'تسمانيا ولاية جزيرية تتبع أستراليا.',
   },
 ];
 
