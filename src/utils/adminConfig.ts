@@ -65,14 +65,10 @@ export function subscribeQaddhaRemoteConfig(onChange: (config: QaddhaRemoteConfi
 
 export async function saveQaddhaRemoteConfig(config: QaddhaRemoteConfig): Promise<QaddhaRemoteConfig> {
   const client = await getAuthClient();
-  const next: QaddhaRemoteConfig = {
-    ...config,
-    id: 'global',
-    updated_at: new Date().toISOString(),
-  };
-  const { error } = await client.from('qaddha_remote_config').upsert(next, { onConflict: 'id' });
+  const { data, error } = await client.rpc('qaddha_admin_save_config', { p_config: config });
   if (error) throw error;
-  return next;
+  const next = (data || {}) as Partial<QaddhaRemoteConfig>;
+  return { ...DEFAULT_QADDHA_CONFIG, ...next, enabled_games: Array.isArray(next.enabled_games) ? next.enabled_games : ALL_GAME_IDS } as QaddhaRemoteConfig;
 }
 
 export async function isCurrentUserQaddhaAdmin(): Promise<boolean> {
@@ -116,4 +112,47 @@ export async function fetchQaddhaAdminOverview(): Promise<QaddhaAdminOverview> {
     top_games: Array.isArray(value.top_games) ? value.top_games : [],
     recent_rooms: Array.isArray(value.recent_rooms) ? value.recent_rooms : [],
   };
+}
+
+
+export type QaddhaAdminPlayer = {
+  user_id: string;
+  email: string | null;
+  display_name: string;
+  xp: number;
+  games_played: number;
+  wins: number;
+  last_seen: string;
+  created_at: string;
+};
+
+export type QaddhaAdminAuditEntry = {
+  id: number;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
+  admin_name: string;
+};
+
+export async function fetchQaddhaAdminPlayers(limit = 50): Promise<QaddhaAdminPlayer[]> {
+  const client = await getAuthClient();
+  const { data, error } = await client.rpc('qaddha_admin_players', { p_limit: limit });
+  if (error) throw error;
+  return Array.isArray(data) ? data as QaddhaAdminPlayer[] : [];
+}
+
+export async function fetchQaddhaAdminAudit(limit = 30): Promise<QaddhaAdminAuditEntry[]> {
+  const client = await getAuthClient();
+  const { data, error } = await client.rpc('qaddha_admin_audit', { p_limit: limit });
+  if (error) throw error;
+  return Array.isArray(data) ? data as QaddhaAdminAuditEntry[] : [];
+}
+
+export async function cancelQaddhaOnlineRoom(roomId: string, reason = 'manual_admin_cancel'): Promise<boolean> {
+  const client = await getAuthClient();
+  const { data, error } = await client.rpc('qaddha_admin_cancel_room', { p_room_id: roomId, p_reason: reason });
+  if (error) throw error;
+  return data === true;
 }
