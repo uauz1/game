@@ -151,18 +151,33 @@ export default function QaddhaAdminDashboard(){
     <div className="text-center"><RefreshCw className="mx-auto mb-3 animate-spin text-amber-300"/><p>جاري تجهيز لوحة قدّها…</p></div>
   </main>;
 
-  if(!auth.session)return <main dir="rtl" className="min-h-screen bg-[#080808] text-white grid place-items-center p-5">
-    <section className="w-full max-w-md rounded-[28px] border border-amber-400/20 bg-[#111] p-7 shadow-2xl">
-      <div className="text-center"><LockKeyhole className="mx-auto mb-4 text-amber-300" size={34}/><h1 className="text-2xl font-black mb-2">لوحة تحكم قدّها</h1><p className="text-sm text-zinc-400 mb-6">دخول الإدارة فقط.</p></div>
-      <form onSubmit={login} className="space-y-3">
-        <label className="block text-sm font-bold text-zinc-300">البريد الإلكتروني<input dir="ltr" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-left text-white outline-none focus:border-amber-400/50" placeholder="name@example.com"/></label>
-        <label className="block text-sm font-bold text-zinc-300">كلمة المرور<input dir="ltr" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-left text-white outline-none focus:border-amber-400/50" placeholder="••••••••"/></label>
-        <button disabled={signingIn} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 px-5 py-3.5 font-black text-black disabled:opacity-50"><LogIn size={18}/>{signingIn?'جاري الدخول…':'دخول لوحة التحكم'}</button>
-      </form>
-      <div className="my-4 flex items-center gap-3 text-xs text-zinc-600"><span className="h-px flex-1 bg-white/10"/><span>أو</span><span className="h-px flex-1 bg-white/10"/></div>
-      <button disabled={signingIn} onClick={loginGoogle} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 font-bold"><KeyRound size={17}/>الدخول بحساب Google</button>
-      {message&&<p className="mt-4 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-center text-sm">{message}</p>}
-      <a href={siteBaseUrl} className="mt-5 block text-center text-sm text-zinc-500 hover:text-amber-300">العودة إلى قدّها</a>
+  if(!auth.session)return <main dir="rtl" className="admin-auth-screen">
+    <section className="admin-auth-shell">
+      <aside className="admin-auth-brand">
+        <div className="admin-auth-wordmark"><span>ق</span><div><b>قدّها</b><small>CONTROL CENTER</small></div></div>
+        <div className="admin-auth-brand-copy">
+          <span className="admin-auth-kicker"><ShieldCheck size={15}/> مساحة إدارة خاصة</span>
+          <h1>كل قدّها<br/><em>من مكان واحد.</em></h1>
+          <p>راقب التشغيل، الأونلاين، اللاعبين، الألعاب وسجل الإدارة من لوحة واحدة محمية.</p>
+        </div>
+        <div className="admin-auth-trust">
+          <span><BadgeCheck size={16}/> دخول محمي</span>
+          <span><Activity size={16}/> بيانات مباشرة</span>
+        </div>
+      </aside>
+      <section className="admin-auth-card">
+        <div className="admin-auth-lock"><LockKeyhole size={24}/></div>
+        <div className="admin-auth-heading"><small>ADMIN ACCESS</small><h2>تسجيل دخول الإدارة</h2><p>استخدم حساب الإدارة المصرح له للدخول إلى مركز التحكم.</p></div>
+        <form onSubmit={login} className="admin-auth-form">
+          <label>البريد الإلكتروني<input dir="ltr" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@example.com"/></label>
+          <label>كلمة المرور<input dir="ltr" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••"/></label>
+          <button disabled={signingIn} className="admin-auth-primary"><LogIn size={18}/>{signingIn?'جاري الدخول…':'دخول لوحة التحكم'}</button>
+        </form>
+        <div className="admin-auth-divider"><span/>أو<span/></div>
+        <button disabled={signingIn} onClick={loginGoogle} className="admin-auth-google"><KeyRound size={17}/>الدخول بحساب Google</button>
+        {message&&<p className="admin-auth-message">{message}</p>}
+        <a href={siteBaseUrl} className="admin-auth-back">العودة إلى قدّها</a>
+      </section>
     </section>
   </main>;
 
