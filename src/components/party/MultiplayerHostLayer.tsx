@@ -25,6 +25,7 @@ export default function MultiplayerHostLayer(){
   const gameRef=useRef('');
   const autoScoredRef=useRef(new Set<string>());
   const roundScoredRef=useRef(new Set<string>());
+  const buzzedRoundsRef=useRef(new Set<string>());
   const joinUrl=useMemo(()=>room?buildMultiplayerJoinUrl(room.code):'',[room]);
 
   useEffect(()=>{
@@ -85,6 +86,15 @@ export default function MultiplayerHostLayer(){
         if(!incoming||typeof incoming.id!=='string'||typeof incoming.playerId!=='string'||typeof incoming.playerName!=='string')return;
         setInputs(current=>[incoming,...current.filter(item=>item.id!==incoming.id)].slice(0,20));
         setCollapsed(false);
+        if(incoming.kind==='buzz'){
+          const active=challengeRef.current;
+          const roundKey=active?.roundKey||`${gameRef.current}:buzz`;
+          if(active?.gameId===gameRef.current&&!buzzedRoundsRef.current.has(roundKey)){
+            buzzedRoundsRef.current.add(roundKey);
+            window.dispatchEvent(new CustomEvent('qaddha:multiplayer-buzz',{detail:{gameId:gameRef.current,team:incoming.team===1?1:0,playerId:incoming.playerId,playerName:incoming.playerName,roundKey}}));
+            void channel.send({type:'broadcast',event:'host-message',payload:{text:`${incoming.playerName} ضغط أول · ${incoming.team===1?'الفريق 2':'الفريق 1'}`}});
+          }
+        }
         if(incoming.kind==='answer'&&incoming.value){
           const activeChallenge=challengeRef.current;
           const direct = activeChallenge && activeChallenge.gameId===gameRef.current && (activeChallenge.eligibleTeam===undefined||activeChallenge.eligibleTeam===incoming.team) ? judgeMultiplayerChallenge(activeChallenge,incoming.value) : null;
@@ -98,6 +108,10 @@ export default function MultiplayerHostLayer(){
             sendScore(incoming.playerId,result.points);
             void channel.send({type:'broadcast',event:'host-message',payload:{text:firstTeamScore?`إجابة صحيحة لفريقك +${result.points}`:'إجابة صحيحة، لكن الجولة حُسمت بالفعل'}});
           }else if(result.supported&&result.correct===false){
+            if(activeChallenge?.gameId==='fast'){
+              buzzedRoundsRef.current.delete(activeChallenge.roundKey);
+              window.dispatchEvent(new CustomEvent('qaddha:multiplayer-wrong',{detail:{gameId:'fast',team:incoming.team===1?1:0,playerId:incoming.playerId,roundKey:activeChallenge.roundKey}}));
+            }
             void channel.send({type:'broadcast',event:'host-message',payload:{text:'الإجابة وصلت، لكنها غير صحيحة'}});
           }
         }
@@ -111,7 +125,7 @@ export default function MultiplayerHostLayer(){
 
   useEffect(()=>{
     if(!room)return;
-    const syncGame=(gameId:string)=>{if(!gameId||gameId===gameRef.current)return;gameRef.current=gameId;setInputs([]);setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();void channelRef.current?.send({type:'broadcast',event:'game',payload:{gameId}});const teams=loadSharedTeams();if(teams)void channelRef.current?.send({type:'broadcast',event:'team-info',payload:{teams:teams.map(team=>team.name)}});void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{gameId}});};
+    const syncGame=(gameId:string)=>{if(!gameId||gameId===gameRef.current)return;gameRef.current=gameId;setInputs([]);setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();buzzedRoundsRef.current.clear();void channelRef.current?.send({type:'broadcast',event:'game',payload:{gameId}});const teams=loadSharedTeams();if(teams)void channelRef.current?.send({type:'broadcast',event:'team-info',payload:{teams:teams.map(team=>team.name)}});void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{gameId}});};
     const onGame=(event:Event)=>{const detail=(event as CustomEvent<{gameId?:string}>).detail;if(detail?.gameId)syncGame(detail.gameId);};
     window.addEventListener('qaddha:game-changed',onGame);
     const detect=()=>{
@@ -128,9 +142,9 @@ export default function MultiplayerHostLayer(){
   if(!room)return null;
 
   const award=(input:MultiplayerInput,delta:number)=>sendScore(input.playerId,delta);
-  const resetRound=()=>{setInputs([]);setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{at:Date.now()}});};
+  const resetRound=()=>{setInputs([]);setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();buzzedRoundsRef.current.clear();void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{at:Date.now()}});};
   const copy=async()=>{try{await navigator.clipboard.writeText(joinUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1500);}catch{/* url visible through code */}};
-  const close=()=>{clearActiveHostRoom();setRoom(null);setInputs([]);setMembers([]);setScores({});scoresRef.current={};setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();};
+  const close=()=>{clearActiveHostRoom();setRoom(null);setInputs([]);setMembers([]);setScores({});scoresRef.current={};setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();buzzedRoundsRef.current.clear();};
 
   return <aside className={`mp-host ${collapsed?'collapsed':''}`} dir="rtl">
     <div className="mp-host-head"><button className="mp-host-toggle" onClick={()=>setCollapsed(value=>!value)}><span className={connected?'live':''}><Wifi/></span><b>{room.code}</b><small>{members.filter(member=>member.team===0).length} / {members.filter(member=>member.team===1).length} فرق</small></button><button onClick={close} aria-label="إغلاق الغرفة"><X/></button></div>
