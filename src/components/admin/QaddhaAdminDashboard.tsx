@@ -197,7 +197,7 @@ export default function QaddhaAdminDashboard(){
     ['غرف نشطة الآن',overview?.active_rooms??0,Wifi],
   ] as const;
 
-  return <main dir="rtl" className="min-h-screen bg-[#070707] text-white pb-28">
+  return <main dir="rtl" className="admin-dashboard-root min-h-screen bg-[#070707] text-white pb-28">
     <header className="sticky top-0 z-40 border-b border-white/10 bg-black/85 backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between gap-3">
         <div><p className="text-xs font-bold text-amber-300">QADDHA CONTROL CENTER</p><h1 className="text-xl sm:text-2xl font-black">إدارة قدّها</h1></div>
