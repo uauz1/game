@@ -402,8 +402,6 @@ $$;
 revoke all on function public.claim_first_qaddha_admin() from public,anon;
 grant execute on function public.claim_first_qaddha_admin() to authenticated;
 
-revoke all on function public.qaddha_control_get(text) from public,anon,authenticated;
-revoke all on function public.qaddha_control_save(text,jsonb) from public,anon,authenticated;
 
 drop policy if exists "online members can receive room realtime" on realtime.messages;
 create policy "online members can receive room realtime" on realtime.messages for select to authenticated using(
