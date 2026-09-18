@@ -69,7 +69,7 @@ export const scienceQuestions: Question[] = [
     text: 'كم عدد الأسنان في فم الإنسان البالغ؟',
     choices: ['28', '30', '32', '34'],
     correctAnswer: 2,
-    explanation: 'الإنسان البالغ لديه 32 سناً بما في ذلك أضرار العقل.',
+    explanation: 'الإنسان البالغ لديه 32 سناً بما في ذلك أضراس العقل.',
   },
   {
     id: 'sci-11', category: 'science', difficulty: 'hard', type: 'multiple',
