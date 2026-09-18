@@ -69,8 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = useCallback(async (email: string, password: string, displayName: string): Promise<AuthResult> => {
     try {
       const client = await getAuthClient();
-      const { error } = await client.auth.signUp({ email, password, options: { data: { display_name: displayName }, emailRedirectTo: authRedirectUrl } });
-      return error ? { ok: false, message: authError(error.message) } : { ok: true, message: 'أنشأنا الحساب. افتح بريدك لتأكيده.' };
+      const { data, error } = await client.auth.signUp({ email, password, options: { data: { display_name: displayName }, emailRedirectTo: authRedirectUrl } });
+      if (error) return { ok: false, message: authError(error.message) };
+      return data.session
+        ? { ok: true, message: 'تم إنشاء الحساب وتسجيل الدخول.' }
+        : { ok: true, message: 'أنشأنا الحساب. افتح بريدك لتأكيده ثم ارجع لقدّها.' };
     } catch { return { ok: false, message: 'خدمة الحسابات غير متاحة الآن.' }; }
   }, [authRedirectUrl]);
 
