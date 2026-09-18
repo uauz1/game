@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const requestReset = useCallback(async (email: string): Promise<AuthResult> => {
     try {
       const client = await getAuthClient();
-      const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: location.origin });
+      const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: authRedirectUrl });
       return error ? { ok: false, message: authError(error.message) } : { ok: true, message: 'أرسلنا رابط الاستعادة إذا كان البريد مسجلًا.' };
     } catch { return { ok: false, message: 'خدمة الحسابات غير متاحة الآن.' }; }
   }, [authRedirectUrl]);
