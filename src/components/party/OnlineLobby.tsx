@@ -38,6 +38,7 @@ type DuelState = {
 };
 
 const MAX_ROUNDS = 7;
+function connectedPollMs(status:string){return status==='SUBSCRIBED'?5000:1800;}
 
 function normalize(value:string){
   return value.trim().toLowerCase().normalize('NFD')
@@ -169,7 +170,7 @@ export default function OnlineLobby({ onBack, onRequireAuth, initialCode = '' }:
       },setOnlineIds,setConnection);
       if(!disposed)channelRef.current=channel;
     })();
-    const timer=window.setInterval(()=>void refresh(roomId),1400);
+    const timer=window.setInterval(()=>{if(document.visibilityState==='visible')void refresh(roomId);},connectedPollMs(connection));
     return()=>{disposed=true;window.clearInterval(timer);void closeOnlineRoomChannel(channelRef.current);channelRef.current=null;};
   },[snapshot?.room.id,userId,persist,refresh]);
 
