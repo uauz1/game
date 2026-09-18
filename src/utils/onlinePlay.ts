@@ -147,7 +147,7 @@ export async function openOnlineRoomChannel(
     },
   });
   channel
-    .on('broadcast', { event: '*' }, ({event,payload}) => onEvent(event, (payload || {}) as Record<string,unknown>))
+    .on('broadcast', { event: 'duel' }, ({payload}) => onEvent('duel', (payload || {}) as Record<string,unknown>))
     .on('presence', { event: 'sync' }, () => {
       const ids = Object.values(channel.presenceState<{userId?:string}>()).flat().map(item=>item.userId).filter((value):value is string=>Boolean(value));
       onPresence([...new Set(ids)]);
@@ -170,4 +170,27 @@ export async function closeOnlineRoomChannel(channel: RealtimeChannel | null) {
   } catch {
     // A stale websocket must never block leaving the room.
   }
+}
+
+
+export async function findMyActiveOnlineRoom(): Promise<OnlineRoomSnapshot | null> {
+  const client = await getAuthClient();
+  const { data: { user } } = await client.auth.getUser();
+  if (!user) return null;
+  const { data: memberships, error } = await client
+    .from('qaddha_online_room_members')
+    .select('room_id,last_seen')
+    .eq('user_id', user.id)
+    .order('last_seen', { ascending: false })
+    .limit(5);
+  if (error) throw error;
+  for (const membership of memberships || []) {
+    try {
+      const snapshot = await getOnlineRoomSnapshot(membership.room_id as string);
+      if (snapshot.room.status !== 'finished' && snapshot.room.status !== 'cancelled' && new Date(snapshot.room.expires_at).getTime() > Date.now()) return snapshot;
+    } catch {
+      // Ignore stale membership rows and keep looking.
+    }
+  }
+  return null;
 }
