@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Award, BarChart3, CalendarDays, Clock3, Compass, Crown, Flame, Gamepad2, Heart, History, Library, LockKeyhole, LogIn, Play, Sparkles, Target, Trophy, UserRound, X } from 'lucide-react';
 import { getTournamentStandings, readTournamentHistory, type TournamentHistoryEntry } from '../../utils/tournamentHistory';
+import { getMyOnlineProfile } from '../../utils/onlinePlay';
 
 export type PlayerActivity = {
   gameId: string;
@@ -96,6 +97,14 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
   const closeRef = useRef<HTMLButtonElement>(null);
   const [dailyState, setDailyState] = useState<DailyState>(() => readDailyState());
   const [tournamentHistory, setTournamentHistory] = useState<TournamentHistoryEntry[]>(() => readTournamentHistory());
+  const [onlineProfile,setOnlineProfile]=useState<{xp:number;games_played:number;wins:number}|null>(null);
+
+  useEffect(()=>{
+    if(!open||!accountName){setOnlineProfile(null);return;}
+    let active=true;
+    void getMyOnlineProfile().then(profile=>{if(active)setOnlineProfile({xp:profile.xp,games_played:profile.games_played,wins:profile.wins});}).catch(()=>active&&setOnlineProfile(null));
+    return()=>{active=false;};
+  },[open,accountName]);
 
   useEffect(() => {
     if (!open) return;
@@ -135,7 +144,8 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
 
   const tournamentCount = tournamentHistory.length;
   const decisiveTournaments = tournamentHistory.filter(item => item.winner !== 'تعادل').length;
-  const xp = uniqueRecent * 120 + favoriteGames.length * 40 + dailyState.totalDaily * 80 + Math.min(dailyState.streak, 7) * 35 + tournamentCount * 100;
+  const localXp = uniqueRecent * 120 + favoriteGames.length * 40 + dailyState.totalDaily * 80 + Math.min(dailyState.streak, 7) * 35 + tournamentCount * 100;
+  const xp = Math.max(localXp, onlineProfile?.xp || 0);
   const level = Math.max(1, Math.floor(xp / 300) + 1);
   const levelFloor = (level - 1) * 300;
   const levelProgress = Math.min(100, Math.round(((xp - levelFloor) / 300) * 100));
@@ -200,6 +210,7 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
         <article><BarChart3/><div><small>استكشافك</small><b>{uniqueRecent}</b><span>ألعاب مختلفة</span></div></article>
         <article><Trophy/><div><small>بطولات مكتملة</small><b>{tournamentCount}</b><span>{decisiveTournaments} بنتيجة حاسمة</span></div></article>
         <article><Crown/><div><small>أفضل فريق</small><b>{bestTeam?.wins || 0}</b><span>{bestTeam?.team || 'بانتظار أول بطولة'}</span></div></article>
+        {accountName&&<article><Gamepad2/><div><small>مواجهات أونلاين</small><b>{onlineProfile?.games_played || 0}</b><span>{onlineProfile?.wins || 0} انتصار</span></div></article>}
       </div>
 
       <section className={`weekly-mission ${weeklyProgress >= weeklyGoal ? 'complete' : ''}`}>
@@ -240,7 +251,7 @@ export default function PlayerPanel({ open, onClose, games, favorites, recent, o
         {tournamentHistory.length ? <div className="tournament-history-list">{tournamentHistory.slice(0, 6).map(item => <article key={item.id}><div><small>{formatTournamentDate(item.finishedAt)} · {item.gameCount} ألعاب</small><b>{item.winner === 'تعادل' ? 'تعادل' : `🏆 ${item.winner}`}</b></div><div className="history-score"><span>{item.teamA}<strong>{item.scoreA}</strong></span><i>—</i><span>{item.teamB}<strong>{item.scoreB}</strong></span></div></article>)}</div> : <div className="player-empty"><Trophy/><b>ما عندك بطولة محفوظة إلى الآن</b><p>أكمل بطولة من مدير الجلسة، ونتيجتها تنحفظ هنا تلقائيًا.</p></div>}
       </section>
 
-      <div className={`guest-account-note ${accountName ? 'signed-in' : ''}`}><LogIn/><div><b>{accountName ? 'أنت مسجل الدخول' : 'الحساب اختياري'}</b><small>{accountName ? 'تقدر تكمل اللعب كالمعتاد وتسجيل الخروج وقت ما تحب.' : accountConfigured ? 'سجّل دخولك أو أنشئ حسابًا، أو كمل اللعب مباشرة كضيف.' : 'تلعب الآن بلا تسجيل. خدمة الحسابات جاهزة وتحتاج تفعيل الربط الآمن فقط.'}</small></div>{accountConfigured && <button onClick={accountName ? onSignOut : onAuth}>{accountName ? 'خروج' : 'دخول'}</button>}</div>
+      <div className={`guest-account-note ${accountName ? 'signed-in' : ''}`}><LogIn/><div><b>{accountName ? 'أنت مسجل الدخول' : 'الحساب اختياري'}</b><small>{accountName ? 'مفضّلتك وسجلك ونتائج الأونلاين محفوظة على حسابك وتنتقل معك بين الأجهزة.' : accountConfigured ? 'سجّل دخولك أو أنشئ حسابًا، أو كمل اللعب مباشرة كضيف.' : 'تلعب الآن بلا تسجيل. خدمة الحسابات جاهزة وتحتاج تفعيل الربط الآمن فقط.'}</small></div>{accountConfigured && <button onClick={accountName ? onSignOut : onAuth}>{accountName ? 'خروج' : 'دخول'}</button>}</div>
       <section className="player-section"><div className="player-section-title"><Heart/><h3>المفضلة</h3><span>{favoriteGames.length}</span></div>{favoriteGames.length ? <div className="player-game-list">{favoriteGames.map((game) => <article key={game.id}><img src={game.cover} alt=""/><button onClick={() => { onPlay(game.id); onClose(); }}><b>{game.title}</b><small>العب الآن</small></button><button className="favorite-remove" aria-label={`إزالة ${game.title} من المفضلة`} onClick={() => onToggleFavorite(game.id)}><Heart fill="currentColor"/></button></article>)}</div> : <div className="player-empty"><Heart/><b>مفضّلتك فاضية</b><p>اضغط القلب على أي لعبة عشان تلقاها هنا بسرعة.</p></div>}</section>
       <section className="player-section"><div className="player-section-title"><Clock3/><h3>لعبت مؤخرًا</h3><span>{recentGames.length}</span></div>{recentGames.length ? <div className="player-game-list">{recentGames.map((game) => <article key={`${game.id}-${game.playedAt}`}><img src={game.cover} alt=""/><button onClick={() => { onPlay(game.id); onClose(); }}><b>{game.title}</b><small>{formatRecent(game.playedAt)}</small></button><Gamepad2/></article>)}</div> : <div className="player-empty"><Gamepad2/><b>ما بدأت لعبة إلى الآن</b><p>اختر لعبة من المكتبة وبتظهر هنا تلقائيًا.</p></div>}</section>
     </section>
