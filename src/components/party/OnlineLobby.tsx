@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { ArrowRight, Check, Copy, Gamepad2, LogIn, Radio, RefreshCw, Send, ShieldCheck, Swords, UserPlus, UserRound, Users, Wifi, WifiOff, Zap } from 'lucide-react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuth } from '../../contexts/AuthContext';
+import QRCode from 'qrcode';
 import { speedQuestions } from '../../data/newPartyGames';
 import {
   closeOnlineRoomChannel,
@@ -83,6 +84,7 @@ export default function OnlineLobby({ onBack, onRequireAuth, initialCode = '' }:
   const [playerQuery,setPlayerQuery]=useState('');
   const [players,setPlayers]=useState<{user_id:string;display_name:string;avatar_url:string|null;last_seen:string}[]>([]);
   const [socialBusy,setSocialBusy]=useState(false);
+  const [qrDataUrl,setQrDataUrl]=useState('');
   const channelRef=useRef<RealtimeChannel|null>(null);
   const snapshotRef=useRef<OnlineRoomSnapshot|null>(null);
   const duelRef=useRef<DuelState|null>(null);
@@ -212,6 +214,7 @@ export default function OnlineLobby({ onBack, onRequireAuth, initialCode = '' }:
     if(!snapshot)return'';
     const url=new URL(window.location.href);url.search='';url.hash='';url.searchParams.set('online',snapshot.room.code);return url.toString();
   },[snapshot?.room.code]);
+  useEffect(()=>{let active=true;if(!shareUrl){setQrDataUrl('');return;}void QRCode.toDataURL(shareUrl,{width:260,margin:1}).then(url=>{if(active)setQrDataUrl(url);}).catch(()=>{});return()=>{active=false;};},[shareUrl]);
   const copy=async()=>{try{await navigator.clipboard.writeText(shareUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1400);}catch{/* code remains visible */}};
   const shareRoom=async()=>{if(!shareUrl)return;try{if(navigator.share){await navigator.share({title:'قدّها أونلاين',text:`ادخل غرفتي في قدّها · الكود ${snapshot?.room.code||''}`,url:shareUrl});}else await copy();}catch{/* user cancelled share */}};
   const loadFriends=useCallback(async()=>{if(!auth.session)return;try{setFriends(await getMyFriends());}catch{}},[auth.session?.user.id]);
@@ -225,7 +228,7 @@ export default function OnlineLobby({ onBack, onRequireAuth, initialCode = '' }:
   if(!snapshot)return <section className="online-page" dir="rtl"><div className="online-top"><button className="online-back" onClick={onBack}><ArrowRight/> رجوع لقدّها</button><div className="online-top-actions"><button className="online-friends-btn" onClick={()=>setSocialOpen(true)}><Users/> الأصدقاء</button><span className="online-secure"><ShieldCheck/> حساب موثّق · بيانات محفوظة</span></div></div><div className="online-hero"><div><span><Radio/> قدّها أونلاين</span><h1>خصم حقيقي.<br/>غرفة حقيقية.<br/><em>والجولة ما تضيع.</em></h1><p>ابدأ بحثًا سريعًا عن لاعب، أو افتح غرفة خاصة وأرسل الكود لصاحبك. النسخة الأولى من المواجهات مبنية على «مين أسرع؟» لأنها الأنسب لتزامن سريع وعادل بين جهازين.</p></div><div className="online-player-chip"><UserRound/><small>داخل باسم</small><b>{profile?.display_name||auth.session.user.email?.split('@')[0]||'لاعب'}</b><span><Check/> محفوظ على الحساب</span></div></div><div className="online-actions-grid"><button className="online-primary-card" disabled={busy} onClick={()=>void run(()=>findQuickOnlineMatch('fast'))}><Zap/><div><small>مطابقة تلقائية</small><h2>{busy?'نبحث…':'ابحث عن خصم الآن'}</h2><p>نضعك مع أول لاعب مناسب ونجهز المواجهة تلقائيًا.</p></div></button><button disabled={busy} onClick={()=>void run(()=>createPrivateOnlineRoom('fast'))}><Users/><div><small>غرفة خاصة</small><h2>العب مع شخص تعرفه</h2><p>ينشئ لك قدّها كودًا ورابطًا خاصًا للمواجهة.</p></div></button><form onSubmit={join}><Gamepad2/><div><small>عندك كود؟</small><h2>ادخل غرفة</h2><input value={code} onChange={e=>setCode(e.target.value.toUpperCase().replace(/[^A-Z2-9]/g,'').slice(0,6))} placeholder="ABC234" maxLength={6}/></div><button disabled={busy||code.length!==6}>دخول</button></form></div>{notice&&<div className="online-notice">{notice}</div>}{socialPanel}</section>;
 
   const connected=connection==='SUBSCRIBED';
-  if(snapshot.members.length<2)return <section className="online-page" dir="rtl"><div className="online-top"><button className="online-back" onClick={leave}><ArrowRight/> خروج</button><span className={connected?'online-live':'online-off'}>{connected?<Wifi/>:<WifiOff/>}{connected?'متصل بالخادم':'نعيد الاتصال…'}</span></div><div className="online-wait"><div className="online-code"><small>كود الغرفة</small><strong>{snapshot.room.code}</strong><button onClick={copy}>{copied?<Check/>:<Copy/>}{copied?'تم النسخ':'نسخ الرابط'}</button><button onClick={()=>void shareRoom()}><Send/>{'دعوة صديق'}</button></div><div className="online-radar"><span/><Users/><b>بانتظار الخصم</b><small>الغرفة محفوظة حتى لو حدّثت الصفحة</small></div><div className="online-seats"><article className="ready"><UserRound/><b>{me?.display_name||profile?.display_name}</b><span><Check/> جاهز</span></article><article><RefreshCw className="spin"/><b>المقعد الثاني</b><span>بانتظار لاعب…</span></article></div></div>{notice&&<div className="online-notice">{notice}</div>}</section>;
+  if(snapshot.members.length<2)return <section className="online-page" dir="rtl"><div className="online-top"><button className="online-back" onClick={leave}><ArrowRight/> خروج</button><span className={connected?'online-live':'online-off'}>{connected?<Wifi/>:<WifiOff/>}{connected?'متصل بالخادم':'نعيد الاتصال…'}</span></div><div className="online-wait"><div className="online-code"><small>كود الغرفة</small><strong>{snapshot.room.code}</strong><button onClick={copy}>{copied?<Check/>:<Copy/>}{copied?'تم النسخ':'نسخ الرابط'}</button><button onClick={()=>void shareRoom()}><Send/>{'دعوة صديق'}</button>{qrDataUrl&&<div className="online-room-qr"><img src={qrDataUrl} alt="QR لدخول غرفة قدّها"/><small>امسح الكود للدخول مباشرة</small></div>}</div><div className="online-radar"><span/><Users/><b>بانتظار الخصم</b><small>الغرفة محفوظة حتى لو حدّثت الصفحة</small></div><div className="online-seats"><article className="ready"><UserRound/><b>{me?.display_name||profile?.display_name}</b><span><Check/> جاهز</span></article><article><RefreshCw className="spin"/><b>المقعد الثاني</b><span>بانتظار لاعب…</span></article></div></div>{notice&&<div className="online-notice">{notice}</div>}{socialPanel}</section>;
 
   if(!duel||!question)return <section className="online-page" dir="rtl"><div className="online-wait"><RefreshCw className="spin"/><h1>نجهّز المواجهة…</h1><p>تم العثور على الخصم ونزامن الجولة الآن.</p></div></section>;
 
