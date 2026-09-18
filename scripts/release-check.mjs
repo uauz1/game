@@ -91,6 +91,8 @@ if (exists(adminDashboardFile) && exists(adminConfigFile)) {
     [adminConfig.includes('qaddha_admin_players') && adminConfig.includes('qaddha_admin_audit'), 'Admin player operations are wired'],
     [adminDashboard.includes('آخر اللاعبين') && adminDashboard.includes('سجل الإدارة'), 'Admin player and audit views are present'],
     [adminDashboard.includes('cancelQaddhaOnlineRoom'), 'Admin room termination is wired'],
+    [exists('src/admin.css') && read('src/admin.css').includes('@tailwind utilities'), 'Admin Tailwind stylesheet is present'],
+    [read('public/sw.js').includes("admin.html") && read('public/sw.js').includes("cache: 'no-store'"), 'Admin navigation cache is isolated'],
   ];
   for (const [ok, label] of adminChecks) ok ? pass(label) : fail(label);
 }
