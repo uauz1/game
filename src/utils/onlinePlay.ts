@@ -223,3 +223,40 @@ export async function getQaddhaAccountSummary(): Promise<QaddhaAccountSummary> {
   if (error) throw error;
   return data as QaddhaAccountSummary;
 }
+
+
+export type QaddhaFriend = {
+  user_id:string; display_name:string; avatar_url:string|null;
+  status:'pending'|'accepted'|'blocked'; incoming:boolean; last_seen:string;
+};
+export type QaddhaMatchHistory = {
+  id:string; room_id:string; opponent_user_id:string|null; game_id:string;
+  result:'win'|'loss'|'draw'; score:number; opponent_score:number; xp_earned:number; played_at:string;
+};
+
+export async function getMyFriends(): Promise<QaddhaFriend[]> {
+  const client=await getAuthClient();
+  const {data,error}=await client.rpc('qaddha_my_friends');
+  if(error) throw error;
+  return (data||[]) as QaddhaFriend[];
+}
+export async function findOnlinePlayers(query:string) {
+  const client=await getAuthClient();
+  const {data,error}=await client.rpc('qaddha_find_player',{p_query:query.trim()});
+  if(error) throw error;
+  return (data||[]) as {user_id:string;display_name:string;avatar_url:string|null;last_seen:string}[];
+}
+export async function sendFriendRequest(userId:string) {
+  const client=await getAuthClient(); const {error}=await client.rpc('qaddha_send_friend_request',{p_user_id:userId}); if(error) throw error;
+}
+export async function acceptFriendRequest(userId:string) {
+  const client=await getAuthClient(); const {error}=await client.rpc('qaddha_accept_friend_request',{p_user_id:userId}); if(error) throw error;
+}
+export async function removeFriend(userId:string) {
+  const client=await getAuthClient(); const {error}=await client.rpc('qaddha_remove_friend',{p_user_id:userId}); if(error) throw error;
+}
+export async function getMyOnlineMatchHistory(limit=20):Promise<QaddhaMatchHistory[]> {
+  const client=await getAuthClient(); const {data:{user}}=await client.auth.getUser(); if(!user) throw new Error('AUTH_REQUIRED');
+  const {data,error}=await client.from('qaddha_match_history').select('*').eq('user_id',user.id).order('played_at',{ascending:false}).limit(limit);
+  if(error) throw error; return (data||[]) as QaddhaMatchHistory[];
+}
