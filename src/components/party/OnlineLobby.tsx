@@ -16,6 +16,7 @@ import {
   openOnlineRoomChannel,
   saveOnlineGameState,
   recordOnlineDuelResult,
+  touchOnlinePresence,
   type OnlineRoomSnapshot,
 } from '../../utils/onlinePlay';
 
@@ -75,6 +76,15 @@ export default function OnlineLobby({ onBack, onRequireAuth, initialCode = '' }:
   const duelRef=useRef<DuelState|null>(null);
   snapshotRef.current=snapshot;
   duelRef.current=readDuel(snapshot);
+
+  useEffect(()=>{
+    if(!auth.session)return;
+    void touchOnlinePresence().catch(()=>{});
+    const heartbeat=window.setInterval(()=>void touchOnlinePresence().catch(()=>{}),30000);
+    const onVisible=()=>{if(document.visibilityState==='visible')void touchOnlinePresence().catch(()=>{});};
+    document.addEventListener('visibilitychange',onVisible);
+    return()=>{window.clearInterval(heartbeat);document.removeEventListener('visibilitychange',onVisible);};
+  },[auth.session?.user.id]);
 
   const userId=auth.session?.user.id||'';
   const isHost=Boolean(snapshot&&userId&&snapshot.room.host_user_id===userId);
