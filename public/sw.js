@@ -1,6 +1,6 @@
-const CACHE_NAME = 'qaddha-v5';
+const CACHE_NAME = 'qaddha-v6';
 const BASE = new URL('./', self.location.href).pathname;
-const SHELL = [BASE, `${BASE}index.html`, `${BASE}manifest.webmanifest`, `${BASE}qaddha-icon.svg`];
+const SHELL = [BASE, `${BASE}index.html`, `${BASE}admin.html`, `${BASE}manifest.webmanifest`, `${BASE}qaddha-icon.svg`];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)).catch(() => {}));
@@ -30,12 +30,15 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
+      const url = new URL(request.url);
+      const isAdmin = url.pathname.endsWith('/admin') || url.pathname.endsWith('/admin.html');
+      const fallback = isAdmin ? `${BASE}admin.html` : `${BASE}index.html`;
       try {
-        const response = await fetch(request);
-        await putSafe(`${BASE}index.html`, response);
+        const response = await fetch(request, { cache: 'no-store' });
+        await putSafe(fallback, response);
         return response;
       } catch {
-        return (await caches.match(`${BASE}index.html`)) || (await caches.match(BASE)) || Response.error();
+        return (await caches.match(fallback)) || (isAdmin ? Response.error() : (await caches.match(BASE)) || Response.error());
       }
     })());
     return;
