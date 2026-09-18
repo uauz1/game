@@ -156,3 +156,18 @@ export async function cancelQaddhaOnlineRoom(roomId: string, reason = 'manual_ad
   if (error) throw error;
   return data === true;
 }
+
+
+export async function isQaddhaAdminBootstrapAvailable(): Promise<boolean> {
+  const client = await getAuthClient();
+  const { data, error } = await client.rpc('qaddha_admin_bootstrap_available');
+  if (error) throw error;
+  return data === true;
+}
+
+export async function bootstrapFirstQaddhaAdmin(): Promise<boolean> {
+  const client = await getAuthClient();
+  const { data, error } = await client.rpc('qaddha_bootstrap_first_admin');
+  if (error) throw error;
+  return data === true;
+}
