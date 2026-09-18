@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, Gamepad2, Star, Target, TrendingUp, Award,
-  Calendar,
+  Calendar, Pencil, Swords,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -12,7 +12,7 @@ import { GAME_MODES } from '@/types';
 import { formatDate, cn, getBestCategory } from '@/utils/helpers';
 import type { GameResult } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { getQaddhaAccountSummary, type QaddhaAccountSummary } from '@/utils/onlinePlay';
+import { getQaddhaAccountSummary, getMyOnlineMatchHistory, updateOnlineDisplayName, type QaddhaAccountSummary, type QaddhaMatchHistory } from '@/utils/onlinePlay';
 
 interface Achievement {
   id: string;
@@ -36,13 +36,19 @@ export function Profile() {
   const navigate = useNavigate();
   const auth = useAuth();
   const [cloud,setCloud]=useState<QaddhaAccountSummary|null>(null);
+  const [onlineHistory,setOnlineHistory]=useState<QaddhaMatchHistory[]>([]);
+  const [editingName,setEditingName]=useState(false);
+  const [displayName,setDisplayName]=useState('');
+  const [savingName,setSavingName]=useState(false);
 
   useEffect(()=>{
     if(!auth.session){setCloud(null);return;}
     let active=true;
-    void getQaddhaAccountSummary().then(data=>{if(active)setCloud(data);}).catch(()=>{});
+    void Promise.all([getQaddhaAccountSummary(),getMyOnlineMatchHistory(20)]).then(([data,history])=>{if(active){setCloud(data);setDisplayName(data.profile.display_name);setOnlineHistory(history);}}).catch(()=>{});
     return()=>{active=false;};
   },[auth.session?.user.id]);
+
+  const saveName=async()=>{if(!displayName.trim())return;setSavingName(true);try{const name=await updateOnlineDisplayName(displayName);setCloud(prev=>prev?{...prev,profile:{...prev.profile,display_name:name}}:prev);setEditingName(false);}finally{setSavingName(false);}};
 
   const gameHistory = useMemo(() => loadFromStorage<GameResult[]>('gameHistory', []), []);
   const stats = useMemo(() => {
@@ -102,7 +108,7 @@ export function Profile() {
         <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple to-turquoise flex items-center justify-center mx-auto mb-3 shadow-glow-purple">
           <User className="w-10 h-10 text-white" />
         </div>
-        <h1 className="text-2xl font-cairo font-black">{cloud?.profile.display_name || auth.session?.user.user_metadata?.display_name || 'لاعب تحدّي'}</h1>
+        {editingName?<div className="flex gap-2 justify-center items-center"><input className="bg-black/30 border border-white/15 rounded-xl px-3 py-2 text-center max-w-52" value={displayName} maxLength={24} onChange={e=>setDisplayName(e.target.value)}/><Button variant="primary" disabled={savingName} onClick={()=>void saveName()}>{savingName?'حفظ…':'حفظ'}</Button></div>:<div className="flex gap-2 justify-center items-center"><h1 className="text-2xl font-cairo font-black">{cloud?.profile.display_name || auth.session?.user.user_metadata?.display_name || 'لاعب تحدّي'}</h1>{cloud&&<button aria-label="تعديل الاسم" className="text-off-white/50 hover:text-white" onClick={()=>setEditingName(true)}><Pencil className="w-4 h-4"/></button>}</div>}
         <p className="text-sm text-off-white/60 mt-1">{auth.session?.user.email || (cloud ? 'حساب قدّها محفوظ' : `${stats.totalGames} لعبة مكتملة`)}</p>
         {cloud && <div className="mt-4 grid grid-cols-3 gap-2 text-center"><div><b>{cloud.profile.xp}</b><small className="block text-off-white/50">XP</small></div><div><b>{cloud.profile.games_played}</b><small className="block text-off-white/50">أونلاين</small></div><div><b>{cloud.profile.wins}</b><small className="block text-off-white/50">فوز</small></div></div>
       </Card>
@@ -169,6 +175,8 @@ export function Profile() {
           );
         })}
       </div>
+
+      {auth.session && <><h2 className="text-xl font-bold mb-4">سجل الأونلاين</h2>{onlineHistory.length===0?<Card className="text-center py-8 mb-8"><Swords className="w-10 h-10 text-off-white/20 mx-auto mb-2"/><p className="text-off-white/50">مباريات الأونلاين المكتملة بتظهر هنا.</p></Card>:<div className="space-y-2 mb-8">{onlineHistory.map(match=><Card key={match.id} className="p-4 flex items-center gap-3"><div className={cn("w-11 h-11 rounded-2xl grid place-items-center font-black",match.result==='win'?'bg-green-500/10 text-green-400':match.result==='draw'?'bg-yellow-500/10 text-yellow-300':'bg-red-500/10 text-red-400')}>{match.result==='win'?'ف':match.result==='draw'?'ت':'خ'}</div><div className="flex-1"><b className="text-sm">{match.game_id==='fast'?'مين أسرع؟':match.game_id}</b><p className="text-xs text-off-white/45">{formatDate(match.played_at)}</p></div><div className="text-left"><b>{match.score} — {match.opponent_score}</b><small className="block text-turquoise">+{match.xp_earned} XP</small></div></Card>)}</div>}</>}
 
       {/* Game history */}
       <h2 className="text-xl font-bold mb-4">سجل الألعاب</h2>
