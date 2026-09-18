@@ -62,7 +62,7 @@ for (const file of files) {
       if (!text) errors.push(`${label}: missing question text`);
       const promptKey = normalizeArabic(text);
       if (promptKey) {
-        if (prompts.has(promptKey)) warnings.push(`${label}: duplicate prompt (also ${prompts.get(promptKey)})`);
+        if (prompts.has(promptKey)) errors.push(`${label}: duplicate prompt (also ${prompts.get(promptKey)})`);
         else prompts.set(promptKey, label);
       }
 
