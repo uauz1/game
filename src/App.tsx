@@ -110,6 +110,14 @@ export default function App() {
     return()=>window.removeEventListener('beforeunload',warn);
   },[isGame]);
   useEffect(()=>{
+    if(!onlineOpen)return;
+    const previousOverflow=document.body.style.overflow;
+    const close=(event:KeyboardEvent)=>{if(event.key==='Escape')setOnlineOpen(false);};
+    document.body.style.overflow='hidden';
+    window.addEventListener('keydown',close);
+    return()=>{document.body.style.overflow=previousOverflow;window.removeEventListener('keydown',close);};
+  },[onlineOpen]);
+  useEffect(()=>{
     if(!homeConfirm)return;
     const previousOverflow=document.body.style.overflow;
     const close=(event:KeyboardEvent)=>{if(event.key==='Escape')setHomeConfirm(false);};
