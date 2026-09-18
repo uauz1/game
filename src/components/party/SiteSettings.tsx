@@ -165,8 +165,8 @@ export default function SiteSettings({ open, onClose }: { open: boolean; onClose
   const share = async () => {
     const canShare = typeof navigator.share === 'function';
     try {
-      if (canShare) await navigator.share({ title: 'قدّها', text: 'خلّنا نتحدى في قدّها', url: location.origin });
-      else await navigator.clipboard.writeText(location.origin);
+      if (canShare) await navigator.share({ title: 'قدّها', text: 'خلّنا نتحدى في قدّها', url: siteUrl });
+      else await navigator.clipboard.writeText(siteUrl);
       setNotice(canShare ? 'تم فتح المشاركة' : 'تم نسخ رابط قدّها');
     } catch { setNotice('تعذّرت المشاركة؛ جرّب نسخ الرابط بدلًا منها'); }
   };
