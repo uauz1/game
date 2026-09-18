@@ -11,10 +11,10 @@ export const vaultPlusQuestions: Question[] = [
   { id:'vp-food-006', category:'food', difficulty:'hard', type:'multiple', text:'أي حمض طبيعي مسؤول غالبًا عن الطعم الحامض في الخل؟', choices:['حمض الستريك','حمض الخليك','حمض اللاكتيك','حمض الماليك'], correctAnswer:1 },
 
   // Medicine / human body
-  { id:'vp-med-001', category:'medicine', difficulty:'medium', type:'multiple', text:'أي جزء من الدم مسؤول أساسًا عن التجلط؟', choices:['كريات الدم الحمراء','الصفائح الدموية','البلازما فقط','الخلايا العصبية'], correctAnswer:1 },
+  { id:'vp-med-001', category:'medicine', difficulty:'medium', type:'multiple', text:'أي خلايا دم تنقل الأكسجين أساسًا إلى أنسجة الجسم؟', choices:['كريات الدم الحمراء','الصفائح الدموية','الخلايا العصبية','الخلايا الدهنية'], correctAnswer:0 },
   { id:'vp-med-002', category:'medicine', difficulty:'hard', type:'multiple', text:'في أي جزء من الكلية يحدث الترشيح الأولي للدم داخل النفرون؟', choices:['الكبيبة','الحالب','حوض الكلية','الأنبوب الجامع فقط'], correctAnswer:0 },
   { id:'vp-med-003', category:'medicine', difficulty:'medium', type:'multiple', text:'ما الهرمون الذي يساعد أساسًا على خفض مستوى الغلوكوز في الدم؟', choices:['الأدرينالين','الإنسولين','الكورتيزول','الميلاتونين'], correctAnswer:1 },
-  { id:'vp-med-004', category:'medicine', difficulty:'hard', type:'multiple', text:'أي عصب قحفي يرتبط أساسًا بحاسة الشم؟', choices:['العصب البصري','العصب الشمي','العصب الوجهي','العصب السمعي'], correctAnswer:1 },
+  { id:'vp-med-004', category:'medicine', difficulty:'hard', type:'multiple', text:'أي عصب قحفي يتحكم بمعظم حركات اللسان؟', choices:['العصب تحت اللسان','العصب المبهم','العصب البصري','العصب الشمي'], correctAnswer:0 },
   { id:'vp-med-005', category:'medicine', difficulty:'medium', type:'multiple', text:'ما الصبغة الموجودة في كريات الدم الحمراء والمسؤولة عن نقل الأكسجين؟', choices:['الميلانين','الهيموغلوبين','الكيراتين','الإنسولين'], correctAnswer:1 },
   { id:'vp-med-006', category:'medicine', difficulty:'hard', type:'multiple', text:'أي صمام في القلب يقع بين الأذين الأيسر والبطين الأيسر؟', choices:['ثلاثي الشرفات','الميترالي','الرئوي','الأبهري'], correctAnswer:1 },
 
@@ -75,8 +75,8 @@ export const vaultPlusQuestions: Question[] = [
   { id:'vp-space-006', category:'space', difficulty:'hard', type:'multiple', text:'أي نوع نجمي يمثل بقايا نجم منخفض أو متوسط الكتلة بعد نفاد وقوده؟', choices:['قزم أبيض','نجم نيوتروني دائمًا','ثقب أسود دائمًا','نجم أولي'], correctAnswer:0 },
 
   // Books
-  { id:'vp-books-001', category:'books', difficulty:'medium', type:'multiple', text:'من مؤلف رواية الجريمة والعقاب؟', choices:['فيودور دوستويفسكي','ليو تولستوي','أنطون تشيخوف','إيفان تورغينيف'], correctAnswer:0 },
-  { id:'vp-books-002', category:'books', difficulty:'hard', type:'multiple', text:'من مؤلف رواية مئة عام من العزلة؟', choices:['غابرييل غارسيا ماركيز','خورخي لويس بورخيس','بابلو نيرودا','ماريو بارغاس يوسا'], correctAnswer:0 },
+  { id:'vp-books-001', category:'books', difficulty:'medium', type:'multiple', text:'من مؤلف رواية الإخوة كارامازوف؟', choices:['فيودور دوستويفسكي','ليو تولستوي','أنطون تشيخوف','إيفان تورغينيف'], correctAnswer:0 },
+  { id:'vp-books-002', category:'books', difficulty:'hard', type:'multiple', text:'من مؤلف رواية الحب في زمن الكوليرا؟', choices:['غابرييل غارسيا ماركيز','خورخي لويس بورخيس','بابلو نيرودا','ماريو بارغاس يوسا'], correctAnswer:0 },
   { id:'vp-books-003', category:'books', difficulty:'medium', type:'multiple', text:'أي أديب عربي كتب ثلاثية القاهرة الشهيرة؟', choices:['نجيب محفوظ','توفيق الحكيم','يوسف إدريس','طه حسين'], correctAnswer:0 },
   { id:'vp-books-004', category:'books', difficulty:'hard', type:'multiple', text:'من مؤلف رواية اسم الوردة؟', choices:['أمبرتو إيكو','إيتالو كالفينو','ميلان كونديرا','ألبرتو مورافيا'], correctAnswer:0 },
   { id:'vp-books-005', category:'books', difficulty:'medium', type:'multiple', text:'أي نوع أدبي يعتمد على سرد حياة الشخص بقلمه هو؟', choices:['السيرة الذاتية','المسرحية','الملحمة','المقالة النقدية'], correctAnswer:0 },
