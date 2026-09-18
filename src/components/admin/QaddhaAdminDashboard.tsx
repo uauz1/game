@@ -8,7 +8,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   ALL_GAME_IDS, DEFAULT_QADDHA_CONFIG, QaddhaRemoteConfig, fetchQaddhaRemoteConfig,
   isCurrentUserQaddhaAdmin, saveQaddhaRemoteConfig, fetchQaddhaAdminOverview,
-  type QaddhaAdminOverview
+  fetchQaddhaAdminPlayers, fetchQaddhaAdminAudit, cancelQaddhaOnlineRoom,
+  type QaddhaAdminOverview, type QaddhaAdminPlayer, type QaddhaAdminAuditEntry
 } from '../../utils/adminConfig';
 
 const GAME_NAMES: Record<string,string> = {
@@ -44,6 +45,9 @@ export default function QaddhaAdminDashboard(){
   const [config,setConfig]=useState<QaddhaRemoteConfig>(DEFAULT_QADDHA_CONFIG);
   const [saved,setSaved]=useState<QaddhaRemoteConfig>(DEFAULT_QADDHA_CONFIG);
   const [overview,setOverview]=useState<QaddhaAdminOverview|null>(null);
+  const [players,setPlayers]=useState<QaddhaAdminPlayer[]>([]);
+  const [audit,setAudit]=useState<QaddhaAdminAuditEntry[]>([]);
+  const [roomBusy,setRoomBusy]=useState('');
   const [allowed,setAllowed]=useState(false);
   const [checking,setChecking]=useState(true);
   const [message,setMessage]=useState('');
@@ -61,8 +65,8 @@ export default function QaddhaAdminDashboard(){
   const refreshOverview=async()=>{
     setRefreshing(true);
     try{
-      const next=await fetchQaddhaAdminOverview();
-      setOverview(next);
+      const [next,nextPlayers,nextAudit]=await Promise.all([fetchQaddhaAdminOverview(),fetchQaddhaAdminPlayers(50),fetchQaddhaAdminAudit(30)]);
+      setOverview(next);setPlayers(nextPlayers);setAudit(nextAudit);
     }catch{
       setMessage('تعذر تحديث إحصائيات الإدارة الآن.');
     }finally{
@@ -76,8 +80,8 @@ export default function QaddhaAdminDashboard(){
     const ok=await isCurrentUserQaddhaAdmin();
     setAllowed(ok);
     if(ok){
-      const [remote,stats]=await Promise.all([fetchQaddhaRemoteConfig(),fetchQaddhaAdminOverview().catch(()=>null)]);
-      setConfig(remote);setSaved(remote);if(stats)setOverview(stats);
+      const [remote,stats,nextPlayers,nextAudit]=await Promise.all([fetchQaddhaRemoteConfig(),fetchQaddhaAdminOverview().catch(()=>null),fetchQaddhaAdminPlayers(50).catch(()=>[]),fetchQaddhaAdminAudit(30).catch(()=>[])]);
+      setConfig(remote);setSaved(remote);if(stats)setOverview(stats);setPlayers(nextPlayers);setAudit(nextAudit);
     }
     setChecking(false);
   })()},[auth.session?.user.id]);
@@ -107,6 +111,7 @@ export default function QaddhaAdminDashboard(){
       const next=await saveQaddhaRemoteConfig(config);
       setConfig(next);setSaved(next);
       setMessage('تم حفظ التغييرات ونشرها على قدّها ✅');
+      void refreshOverview();
     }catch{
       setMessage('تعذر الحفظ. تحقق من اتصال Supabase وصلاحية الإدارة.');
     }finally{setSaving(false)}
@@ -114,6 +119,16 @@ export default function QaddhaAdminDashboard(){
   const setBool=(key:keyof QaddhaRemoteConfig,value:boolean)=>setConfig(prev=>({...prev,[key]:value}));
   const toggleGame=(id:string)=>setConfig(prev=>({...prev,enabled_games:prev.enabled_games.includes(id)?prev.enabled_games.filter(x=>x!==id):[...prev.enabled_games,id]}));
 
+  const cancelRoom=async(roomId:string,code:string)=>{
+    if(!window.confirm('إنهاء الغرفة '+code+'؟ اللاعبون الموجودون فيها بيطلعون منها.'))return;
+    setRoomBusy(roomId);setMessage('');
+    try{
+      const ok=await cancelQaddhaOnlineRoom(roomId,'cancelled_from_control_center');
+      setMessage(ok?'تم إنهاء الغرفة '+code+' ✅':'الغرفة منتهية أصلًا أو غير موجودة.');
+      await refreshOverview();
+    }catch{setMessage('تعذر إنهاء الغرفة.');}
+    finally{setRoomBusy('');}
+  };
   const runHealth=async()=>{
     setHealth({site:'checking',supabase:'checking',content:'checking',sessions:'checking'});
     const check=async(url:string):Promise<Health>=>{try{const r=await fetch(url,{cache:'no-store'});return r.ok?'ok':'error'}catch{return'error'}};
