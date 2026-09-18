@@ -47,6 +47,31 @@ else fail('Smart-session release features are incomplete');
 if (realtime.includes('createRealtimeRoomChannel')) pass('Shared realtime room transport is present');
 else fail('Shared realtime room transport entry point is missing');
 
+
+const onlineLobbyFile = 'src/components/party/OnlineLobby.tsx';
+const onlineClientFile = 'src/utils/onlinePlay.ts';
+const authClientFile = 'src/utils/authClient.ts';
+const productionMigrationFile = 'supabase/migrations/20260918012100_qaddha_production_accounts_online.sql';
+for (const file of [onlineLobbyFile, onlineClientFile, authClientFile, productionMigrationFile]) {
+  if (!exists(file)) fail(`Online release file missing: ${file}`);
+}
+if (exists(onlineLobbyFile) && exists(onlineClientFile) && exists(authClientFile)) {
+  const onlineLobby = read(onlineLobbyFile);
+  const onlineClient = read(onlineClientFile);
+  const authClient = read(authClientFile);
+  const onlineChecks = [
+    [app.includes("screen==='online'"), 'Online screen route is wired'],
+    [app.includes("initialParams.get('online')"), 'Invite-code deep link is wired'],
+    [onlineLobby.includes('findQuickOnlineMatch'), 'Quick Match UI is wired'],
+    [onlineLobby.includes('createPrivateOnlineRoom'), 'Private-room UI is wired'],
+    [onlineLobby.includes('recordOnlineDuelResult'), 'Online results persist to account stats'],
+    [onlineClient.includes("private: true"), 'Online Realtime channel is private'],
+    [onlineClient.includes('qaddha_record_duel_result'), 'Online result RPC is wired'],
+    [authClient.includes('persistSession: true') && authClient.includes('autoRefreshToken: true'), 'Auth session persistence and refresh are enabled'],
+  ];
+  for (const [ok, label] of onlineChecks) ok ? pass(label) : fail(label);
+}
+
 const forbidden = /coming soon|قريبًا فقط|لعبة غير متاحة|TODO\b|FIXME\b/i;
 const criticalFiles = [
   'src/App.tsx',
