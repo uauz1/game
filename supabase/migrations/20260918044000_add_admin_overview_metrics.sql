@@ -190,3 +190,38 @@ grant execute on function public.qaddha_admin_save_config(jsonb) to authenticate
 grant execute on function public.qaddha_admin_players(int) to authenticated;
 grant execute on function public.qaddha_admin_cancel_room(uuid,text) to authenticated;
 grant execute on function public.qaddha_admin_audit(int) to authenticated;
+
+
+-- One-time first-owner bootstrap for an empty installation.
+create or replace function public.qaddha_admin_bootstrap_available()
+returns boolean language sql stable security invoker set search_path='' as $$
+select not exists(select 1 from public.qaddha_admins);
+$$;
+grant execute on function public.qaddha_admin_bootstrap_available() to anon,authenticated;
+
+create or replace function private.qaddha_bootstrap_first_admin_impl()
+returns boolean language plpgsql security definer set search_path='' as $$
+declare uid uuid:=auth.uid();
+begin
+  if uid is null then raise exception 'AUTH_REQUIRED'; end if;
+  perform pg_advisory_xact_lock(620260918);
+  if exists(select 1 from public.qaddha_admins) then
+    return exists(select 1 from public.qaddha_admins where user_id=uid);
+  end if;
+  insert into public.qaddha_admins(user_id) values(uid) on conflict do nothing;
+  insert into public.qaddha_admin_audit(admin_user_id,action,target_type,target_id,details)
+  values(uid,'admin.bootstrap','admin',uid::text,jsonb_build_object('source','first_owner_setup'));
+  return true;
+end;
+$$;
+
+revoke all on function private.qaddha_bootstrap_first_admin_impl() from public,anon;
+grant execute on function private.qaddha_bootstrap_first_admin_impl() to authenticated;
+
+create or replace function public.qaddha_bootstrap_first_admin()
+returns boolean language sql security invoker set search_path='' as $$
+select private.qaddha_bootstrap_first_admin_impl();
+$$;
+
+revoke all on function public.qaddha_bootstrap_first_admin() from public,anon;
+grant execute on function public.qaddha_bootstrap_first_admin() to authenticated;
