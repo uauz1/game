@@ -118,10 +118,10 @@ export const techQuestions: Question[] = [
   },
   {
     id: 'tec-2', category: 'tech', difficulty: 'easy', type: 'multiple',
-    text: 'من هو مؤسس شركة مايكروسوفت؟',
-    choices: ['ستيف جوبز', 'بيل غيتس', 'إيلون ماسك', 'مارك زوكربيرغ'],
-    correctAnswer: 1,
-    explanation: 'بيل غيتس مؤسس شركة مايكروسوفت مع بول ألن عام 1975.',
+    text: 'أي جهاز يُستخدم عادة لإدخال النصوص إلى الحاسوب؟',
+    choices: ['لوحة المفاتيح', 'الشاشة', 'السماعة', 'الطابعة'],
+    correctAnswer: 0,
+    explanation: 'لوحة المفاتيح من أشهر أجهزة إدخال النصوص إلى الحاسوب.',
   },
   {
     id: 'tec-3', category: 'tech', difficulty: 'easy', type: 'multiple',
