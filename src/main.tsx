@@ -34,7 +34,8 @@ const params = new URLSearchParams(window.location.search);
 const host = params.get('host');
 const isWhoHost = host === 'who';
 const playRoom = params.get('playroom');
-const isAdmin = params.get('admin') === '1' || window.location.pathname === '/admin' || window.location.pathname === '/admin/' || window.location.pathname === '/admin.html';
+const normalizedPath = window.location.pathname.replace(/\/+$/, '');
+const isAdmin = params.get('admin') === '1' || normalizedPath.endsWith('/admin') || normalizedPath.endsWith('/admin.html');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
