@@ -56,6 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { active = false; unsubscribe?.(); };
   }, []);
 
+  const authRedirectUrl = useMemo(() => new URL(import.meta.env.BASE_URL, window.location.origin).href, []);
+
   const signIn = useCallback(async (email: string, password: string): Promise<AuthResult> => {
     try {
       const client = await getAuthClient();
@@ -67,18 +69,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = useCallback(async (email: string, password: string, displayName: string): Promise<AuthResult> => {
     try {
       const client = await getAuthClient();
-      const { error } = await client.auth.signUp({ email, password, options: { data: { display_name: displayName }, emailRedirectTo: location.origin } });
+      const { error } = await client.auth.signUp({ email, password, options: { data: { display_name: displayName }, emailRedirectTo: authRedirectUrl } });
       return error ? { ok: false, message: authError(error.message) } : { ok: true, message: 'أنشأنا الحساب. افتح بريدك لتأكيده.' };
     } catch { return { ok: false, message: 'خدمة الحسابات غير متاحة الآن.' }; }
-  }, []);
+  }, [authRedirectUrl]);
 
   const signInWithGoogle = useCallback(async (): Promise<AuthResult> => {
     try {
       const client = await getAuthClient();
-      const { error } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin } });
+      const { error } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: authRedirectUrl } });
       return error ? { ok: false, message: authError(error.message) } : { ok: true, message: 'جاري فتح Google…' };
     } catch { return { ok: false, message: 'خدمة الحسابات غير متاحة الآن.' }; }
-  }, []);
+  }, [authRedirectUrl]);
 
   const requestReset = useCallback(async (email: string): Promise<AuthResult> => {
     try {
@@ -86,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: location.origin });
       return error ? { ok: false, message: authError(error.message) } : { ok: true, message: 'أرسلنا رابط الاستعادة إذا كان البريد مسجلًا.' };
     } catch { return { ok: false, message: 'خدمة الحسابات غير متاحة الآن.' }; }
-  }, []);
+  }, [authRedirectUrl]);
 
   const updatePassword = useCallback(async (password: string): Promise<AuthResult> => {
     try {
