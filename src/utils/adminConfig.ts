@@ -16,7 +16,7 @@ export type QaddhaRemoteConfig = {
   updated_at?: string;
 };
 
-export const ALL_GAME_IDS = ['teams','letters','who','photo','words','fast','character','riddles','family','connection','auction','order','memory','missing','acting','secret'];
+export const ALL_GAME_IDS = ['teams','letters','who','photo','words','fast','character','riddles','family','connection','auction','order','memory','missing','acting','secret','pressure','intruder'];
 
 export const DEFAULT_QADDHA_CONFIG: QaddhaRemoteConfig = {
   id: 'global',
