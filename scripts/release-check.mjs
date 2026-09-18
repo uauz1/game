@@ -72,6 +72,26 @@ if (exists(onlineLobbyFile) && exists(onlineClientFile) && exists(authClientFile
   for (const [ok, label] of onlineChecks) ok ? pass(label) : fail(label);
 }
 
+
+const adminDashboardFile = 'src/components/admin/QaddhaAdminDashboard.tsx';
+const adminConfigFile = 'src/utils/adminConfig.ts';
+const adminMigrationFile = 'supabase/migrations/20260918044000_add_admin_overview_metrics.sql';
+for (const file of [adminDashboardFile, adminConfigFile, adminMigrationFile]) {
+  if (!exists(file)) fail(`Admin release file missing: ${file}`);
+}
+if (exists(adminDashboardFile) && exists(adminConfigFile)) {
+  const adminDashboard = read(adminDashboardFile);
+  const adminConfig = read(adminConfigFile);
+  const adminChecks = [
+    [adminDashboard.includes('QADDHA CONTROL CENTER'), 'Admin control center shell is present'],
+    [adminDashboard.includes('fetchQaddhaAdminOverview'), 'Admin live overview is wired'],
+    [adminDashboard.includes('آخر غرف الأونلاين'), 'Admin recent online rooms view is present'],
+    [adminDashboard.includes('ALL_GAME_IDS.length'), 'Admin game controls cover the full game registry'],
+    [adminConfig.includes('qaddha_admin_overview'), 'Admin overview RPC is wired'],
+  ];
+  for (const [ok, label] of adminChecks) ok ? pass(label) : fail(label);
+}
+
 const forbidden = /coming soon|قريبًا فقط|لعبة غير متاحة|TODO\b|FIXME\b/i;
 const criticalFiles = [
   'src/App.tsx',
