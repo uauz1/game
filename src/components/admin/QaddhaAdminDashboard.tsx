@@ -10,7 +10,7 @@ import {
   ALL_GAME_IDS, DEFAULT_QADDHA_CONFIG, QaddhaRemoteConfig, fetchQaddhaRemoteConfig,
   isCurrentUserQaddhaAdmin, saveQaddhaRemoteConfig, fetchQaddhaAdminOverview,
   fetchQaddhaAdminPlayers, fetchQaddhaAdminAudit, cancelQaddhaOnlineRoom,
-  isQaddhaAdminBootstrapAvailable, bootstrapFirstQaddhaAdmin,
+  isQaddhaAdminBootstrapAvailable, bootstrapFirstQaddhaAdmin, setupFirstQaddhaOwner,
   type QaddhaAdminOverview, type QaddhaAdminPlayer, type QaddhaAdminAuditEntry
 } from '../../utils/adminConfig';
 
@@ -123,8 +123,15 @@ export default function QaddhaAdminDashboard(){
       if(password.length<8){setMessage('كلمة المرور لازم تكون 8 أحرف على الأقل.');return;}
       if(password!==confirmPassword){setMessage('كلمتا المرور غير متطابقتين.');return;}
       setSigningIn(true);setMessage('');
-      const result=await auth.signUp(email.trim(),password,displayName.trim());
-      setMessage(result.message);
+      try{
+        const created=await setupFirstQaddhaOwner(email.trim(),password,displayName.trim());
+        if(!created){setMessage('تعذر إنشاء حساب المالك.');setSigningIn(false);return;}
+        const result=await auth.signIn(email.trim(),password);
+        setMessage(result.ok?'تم إنشاء حساب المالك وتسجيل الدخول ✅':result.message);
+      }catch(error){
+        const raw=String((error as {message?:string})?.message||error);
+        setMessage(raw.includes('OWNER_ALREADY_EXISTS')?'تم إنشاء حساب مالك من قبل. استخدم تسجيل الدخول.':raw.includes('EMAIL_EXISTS')?'هذا البريد مستخدم من قبل.':raw.includes('WEAK_PASSWORD')?'كلمة المرور لازم تكون 8 أحرف على الأقل.':'تعذر إنشاء حساب المالك الآن.');
+      }
       setSigningIn(false);
       return;
     }
@@ -207,7 +214,7 @@ export default function QaddhaAdminDashboard(){
           {authMode==='setup'&&<label>تأكيد كلمة المرور<input dir="ltr" type="password" autoComplete="new-password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="••••••••"/></label>}
           <button disabled={signingIn} className="admin-auth-primary"><LogIn size={18}/>{signingIn?'جاري التنفيذ…':authMode==='setup'?'إنشاء حساب المالك':'دخول لوحة التحكم'}</button>
         </form>
-        {authMode==='signin'&&<><div className="admin-auth-divider"><span/>أو<span/></div><button disabled={signingIn} onClick={loginGoogle} className="admin-auth-google"><KeyRound size={17}/>الدخول بحساب Google</button></>}
+        {authMode==='signin'&&<p className="admin-auth-google-note">الدخول عبر Google غير مفعّل حاليًا. استخدم البريد وكلمة المرور.</p>}
         {message&&<p className="admin-auth-message">{message}</p>}
         <a href={siteBaseUrl} className="admin-auth-back">العودة إلى قدّها</a>
       </section>
