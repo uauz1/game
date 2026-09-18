@@ -102,14 +102,20 @@ export default function OnlineLobby({ onBack, onRequireAuth, initialCode = '' }:
     let active=true;
     void (async()=>{
       try{
-        const [p,resume]=await Promise.all([getMyOnlineProfile(),findMyActiveOnlineRoom()]);
+        const p=await getMyOnlineProfile();
         if(!active)return;
         setProfile({display_name:p.display_name});
-        if(resume)setSnapshot(resume);
-        else if(initialCode){
-          const joined=await joinPrivateOnlineRoom(initialCode);
-          if(active)await refresh(joined.room_id);
+        if(initialCode){
+          try{
+            const joined=await joinPrivateOnlineRoom(initialCode);
+            if(active)await refresh(joined.room_id);
+            return;
+          }catch{
+            if(active)setNotice('تعذر فتح الغرفة المطلوبة. تقدر تدخل بكود آخر أو ترجع لرومك السابق.');
+          }
         }
+        const resume=await findMyActiveOnlineRoom();
+        if(active&&resume)setSnapshot(resume);
       }catch{if(active)setNotice('تعذر تحميل حساب الأونلاين الآن.');}
     })();
     return()=>{active=false;};
