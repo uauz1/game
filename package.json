@@ -13,7 +13,7 @@
     "validate:content": "node scripts/validate-content.mjs && node scripts/validate-question-bank.mjs && node scripts/simulate-question-bank.mjs && node scripts/validate-party-games.mjs && node scripts/release-check.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.57.4",
+    "@supabase/supabase-js": "2.57.4",
     "@types/canvas-confetti": "^1.9.0",
     "canvas-confetti": "^1.9.4",
     "lucide-react": "^0.446.0",
