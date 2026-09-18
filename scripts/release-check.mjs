@@ -88,6 +88,9 @@ if (exists(adminDashboardFile) && exists(adminConfigFile)) {
     [adminDashboard.includes('آخر غرف الأونلاين'), 'Admin recent online rooms view is present'],
     [adminDashboard.includes('ALL_GAME_IDS.length'), 'Admin game controls cover the full game registry'],
     [adminConfig.includes('qaddha_admin_overview'), 'Admin overview RPC is wired'],
+    [adminConfig.includes('qaddha_admin_players') && adminConfig.includes('qaddha_admin_audit'), 'Admin player operations are wired'],
+    [adminDashboard.includes('آخر اللاعبين') && adminDashboard.includes('سجل الإدارة'), 'Admin player and audit views are present'],
+    [adminDashboard.includes('cancelQaddhaOnlineRoom'), 'Admin room termination is wired'],
   ];
   for (const [ok, label] of adminChecks) ok ? pass(label) : fail(label);
 }
