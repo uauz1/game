@@ -2,7 +2,7 @@ import type { Question } from '@/types';
 
 export const extraQuestions: Question[] = [
   { id:'x-gen-1', category:'general', difficulty:'easy', type:'multiple', text:'كم دقيقة في الساعة الواحدة؟', choices:['30','45','60','90'], correctAnswer:2 },
-  { id:'x-gen-2', category:'general', difficulty:'medium', type:'multiple', text:'أي كوكب يُعرف بالكوكب الأحمر؟', choices:['الزهرة','المريخ','المشتري','عطارد'], correctAnswer:1 },
+  { id:'x-gen-2', category:'general', difficulty:'medium', type:'multiple', text:'كم درجة يساوي مجموع زوايا المثلث في الهندسة الإقليدية؟', choices:['90','180','270','360'], correctAnswer:1 },
   { id:'x-gen-3', category:'general', difficulty:'medium', type:'multiple', text:'ما المعدن السائل في درجة حرارة الغرفة؟', choices:['الحديد','الزئبق','النحاس','الألومنيوم'], correctAnswer:1 },
   { id:'x-gen-4', category:'general', difficulty:'hard', type:'multiple', text:'ما الرمز الكيميائي للفضة؟', choices:['Ag','Au','Fe','Si'], correctAnswer:0 },
 
