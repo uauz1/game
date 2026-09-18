@@ -88,6 +88,7 @@ create table if not exists public.qaddha_admin_audit (
 );
 
 alter table public.qaddha_admin_audit enable row level security;
+create index if not exists qaddha_admin_audit_admin_idx on public.qaddha_admin_audit(admin_user_id, created_at desc);
 drop policy if exists "admins read audit log" on public.qaddha_admin_audit;
 create policy "admins read audit log" on public.qaddha_admin_audit
 for select to authenticated using (private.qaddha_is_admin((select auth.uid())));
