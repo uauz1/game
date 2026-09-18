@@ -98,3 +98,47 @@
 @media (prefers-reduced-motion:reduce){
   .game-cover-image,.cinematic-arena img{transform:none!important}
 }
+
+
+/* Explicit display preferences from Settings */
+html[data-qaddha-display="tv"] .party-app{min-height:100svh}
+html[data-qaddha-display="tv"] .tv-orientation-hint{display:none!important}
+html[data-qaddha-display="tv"] .party-app main{
+  width:100%;max-width:1680px;margin-inline:auto;
+  padding-inline:clamp(28px,3.2vw,64px);padding-bottom:56px
+}
+html[data-qaddha-display="tv"] .party-app .topbar{
+  width:calc(100% - 56px);max-width:1600px;height:84px;margin-inline:auto
+}
+html[data-qaddha-display="tv"] .party-app:has(.lobby-hero) .lobby-hero{
+  min-height:calc(100svh - 84px);padding-block:42px 62px
+}
+html[data-qaddha-display="tv"] .party-app:has(.lobby-hero) .lobby-copy{max-width:min(740px,50vw)}
+html[data-qaddha-display="tv"] .party-app:has(.lobby-hero) .lobby-copy h1{
+  font-size:clamp(56px,5vw,88px);line-height:1.16
+}
+html[data-qaddha-display="tv"] .party-app:has(.lobby-hero) .lobby-copy p{
+  max-width:650px;font-size:clamp(19px,1.35vw,25px);line-height:1.9
+}
+html[data-qaddha-display="tv"] .hero-actions .primary,
+html[data-qaddha-display="tv"] .hero-actions .quiet{min-height:54px;font-size:15px}
+html[data-qaddha-display="tv"] .lobby-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:22px}
+html[data-qaddha-display="tv"] .game-art{height:clamp(160px,13vw,225px)}
+html[data-qaddha-display="tv"] .game-copy h3{font-size:clamp(23px,1.6vw,30px)}
+html[data-qaddha-display="tv"] .game-copy p{font-size:clamp(13px,.95vw,16px);line-height:1.8}
+html[data-qaddha-display="tv"] .arena-heading h1,
+html[data-qaddha-display="tv"] .board-heading h2{font-size:clamp(32px,2.35vw,44px)}
+html[data-qaddha-display="tv"] .question-spotlight{min-height:clamp(540px,62vh,740px)}
+html[data-qaddha-display="tv"] .question-spotlight h2{font-size:clamp(38px,3.2vw,60px);line-height:1.55}
+html[data-qaddha-display="tv"] .arena-score{min-height:98px}
+html[data-qaddha-display="tv"] .arena-score span{font-size:clamp(20px,1.5vw,27px)}
+html[data-qaddha-display="tv"] .arena-score strong{font-size:clamp(36px,2.8vw,52px)}
+html[data-qaddha-display="tv"] .board-column>button{min-height:82px}
+html[data-qaddha-display="tv"] .board-column>button strong{font-size:clamp(29px,2.15vw,38px)}
+html[data-qaddha-display="tv"] .letter-tiles button{min-height:68px;font-size:clamp(27px,2.1vw,36px)}
+html[data-qaddha-display="tv"] .global-hub-launch{transform:scale(1.08);transform-origin:bottom left}
+
+html[data-qaddha-display="mobile"] .party-app main{max-width:760px;margin-inline:auto}
+html[data-qaddha-display="mobile"] .party-app .topbar{max-width:720px;margin-inline:auto}
+html[data-qaddha-display="mobile"] .lobby-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+html[data-qaddha-display="mobile"] .question-board{grid-template-columns:repeat(2,minmax(0,1fr))}
