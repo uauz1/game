@@ -15,6 +15,7 @@ import {
   markOnlineRoomStatus,
   openOnlineRoomChannel,
   saveOnlineGameState,
+  recordOnlineDuelResult,
   type OnlineRoomSnapshot,
 } from '../../utils/onlinePlay';
 
@@ -168,7 +169,7 @@ export default function OnlineLobby({ onBack, onRequireAuth, initialCode = '' }:
   };
   const buzz=()=>{if(!duel||duel.buzzUserId||duel.reveal||!me)return;void sendDuel({kind:'buzz',userId,displayName:me.display_name,round:duel.round,at:Date.now()});};
   const submit=(event:FormEvent)=>{event.preventDefault();if(!duel||duel.buzzUserId!==userId||!answer.trim())return;const value=answer.trim();setAnswer('');void sendDuel({kind:'answer',userId,displayName:me?.display_name||'',round:duel.round,value,at:Date.now()});};
-  const nextRound=()=>{if(!duel||!snapshot||!isHost)return;const nextRound=duel.round+1;const finished=nextRound>=MAX_ROUNDS;void persist({...duel,round:nextRound,questionIndex:seedIndex(snapshot.room.id,nextRound),buzzUserId:null,reveal:false,feedback:finished?'انتهت المواجهة':'جولة جديدة',answer:'',finished});};
+  const nextRound=()=>{if(!duel||!snapshot||!isHost)return;const nextRound=duel.round+1;const finished=nextRound>=MAX_ROUNDS;const next={...duel,round:nextRound,questionIndex:seedIndex(snapshot.room.id,nextRound),buzzUserId:null,reveal:false,feedback:finished?'انتهت المواجهة':'جولة جديدة',answer:'',finished};void (async()=>{await persist(next);if(finished)await recordOnlineDuelResult(snapshot.room.id);})().catch(()=>setNotice('تم حفظ الجولة، لكن تعذر تحديث سجل الحساب الآن.'));};
 
   const shareUrl=useMemo(()=>{
     if(!snapshot)return'';
