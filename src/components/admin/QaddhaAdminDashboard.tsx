@@ -1,3 +1,4 @@
+import '../../admin.css';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   Activity, AlertTriangle, BadgeCheck, BarChart3, CircleDot, Gamepad2, Gauge, Globe2,
@@ -41,6 +42,7 @@ function timeAgo(value:string){
 }
 
 export default function QaddhaAdminDashboard(){
+  useEffect(()=>{document.documentElement.classList.add('admin-page');document.body.classList.add('admin-page');return()=>{document.documentElement.classList.remove('admin-page');document.body.classList.remove('admin-page');};},[]);
   const auth=useAuth();
   const [config,setConfig]=useState<QaddhaRemoteConfig>(DEFAULT_QADDHA_CONFIG);
   const [saved,setSaved]=useState<QaddhaRemoteConfig>(DEFAULT_QADDHA_CONFIG);
