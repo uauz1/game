@@ -92,6 +92,7 @@ export default function MultiplayerHostLayer(){
           if(active?.gameId===gameRef.current&&!buzzedRoundsRef.current.has(roundKey)){
             buzzedRoundsRef.current.add(roundKey);
             window.dispatchEvent(new CustomEvent('qaddha:multiplayer-buzz',{detail:{gameId:gameRef.current,team:incoming.team===1?1:0,playerId:incoming.playerId,playerName:incoming.playerName,roundKey}}));
+            void channel.send({type:'broadcast',event:'buzz-lock',payload:{roundKey,playerId:incoming.playerId,playerName:incoming.playerName,team:incoming.team===1?1:0}});
             void channel.send({type:'broadcast',event:'host-message',payload:{text:`${incoming.playerName} ضغط أول · ${incoming.team===1?'الفريق 2':'الفريق 1'}`}});
           }
         }
@@ -110,6 +111,7 @@ export default function MultiplayerHostLayer(){
           }else if(result.supported&&result.correct===false){
             if(activeChallenge?.gameId==='fast'){
               buzzedRoundsRef.current.delete(activeChallenge.roundKey);
+              void channel.send({type:'broadcast',event:'buzz-unlock',payload:{roundKey:activeChallenge.roundKey}});
               window.dispatchEvent(new CustomEvent('qaddha:multiplayer-wrong',{detail:{gameId:'fast',team:incoming.team===1?1:0,playerId:incoming.playerId,roundKey:activeChallenge.roundKey}}));
             }
             void channel.send({type:'broadcast',event:'host-message',payload:{text:'الإجابة وصلت، لكنها غير صحيحة'}});
@@ -142,7 +144,7 @@ export default function MultiplayerHostLayer(){
   if(!room)return null;
 
   const award=(input:MultiplayerInput,delta:number)=>sendScore(input.playerId,delta);
-  const resetRound=()=>{setInputs([]);setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();buzzedRoundsRef.current.clear();void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{at:Date.now()}});};
+  const resetRound=()=>{setInputs([]);setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();buzzedRoundsRef.current.clear();void channelRef.current?.send({type:'broadcast',event:'buzz-unlock',payload:{}});void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{at:Date.now()}});};
   const copy=async()=>{try{await navigator.clipboard.writeText(joinUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1500);}catch{/* url visible through code */}};
   const close=()=>{clearActiveHostRoom();setRoom(null);setInputs([]);setMembers([]);setScores({});scoresRef.current={};setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();buzzedRoundsRef.current.clear();};
 
