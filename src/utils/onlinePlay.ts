@@ -202,3 +202,24 @@ export async function recordOnlineDuelResult(roomId: string) {
   if (error) throw error;
   return data === true;
 }
+
+
+export type QaddhaAccountSummary = {
+  profile: { user_id:string; display_name:string; avatar_url:string|null; xp:number; games_played:number; wins:number; last_seen:string };
+  stats: { game_id:string; played:number; wins:number; losses:number; draws:number; score:number }[];
+  friends: number;
+};
+
+export async function touchOnlinePresence() {
+  const client = await getAuthClient();
+  const { data, error } = await client.rpc('qaddha_touch_presence');
+  if (error) throw error;
+  return data as string;
+}
+
+export async function getQaddhaAccountSummary(): Promise<QaddhaAccountSummary> {
+  const client = await getAuthClient();
+  const { data, error } = await client.rpc('qaddha_account_summary');
+  if (error) throw error;
+  return data as QaddhaAccountSummary;
+}
