@@ -110,7 +110,7 @@ export function Profile() {
         </div>
         {editingName?<div className="flex gap-2 justify-center items-center"><input className="bg-black/30 border border-white/15 rounded-xl px-3 py-2 text-center max-w-52" value={displayName} maxLength={24} onChange={e=>setDisplayName(e.target.value)}/><Button variant="primary" disabled={savingName} onClick={()=>void saveName()}>{savingName?'حفظ…':'حفظ'}</Button></div>:<div className="flex gap-2 justify-center items-center"><h1 className="text-2xl font-cairo font-black">{cloud?.profile.display_name || auth.session?.user.user_metadata?.display_name || 'لاعب تحدّي'}</h1>{cloud&&<button aria-label="تعديل الاسم" className="text-off-white/50 hover:text-white" onClick={()=>setEditingName(true)}><Pencil className="w-4 h-4"/></button>}</div>}
         <p className="text-sm text-off-white/60 mt-1">{auth.session?.user.email || (cloud ? 'حساب قدّها محفوظ' : `${stats.totalGames} لعبة مكتملة`)}</p>
-        {cloud && <div className="mt-4 grid grid-cols-3 gap-2 text-center"><div><b>{cloud.profile.xp}</b><small className="block text-off-white/50">XP</small></div><div><b>{cloud.profile.games_played}</b><small className="block text-off-white/50">أونلاين</small></div><div><b>{cloud.profile.wins}</b><small className="block text-off-white/50">فوز</small></div></div>
+        {cloud && <div className="mt-4 grid grid-cols-3 gap-2 text-center"><div><b>{cloud.profile.xp}</b><small className="block text-off-white/50">XP</small></div><div><b>{cloud.profile.games_played}</b><small className="block text-off-white/50">أونلاين</small></div><div><b>{cloud.profile.wins}</b><small className="block text-off-white/50">فوز</small></div></div>}
       </Card>
 
       {/* Stats */}
