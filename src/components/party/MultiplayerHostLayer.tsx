@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, Minus, Plus, RotateCcw, Users, Wifi, X, Zap } from 'lucide-react';
+import QRCode from 'qrcode';
 import { createPublicLobbyPresenceChannel, removeRealtimeChannel } from '../../utils/qaddhaRealtime';
 import { buildMultiplayerJoinUrl, clearActiveHostRoom, judgeMultiplayerChallenge, readActiveHostRoom, readMultiplayerChallenge, readMultiplayerRoomScores, saveMultiplayerRoomScores, type MultiplayerChallenge, type MultiplayerInput } from '../../utils/multiplayerSession';
 import { autoJudgeMultiplayerAnswer, type AutoJudgeResult } from '../../utils/multiplayerAutoJudge';
 import { loadSharedTeams } from '../../utils/sharedTeams';
 
-type Member={id:string;name:string;team:0|1;joinedAt:number};
+type Member={id:string;name:string;team:0|1;ready:boolean;joinedAt:number};
 type ScoreMap=Record<string,number>;
 type JudgeMap=Record<string,AutoJudgeResult>;
 
@@ -20,6 +21,7 @@ export default function MultiplayerHostLayer(){
   const challengeRef=useRef<MultiplayerChallenge|null>(readMultiplayerChallenge());
   const [collapsed,setCollapsed]=useState(true);
   const [copied,setCopied]=useState(false);
+  const [qrDataUrl,setQrDataUrl]=useState('');
   const channelRef=useRef<ReturnType<typeof createPublicLobbyPresenceChannel>|null>(null);
   const hostPresenceId=useRef(`host-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`);
   const gameRef=useRef('');
@@ -27,6 +29,9 @@ export default function MultiplayerHostLayer(){
   const roundScoredRef=useRef(new Set<string>());
   const buzzedRoundsRef=useRef(new Set<string>());
   const joinUrl=useMemo(()=>room?buildMultiplayerJoinUrl(room.code):'',[room]);
+
+  useEffect(()=>{let active=true;if(!joinUrl){setQrDataUrl('');return;}void QRCode.toDataURL(joinUrl,{width:280,margin:1}).then(url=>{if(active)setQrDataUrl(url);}).catch(()=>{if(active)setQrDataUrl('');});return()=>{active=false;};},[joinUrl]);
+  useEffect(()=>{if(room)setCollapsed(false);},[room?.code]);
 
   useEffect(()=>{
     const refresh=()=>setRoom(readActiveHostRoom());
@@ -62,9 +67,10 @@ export default function MultiplayerHostLayer(){
     const channel=createPublicLobbyPresenceChannel(code,hostPresenceId.current);
     channelRef.current=channel;
     const syncPresence=()=>{
-      const state=channel.presenceState<{id:string;name:string;team?:number;joinedAt?:number;role?:string}>();
-      const players=Object.values(state).flat().filter(p=>p?.role==='player'&&typeof p.id==='string'&&typeof p.name==='string').map(p=>({id:p.id,name:p.name.slice(0,18),team:p.team===1?1:0,joinedAt:typeof p.joinedAt==='number'?p.joinedAt:Date.now()} as Member)).sort((a,b)=>a.joinedAt-b.joinedAt).slice(0,32);
+      const state=channel.presenceState<{id:string;name:string;team?:number;ready?:boolean;joinedAt?:number;role?:string}>();
+      const players=Object.values(state).flat().filter(p=>p?.role==='player'&&typeof p.id==='string'&&typeof p.name==='string').map(p=>({id:p.id,name:p.name.slice(0,18),team:p.team===1?1:0,ready:p.ready===true,joinedAt:typeof p.joinedAt==='number'?p.joinedAt:Date.now()} as Member)).sort((a,b)=>a.joinedAt-b.joinedAt).slice(0,32);
       setMembers(players);
+      window.dispatchEvent(new CustomEvent('qaddha:room-readiness',{detail:{code,players}}));
     };
     const syncNewPlayers=(newPresences: unknown[])=>{
       for(const raw of newPresences){
@@ -144,15 +150,19 @@ export default function MultiplayerHostLayer(){
   if(!room)return null;
 
   const award=(input:MultiplayerInput,delta:number)=>sendScore(input.playerId,delta);
+  const balanceTeams=()=>{const assignments=Object.fromEntries(members.map((member,index)=>[member.id,index%2]));void channelRef.current?.send({type:'broadcast',event:'team-assign',payload:{assignments}});void channelRef.current?.send({type:'broadcast',event:'host-message',payload:{text:'تم توزيع الفرق بالتساوي · اضغط جاهز مرة ثانية'}});};
   const resetRound=()=>{setInputs([]);setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();buzzedRoundsRef.current.clear();void channelRef.current?.send({type:'broadcast',event:'buzz-unlock',payload:{}});void channelRef.current?.send({type:'broadcast',event:'round-reset',payload:{at:Date.now()}});};
   const copy=async()=>{try{await navigator.clipboard.writeText(joinUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1500);}catch{/* url visible through code */}};
   const close=()=>{clearActiveHostRoom();setRoom(null);setInputs([]);setMembers([]);setScores({});scoresRef.current={};setJudged({});autoScoredRef.current.clear();roundScoredRef.current.clear();buzzedRoundsRef.current.clear();};
 
+  const readyCount=members.filter(member=>member.ready).length;
+  const allReady=members.length>0&&readyCount===members.length;
   return <aside className={`mp-host ${collapsed?'collapsed':''}`} dir="rtl">
-    <div className="mp-host-head"><button className="mp-host-toggle" onClick={()=>setCollapsed(value=>!value)}><span className={connected?'live':''}><Wifi/></span><b>{room.code}</b><small>{members.filter(member=>member.team===0).length} / {members.filter(member=>member.team===1).length} فرق</small></button><button onClick={close} aria-label="إغلاق الغرفة"><X/></button></div>
+    <div className="mp-host-head"><button className="mp-host-toggle" onClick={()=>setCollapsed(value=>!value)}><span className={connected?'live':''}><Wifi/></span><b>{room.code}</b><small>{readyCount}/{members.length} جاهز · {members.filter(member=>member.team===0).length}/{members.filter(member=>member.team===1).length} فرق</small></button><button onClick={close} aria-label="إغلاق الغرفة"><X/></button></div>
     {!collapsed&&<div className="mp-host-body">
-      <div className="mp-host-share"><div><small>دخول اللاعبين</small><strong>{room.code}</strong></div><button onClick={copy}>{copied?<Check/>:<Copy/>}{copied?'تم':'نسخ الرابط'}</button></div>
-      <div className="mp-host-actions"><button onClick={resetRound}><RotateCcw/> جولة جديدة</button><span><Users/> {members.length} متصل</span></div>
+      <div className="mp-host-share"><div><small>دخول اللاعبين</small><strong>{room.code}</strong><span className={allReady?'mp-ready-state all-ready':'mp-ready-state'}>{members.length?`${readyCount} من ${members.length} جاهزين`:'بانتظار اللاعبين'}</span></div><button onClick={copy}>{copied?<Check/>:<Copy/>}{copied?'تم':'نسخ الرابط'}</button>{qrDataUrl&&<div className="mp-host-qr"><img src={qrDataUrl} alt="QR لدخول غرفة قدّها"/><small>امسح للدخول مباشرة</small></div>}</div>
+      <div className="mp-host-actions"><button onClick={resetRound}><RotateCcw/> إعادة الجولة</button><button disabled={members.length<2} onClick={balanceTeams}><Users/> موازنة الفرق</button><span><Users/> {members.length} متصل</span></div>
+      {members.length>0&&<div className="mp-member-grid">{members.map(member=><div key={member.id} className={member.ready?'ready':''}><span><i/>{member.name}</span><small>{member.team===1?'الفريق 2':'الفريق 1'}</small><b>{member.ready?'جاهز ✓':'مو جاهز'}</b></div>)}</div>}
       <div className="mp-input-feed">{inputs.length?inputs.map((input,index)=>{const verdict=judged[input.id];return <article key={input.id} className={`${input.kind==='buzz'?'is-buzz':''} ${verdict?.correct===true?'is-auto-correct':''} ${verdict?.correct===false?'is-auto-wrong':''}`}><span className="mp-place">{index+1}</span><div><b>{input.playerName} · فريق {input.team===1?'2':'1'}</b><small>{input.kind==='buzz'?<><Zap/> ضغط أول</>:input.value||'إجابة'}</small>{verdict?.supported&&verdict.correct!==null?<em>{verdict.correct?`✓ صحيحة تلقائيًا +${verdict.points}`:`✕ غير صحيحة${verdict.canonical?` · الحل: ${verdict.canonical}`:''}`}</em>:null}</div><strong>{scores[input.playerId]||0}</strong><div className="mp-score-buttons"><button onClick={()=>award(input,100)}><Plus/></button><button onClick={()=>award(input,-100)}><Minus/></button></div></article>}):<div className="mp-feed-empty"><Zap/><p>بانتظار ضغطات وإجابات اللاعبين…</p></div>}</div>
     </div>}
   </aside>;
