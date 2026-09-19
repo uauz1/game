@@ -2,3 +2,31 @@
 .mp-team-picker{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}.mp-team-picker button{min-height:44px;border:1px solid #302a1c;border-radius:13px;background:#101010;color:#9b9b9b;font-weight:900}.mp-team-picker button.active{border-color:#d5a93e;background:linear-gradient(180deg,#251d0c,#151108);color:#f3cc68;box-shadow:inset 0 0 0 1px #f2cd6822}.mp-team-picker button:first-child.active{outline:1px solid #45b6ff55}.mp-team-picker button:last-child.active{outline:1px solid #ff70b555}
 .mp-sequence-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:16px 0 4px}.mp-sequence-preview span{min-height:42px;border-radius:12px;border:1px dashed #5a4821;background:#0d0c09;color:#e8c35d;display:grid;place-items:center;padding:7px;font-weight:900;text-align:center}.mp-sequence-actions{display:grid;grid-template-columns:1fr 1.35fr;gap:8px;margin-top:10px}.mp-sequence-actions button{min-height:48px;border-radius:13px;border:1px solid #3a311f;background:#13110c;color:#c9b477;font-weight:900}.mp-sequence-actions button.primary{background:linear-gradient(145deg,#ecc45b,#a46e17);color:#090909;border-color:#d4aa42}.mp-sequence-actions button:disabled{opacity:.4}@media(max-width:420px){.mp-sequence-preview{grid-template-columns:1fr}.mp-sequence-actions{grid-template-columns:1fr}}
 .mp-retry{width:100%;min-height:48px;margin-top:14px;border:1px solid #6d5520;border-radius:14px;background:#1a1408;color:#efc55e;font-weight:900;display:flex;align-items:center;justify-content:center;gap:8px}
+
+
+/* Recovered Work polish: room QR, readiness and team balancing */
+.mp-host-share{grid-template-columns:minmax(0,1fr) auto!important;align-items:center}
+.mp-host-share>div:first-child{display:grid;gap:3px}
+.mp-ready-state{font-size:10px;color:#8f8f8f;font-weight:800}
+.mp-ready-state.all-ready{color:#82dba7}
+.mp-host-qr{grid-column:1/-1;display:grid;place-items:center;gap:7px;padding:12px;margin-top:4px;border:1px solid #ffffff12;border-radius:16px;background:#080808}
+.mp-host-qr img{display:block;width:156px;height:156px;padding:7px;border-radius:14px;background:#fff;box-shadow:0 12px 32px #0007}
+.mp-host-qr small{color:#8f8f8f;font-size:10px}
+.mp-host-actions{flex-wrap:wrap}
+.mp-host-actions button:disabled{opacity:.42;cursor:not-allowed}
+.mp-member-grid{display:grid;gap:7px;margin:11px 0 14px}
+.mp-member-grid>div{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;padding:9px 10px;border:1px solid #ffffff10;border-radius:12px;background:#0b0b0b}
+.mp-member-grid>div.ready{border-color:#69c98d44;background:#69c98d0b}
+.mp-member-grid span{display:flex;align-items:center;gap:7px;min-width:0;font-size:12px;font-weight:850}
+.mp-member-grid i{width:7px;height:7px;border-radius:50%;background:#777}
+.mp-member-grid .ready i,.mp-member-grid>div.ready i{background:#69c98d;box-shadow:0 0 10px #69c98d}
+.mp-member-grid small{color:#a98d4a;font-size:9px}
+.mp-member-grid b{color:#777;font-size:9px}
+.mp-member-grid>div.ready b{color:#83d9a7}
+.mp-ready-toggle{width:100%;min-height:62px;border:1px solid #393018;border-radius:17px;background:linear-gradient(180deg,#17130b,#0d0c09);color:#e7c365;display:grid;grid-template-columns:auto 1fr;grid-template-areas:'icon title' 'icon sub';align-items:center;justify-items:start;gap:2px 10px;padding:11px 14px;margin:10px 0;cursor:pointer}
+.mp-ready-toggle>svg{grid-area:icon;width:25px;height:25px}
+.mp-ready-toggle>b{grid-area:title;font-size:14px}
+.mp-ready-toggle>span{grid-area:sub;color:#8f8a7d;font-size:10px}
+.mp-ready-toggle.ready{border-color:#4f9b6b;background:linear-gradient(180deg,#102117,#0a120d);color:#8fe0af;box-shadow:0 0 24px #69c98d12}
+.mp-ready-toggle:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:560px){.mp-host-qr img{width:138px;height:138px}.mp-member-grid>div{grid-template-columns:minmax(0,1fr) auto}.mp-member-grid b{grid-column:1/-1}.mp-host-share{grid-template-columns:1fr auto!important}}

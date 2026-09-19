@@ -62,13 +62,13 @@ const games = [
   {id:'order',title:'رتّبها',desc:'أربعة عناصر مبعثرة. رتبوها صح قبل ما يضيع عليكم النقطة.',icon:Sparkles,tag:'ترتيب + معرفة',cover:asset('order-cover-v2.webp'),ready:true},
   {id:'memory',title:'ذاكرة البرق',desc:'ثواني للحفظ، وبعدها رجّعوا التسلسل بنفس الترتيب.',icon:Brain,tag:'ذاكرة + تركيز',cover:asset('memory-cover-v2.webp'),ready:true},
   {id:'missing',title:'وش الناقص؟',desc:'ركزوا في العناصر… نخفي واحد ومهمتكم تعرفونه بسرعة.',icon:Search,tag:'ملاحظة + ذاكرة',cover:asset('missing-cover-v2.webp'),ready:true},
-  {id:'acting',title:'مثّلها',desc:'تمثيل صامت، وقت يركض، وفريق يحاول يلقطها.',icon:Gamepad2,tag:'تمثيل + فرق',cover:asset('acting-cover-v2.webp'),ready:true},
-  {id:'secret',title:'الكلمة السرّية',desc:'الكل يعرف المكان إلا المتخفي… اكشفوه قبل ما يندمج.',icon:Users,tag:'خداع + نقاش',cover:asset('secret-cover-v2.webp'),ready:true},
+  {id:'acting',title:'مثّلها',desc:'تمثيل صامت، العبارة تظهر للممثل على جواله فقط، وفريقه يحاول يلقطها قبل انتهاء الوقت.',icon:Gamepad2,tag:'تمثيل + فرق',cover:asset('acting-cover-v2.webp'),ready:true},
+  {id:'secret',title:'الكلمة السرّية',desc:'كل لاعب يعرف المكان وتلميحه الخاص إلا المتخفي… ناقشوا وصوّتوا واكشفوه قبل ما يندمج.',icon:Users,tag:'خداع + نقاش',cover:asset('secret-cover-v2.webp'),ready:true},
   {id:'pressure',title:'تحت الضغط',desc:'عدد محدد من الإجابات ووقت يركض. هل تقدرون تكملون قبل الصافرة؟',icon:Flame,tag:'سرعة + معرفة',cover:asset('pressure-cover.svg'),ready:true,new:true,players:'4+',duration:'10–15 د'},
   {id:'intruder',title:'الدخيل',desc:'أربع اختيارات بينها عنصر واحد ما ينتمي للباقي. اكتشفوه وفسّروا السبب.',icon:ShieldQuestion,tag:'ذكاء + استنتاج',cover:asset('intruder-cover.svg'),ready:true,new:true,players:'2+',duration:'8–12 د'},
 ];
 const gameGroups: Record<string,string> = {teams:'جماعية',letters:'كلمات',who:'تخمين',photo:'تحديات',words:'كلمات',fast:'سريعة',character:'تخمين',riddles:'تحديات',family:'جماعية',connection:'تخمين',auction:'جماعية',order:'تحديات',memory:'سريعة',missing:'سريعة',acting:'جماعية',secret:'جماعية',pressure:'سريعة',intruder:'تحديات'};
-const MULTIPLAYER_READY = new Set(['teams','letters','photo','fast','character','riddles','connection','auction','order','memory','missing','intruder']);
+const MULTIPLAYER_READY = new Set(['teams','letters','photo','fast','character','riddles','connection','auction','order','memory','missing','acting','secret','intruder']);
 const PLAYER_KEY = 'qaddha.player.v1';
 
 function readPlayerData(): { favorites: string[]; recent: PlayerActivity[] } {

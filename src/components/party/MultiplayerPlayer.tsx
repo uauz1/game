@@ -27,9 +27,13 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
   const [requiredSelections,setRequiredSelections] = useState(0);
   const [sequence,setSequence] = useState<string[]>([]);
   const [team,setTeam] = useState<MultiplayerTeam>(()=>{try{return localStorage.getItem('qaddha.multiplayer-team.v1')==='1'?1:0}catch{return 0}});
+  const [ready,setReady] = useState(false);
   const [teamNames,setTeamNames] = useState<[string,string]>(['الفريق 1','الفريق 2']);
   const channelRef = useRef<ReturnType<typeof createPublicLobbyPresenceChannel> | null>(null);
   const playerId = useRef(readMultiplayerPlayerId());
+  const joinedAtRef=useRef(Date.now());
+  const readyRef=useRef(ready);readyRef.current=ready;
+  const teamRef=useRef(team);teamRef.current=team;
   const hostMissingTimer=useRef<number|undefined>(undefined);
 
   const disconnect = async () => {
@@ -60,6 +64,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
         .on('broadcast',{event:'buzz-lock'},({payload})=>{const incoming=payload as {playerId?:string;playerName?:string}|null;setBuzzLocked(true);setBuzzed(incoming?.playerId===playerId.current);setBuzzWinner(incoming?.playerName||'');})
         .on('broadcast',{event:'buzz-unlock'},()=>{setBuzzLocked(false);setBuzzed(false);setBuzzWinner('');})
         .on('broadcast',{event:'team-info'},({payload})=>{const incoming=payload as {teams?:unknown}|null;if(Array.isArray(incoming?.teams)&&incoming.teams.length>=2){const names=incoming.teams.filter((value):value is string=>typeof value==='string').slice(0,2);if(names.length===2)setTeamNames([names[0],names[1]]);}})
+        .on('broadcast',{event:'team-assign'},({payload})=>{const incoming=payload as {assignments?:Record<string,unknown>}|null;const value=incoming?.assignments?.[playerId.current];if(value===0||value===1){const next=value as MultiplayerTeam;teamRef.current=next;readyRef.current=false;setTeam(next);setReady(false);try{localStorage.setItem('qaddha.multiplayer-team.v1',String(next));}catch{/* optional */}void channel.track({id:playerId.current,name:clean,team:next,ready:false,joinedAt:joinedAtRef.current,role:'player'});setNotice('تم توزيع الفرق · اضغط جاهز');}})
         .on('broadcast',{event:'score'},({payload})=>{
           const incoming = payload as { playerId?: string; score?: number; delta?: number } | null;
           if (incoming?.playerId===playerId.current && typeof incoming.score==='number') {
@@ -75,7 +80,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
         .subscribe(next=>{
           if(next==='SUBSCRIBED'){
             setStatus('connecting');
-            const presence={id:playerId.current,name:clean,team,joinedAt:Date.now(),role:'player'} as const;void channel.track(presence);
+            const presence={id:playerId.current,name:clean,team:teamRef.current,ready:readyRef.current,joinedAt:joinedAtRef.current,role:'player'} as const;void channel.track(presence);
           } else if(next==='CHANNEL_ERROR'||next==='TIMED_OUT'){
             setStatus('error'); setNotice('تعذر الاتصال بالغرفة.');
           }
@@ -95,7 +100,7 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
   };
   const sendInput = (kind: MultiplayerInput['kind'], value?: string) => {
     const channel=channelRef.current;
-    if(!channel||status!=='connected')return;
+    if(!channel||status!=='connected'||!readyRef.current)return;
     const payload: MultiplayerInput={id:`${Date.now()}-${Math.random().toString(36).slice(2,7)}`,playerId:playerId.current,playerName:name,team,kind,value:value?.trim(),sentAt:Date.now()};
     void channel.send({type:'broadcast',event:'player-input',payload});
     if(kind==='buzz'){setBuzzed(true);setNotice('تم تسجيل ضغطتك ⚡');}
@@ -103,18 +108,20 @@ export default function MultiplayerPlayer({ code }: { code: string }) {
     window.setTimeout(()=>setNotice(''),1500);
   };
 
-  const changeTeam=(next:MultiplayerTeam)=>{setTeam(next);try{localStorage.setItem('qaddha.multiplayer-team.v1',String(next));}catch{/* optional */}const channel=channelRef.current;if(channel){void channel.track({id:playerId.current,name,team:next,joinedAt:Date.now(),role:'player'});}setBuzzed(false);};
+  const changeTeam=(next:MultiplayerTeam)=>{teamRef.current=next;readyRef.current=false;setTeam(next);setReady(false);try{localStorage.setItem('qaddha.multiplayer-team.v1',String(next));}catch{/* optional */}const channel=channelRef.current;if(channel){void channel.track({id:playerId.current,name,team:next,ready:false,joinedAt:joinedAtRef.current,role:'player'});}setBuzzed(false);};
+  const toggleReady=()=>{const next=!readyRef.current;readyRef.current=next;setReady(next);const channel=channelRef.current;if(channel){void channel.track({id:playerId.current,name,team:teamRef.current,ready:next,joinedAt:joinedAtRef.current,role:'player'});}setNotice(next?'جاهز! انتظر المضيف':'تم إلغاء الجاهزية');window.setTimeout(()=>setNotice(''),1400);};
 
   if(!name) return <main className="mp-player" dir="rtl"><section className="mp-join-card"><div className="mp-logo"><Gamepad2/></div><span>قدّها أونلاين</span><h1>ادخل الغرفة</h1><p>الكود <b>{roomCode}</b></p><form onSubmit={join}><input autoFocus maxLength={18} placeholder="اسمك" value={draftName} onChange={e=>setDraftName(e.target.value)}/><button className="primary" type="submit"><Sparkles/> دخول</button></form></section></main>;
 
   return <main className="mp-player" dir="rtl"><section className="mp-controller">
     <header><div><span>{status==='connected'?<Wifi/>:<WifiOff/>}{status==='connected'?'متصل بالغرفة':status==='error'?'الاتصال متوقف':'جاري الاتصال'}</span><strong>{roomCode}</strong></div><div className="mp-score"><small>نقاطك</small><b>{score.score}</b></div></header>
     <div className="mp-team-picker" role="group" aria-label="اختيار الفريق"><button className={team===0?'active':''} aria-pressed={team===0} onClick={()=>changeTeam(0)}>{teamNames[0]}</button><button className={team===1?'active':''} aria-pressed={team===1} onClick={()=>changeTeam(1)}>{teamNames[1]}</button></div>
-    <div className="mp-game-now"><small>اللعبة الحالية</small><h1>{gameId?GAME_NAMES[gameId]||'اللعبة الحالية':'بانتظار المضيف…'}</h1><p>{gameId?'اضغط بسرعة أو أرسل إجابتك من هنا.':'خلك جاهز، المضيف بيبدأ اللعبة.'}</p></div>
-    <button className={`mp-buzzer ${buzzed?'buzzed':''}`} disabled={status!=='connected'||buzzLocked||gameId!=='fast'} onClick={()=>sendInput('buzz')}><Zap/><b>{buzzed?'تم!':'أنا أول!'}</b><span>{gameId!=='fast'?'يتفعل في مين أسرع؟':buzzLocked?(buzzed?'أنت ضغطت أول':`${buzzWinner||'لاعب'} ضغط أول`):'زر السرعة'}</span></button>
-    {choices.length>0&&choiceMode==='single'&&<div className="mp-choice-grid">{choices.map((choice,index)=><button key={`${choice}-${index}`} disabled={status!=='connected'} onClick={()=>sendInput('answer',String(index+1))}><span>{index+1}</span><b>{choice}</b></button>)}</div>}
+    <button className={`mp-ready-toggle ${ready?'ready':''}`} disabled={status!=='connected'||!ready} onClick={toggleReady}><CheckCircle2/><b>{ready?'جاهز ✓':'أنا جاهز'}</b><span>{ready?'المضيف شايف جاهزيتك':'اختر فريقك ثم أكد جاهزيتك'}</span></button>
+    <div className="mp-game-now"><small>اللعبة الحالية</small><h1>{gameId?GAME_NAMES[gameId]||'اللعبة الحالية':'بانتظار المضيف…'}</h1><p>{!ready?'اضغط «أنا جاهز» قبل اللعب.':gameId?'اضغط بسرعة أو أرسل إجابتك من هنا.':'أنت جاهز، المضيف بيبدأ اللعبة.'}</p></div>
+    <button className={`mp-buzzer ${buzzed?'buzzed':''}`} disabled={status!=='connected'||!ready||buzzLocked||gameId!=='fast'} onClick={()=>sendInput('buzz')}><Zap/><b>{buzzed?'تم!':'أنا أول!'}</b><span>{gameId!=='fast'?'يتفعل في مين أسرع؟':buzzLocked?(buzzed?'أنت ضغطت أول':`${buzzWinner||'لاعب'} ضغط أول`):'زر السرعة'}</span></button>
+    {choices.length>0&&choiceMode==='single'&&<div className="mp-choice-grid">{choices.map((choice,index)=><button key={`${choice}-${index}`} disabled={status!=='connected'||!ready} onClick={()=>sendInput('answer',String(index+1))}><span>{index+1}</span><b>{choice}</b></button>)}</div>}
     {choices.length>0&&(choiceMode==='sequence'||choiceMode==='multi')&&<><div className="mp-sequence-preview">{Array.from({length:requiredSelections||choices.length}).map((_,index)=><span key={index}>{sequence[index]||'؟'}</span>)}</div><div className="mp-choice-grid">{choices.map((choice,index)=><button key={`${choice}-${index}`} disabled={status!=='connected'||sequence.includes(choice)||sequence.length>=(requiredSelections||choices.length)} onClick={()=>setSequence(current=>[...current,choice])}><span>{index+1}</span><b>{choice}</b></button>)}</div><div className="mp-sequence-actions"><button type="button" onClick={()=>setSequence([])} disabled={!sequence.length}>مسح الترتيب</button><button type="button" className="primary" disabled={status!=='connected'||sequence.length!==(requiredSelections||choices.length)} onClick={()=>{sendInput('answer',sequence.join('\u001f'));setSequence([]);}}>إرسال الترتيب</button></div></>}
-    {choiceMode==='single'&&<form className="mp-answer" onSubmit={event=>{event.preventDefault(); if(answer.trim())sendInput('answer',answer);}}><label>إجابتك<input maxLength={120} value={answer} onChange={e=>setAnswer(e.target.value)} placeholder={choices.length?'أو اكتب الإجابة هنا…':'اكتب الإجابة هنا…'}/></label><button disabled={!answer.trim()||status!=='connected'}><Send/> إرسال</button></form>}
+    {choiceMode==='single'&&<form className="mp-answer" onSubmit={event=>{event.preventDefault(); if(answer.trim())sendInput('answer',answer);}}><label>إجابتك<input maxLength={120} value={answer} onChange={e=>setAnswer(e.target.value)} placeholder={choices.length?'أو اكتب الإجابة هنا…':'اكتب الإجابة هنا…'}/></label><button disabled={!answer.trim()||status!=='connected'||!ready}><Send/> إرسال</button></form>}
     {status==='error'&&<button className="mp-retry" onClick={()=>void connect(name)}><Wifi/> إعادة الاتصال</button>}
     {notice&&<div className="mp-notice"><CheckCircle2/>{notice}</div>}
     <footer><span>{name}</span><small>الغرفة {roomCode}</small></footer>
