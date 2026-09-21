@@ -163,7 +163,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     if (!room || (room.phase !== 'countdown' && room.phase !== 'playing')) return;
     replayStoredActions(room);
   }, [room?.gameActions?.length, room?.gameRevision, room?.gameId, room?.phase, replayStoredActions]);
-  useEffect(() => { if (room?.phase !== 'countdown' && room?.phase !== 'playing') return; const timer = window.setInterval(() => setNow(Date.now()), 250); return () => window.clearInterval(timer); }, [room?.phase]);
+  useEffect(() => { if (room?.phase !== 'countdown') return; const timer = window.setInterval(() => setNow(Date.now()), 250); return () => window.clearInterval(timer); }, [room?.phase]);
   useEffect(() => { if (roomUrl) QRCode.toDataURL(roomUrl, { width: 300, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#090909', light: '#fff8df' } }).then(setQr).catch(() => setQr('')); }, [roomUrl]);
 
   useEffect(() => {
