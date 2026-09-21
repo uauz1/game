@@ -37,13 +37,21 @@ function requiredWins(bestOf: number) {
 const emptyStats = (): MatchStats => ({ asked: 0, correct: [0, 0], misses: 0 });
 
 export default function LettersGame({ onHome }: { onHome: () => void }) {
+  const onlineParams = useMemo(() => new URLSearchParams(window.location.search), []);
+  const onlineEmbed = onlineParams.get('onlineEmbed') === '1';
+  const onlineTeamNames: [string, string] = [
+    onlineParams.get('onlineTeam0')?.trim() || '',
+    onlineParams.get('onlineTeam1')?.trim() || '',
+  ];
+  const onlineSeconds = Number(onlineParams.get('onlineTimer') || '0');
+  const onlineDifficulty = onlineParams.get('onlineDifficulty') as HuroofDifficulty | null;
   const [initialPreferences] = useState(loadHuroofPreferences);
   const [teams, setTeams] = useState<Team[]>([
-    { name: initialPreferences.teamNames[0], color: initialPreferences.teamColors[0], rounds: 0 },
-    { name: initialPreferences.teamNames[1], color: initialPreferences.teamColors[1], rounds: 0 },
+    { name: onlineEmbed && onlineTeamNames[0] ? onlineTeamNames[0] : initialPreferences.teamNames[0], color: initialPreferences.teamColors[0], rounds: 0 },
+    { name: onlineEmbed && onlineTeamNames[1] ? onlineTeamNames[1] : initialPreferences.teamNames[1], color: initialPreferences.teamColors[1], rounds: 0 },
   ]);
-  const [seconds, setSeconds] = useState(initialPreferences.seconds);
-  const [difficulty, setDifficulty] = useState<HuroofDifficulty>(initialPreferences.difficulty);
+  const [seconds, setSeconds] = useState(onlineEmbed && [20,30,45,60].includes(onlineSeconds) ? onlineSeconds : initialPreferences.seconds);
+  const [difficulty, setDifficulty] = useState<HuroofDifficulty>(onlineEmbed && ['easy','medium','hard'].includes(onlineDifficulty || '') ? onlineDifficulty as HuroofDifficulty : initialPreferences.difficulty);
   const [bestOf, setBestOf] = useState(initialPreferences.bestOf);
   const [phase, setPhase] = useState<Phase>('setup');
   const [round, setRound] = useState(1);
@@ -54,7 +62,7 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
   const [revealed, setRevealed] = useState(false);
   const [noAnswer, setNoAnswer] = useState(false);
   const [attemptKey, setAttemptKey] = useState(0);
-  const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>(loadUsedHuroofQuestions);
+  const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>(() => onlineEmbed ? [] : loadUsedHuroofQuestions());
   const [winningPath, setWinningPath] = useState<number[]>([]);
   const [roundWinner, setRoundWinner] = useState<0 | 1 | null>(null);
   const [lastDecision, setLastDecision] = useState<LastDecision | null>(null);
@@ -72,6 +80,7 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
   const teamStyle = (team: Team) => ({ '--team': team.color } as CSSProperties);
 
   useEffect(() => {
+    if (onlineEmbed) return;
     saveHuroofPreferences({
       teamNames: [teams[0].name, teams[1].name],
       teamColors: [teams[0].color, teams[1].color],
@@ -79,9 +88,9 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
       difficulty,
       bestOf,
     });
-  }, [bestOf, difficulty, seconds, teams]);
+  }, [bestOf, difficulty, onlineEmbed, seconds, teams]);
 
-  useEffect(() => saveUsedHuroofQuestions(usedQuestionIds), [usedQuestionIds]);
+  useEffect(() => { if (!onlineEmbed) saveUsedHuroofQuestions(usedQuestionIds); }, [onlineEmbed, usedQuestionIds]);
   useEffect(()=>{publishMultiplayerTeamNames([teams[0].name,teams[1].name]);},[teams]);
   useEffect(()=>{if(phase==='question'&&current&&!revealed&&!noAnswer){publishMultiplayerChallenge({gameId:'letters',roundKey:`${current.question.id}-${current.cell}`,answers:[current.question.answer],points:1});return()=>clearMultiplayerChallenge('letters');}clearMultiplayerChallenge('letters');},[current,noAnswer,phase,revealed]);
 
@@ -110,6 +119,10 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
     setStats(emptyStats());
     resetBoard(1, 0);
   };
+  useEffect(() => {
+    if (!onlineEmbed || phase !== 'setup' || !validNames) return;
+    startMatch();
+  }, [onlineEmbed, phase, validNames]);
 
   const restartMatch = () => {
     setTeams(currentTeams => currentTeams.map(team => ({ ...team, rounds: 0 })));
