@@ -17,7 +17,7 @@ const ONLINE_PLAYER_NAME = ONLINE_PARAMS.get('onlineName')?.trim() || '';
 const ONLINE_ROSTER = (() => {
   try {
     const parsed = JSON.parse(ONLINE_PARAMS.get('onlineRoster') || '[]');
-    return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === 'string' && value.trim()).slice(0, 12) : [];
+    return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === 'string' && Boolean(value.trim())).slice(0, 12) : [];
   } catch { return []; }
 })();
 const ONLINE_SEED = ONLINE_PARAMS.get('onlineSeed') || 'qaddha-online';
