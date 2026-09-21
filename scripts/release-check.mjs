@@ -80,12 +80,12 @@ if (exists(adminDashboardFile) && exists(adminConfigFile)) {
   for (const [ok, label] of adminChecks) ok ? pass(label) : fail(label);
 }
 
+const authClientFile = 'src/utils/authClient.ts';
+const authContextFile = 'src/contexts/AuthContext.tsx';
 const durableOnlineFile = 'src/components/party/OnlineRoom.tsx';
 const durableGuestMigration = 'supabase/migrations/20260922011500_guest_rooms_durable.sql';
 const hardenedGuestMigration = 'supabase/migrations/20260922013000_harden_guest_room_rpc.sql';
 const settingsFile = 'src/components/party/SiteSettings.tsx';
-const authContextFile = 'src/contexts/AuthContext.tsx';
-
 for (const file of [durableOnlineFile,durableGuestMigration,hardenedGuestMigration,settingsFile,authContextFile]) {
   if (!exists(file)) fail(`Current production feature missing: ${file}`);
 }
