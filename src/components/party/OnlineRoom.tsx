@@ -102,6 +102,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const [now, setNow] = useState(Date.now());
   const [hostToken, setHostToken] = useState(hostAccessToken);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const actionRateRef = useRef(new Map<string, { startedAt: number; count: number }>());
   const roomRef = useRef<Room | null>(room);
   roomRef.current = room;
   const me = useMemo(getPlayerId, []);
@@ -126,6 +127,17 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const rememberGameAction = useCallback((action: OnlineGameAction) => {
     update(r => r.gameId !== action.gameId ? r : ({ ...r, gameActions: [...(r.gameActions || []), action].slice(-120) }));
   }, [update]);
+  const allowGameAction = useCallback((playerId: string) => {
+    const now = Date.now();
+    const current = actionRateRef.current.get(playerId);
+    if (!current || now - current.startedAt > 5000) {
+      actionRateRef.current.set(playerId, { startedAt: now, count: 1 });
+      return true;
+    }
+    if (current.count >= 80) return false;
+    current.count += 1;
+    return true;
+  }, []);
   const replayStoredActions = useCallback((snapshot: Room | null) => {
     if (!snapshot?.gameActions?.length) return;
     const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
@@ -232,6 +244,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
         } else if (incoming.type === 'game-loaded') {
           update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, gameLoadedId: incoming.gameId, connected: true, seenAt: Date.now() } : p) }), false);
         } else if (incoming.type === 'game-action') {
+          if (!allowGameAction(incoming.playerId)) return;
           const action = normalizeGameAction(incoming.action, incoming.playerId, current.gameId);
           if (!action) return;
           const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
@@ -285,7 +298,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
         if (client) void client.removeChannel(channel);
       }
     };
-  }, [mode, room?.code, me, update]);
+  }, [mode, room?.code, me, update, rememberGameAction, allowGameAction]);
 
   useEffect(() => {
     if (mode !== 'guest' || !join.code || !join.name) return;
