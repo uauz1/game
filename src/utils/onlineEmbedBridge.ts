@@ -73,12 +73,13 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
   const emit = (kind: OnlineActionKind, element: Element, value?: string | boolean) => {
     if (replaying) return;
     const selector = selectorFor(element);
-    if (!selector) return;
+    if (!selector || selector.length > 500) return;
+    const safeValue = typeof value === 'string' ? value.slice(0, 300) : value;
     const action: OnlineGameAction = {
       id: `${sourceId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
       kind,
       selector,
-      value,
+      value: safeValue,
       sourceId,
       gameId,
       sentAt: Date.now(),
