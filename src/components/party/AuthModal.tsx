@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowRight, AtSign, KeyRound, LockKeyhole, ShieldCheck, UserRound, X } from 'lucide-react';
+import { ArrowRight, AtSign, Gamepad2, KeyRound, LockKeyhole, ShieldCheck, UserRound, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 type Mode = 'signin' | 'signup' | 'forgot' | 'recovery';
@@ -63,10 +63,20 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
         {mode === 'signin' && <button type="button" className="auth-text-button" onClick={() => { setMode('forgot'); setNotice(''); }}>نسيت كلمة المرور؟</button>}
         <button className="primary auth-submit" disabled={busy}>{busy ? 'لحظة…' : mode === 'signin' ? 'تسجيل الدخول' : mode === 'signup' ? 'إنشاء الحساب' : mode === 'forgot' ? 'إرسال رابط الاستعادة' : 'حفظ كلمة المرور'}</button>
       </form>
-      {(mode === 'signin' || mode === 'signup') && <><div className="auth-divider"><span>أو</span></div><button className="google-auth" disabled={busy} onClick={async () => { setBusy(true); const result = await auth.signInWithGoogle(); setNotice(result.message); if (!result.ok) setBusy(false); }}><b>G</b> المتابعة باستخدام Google</button></>}
+      {(mode === 'signin' || mode === 'signup') && <>
+        <div className="auth-divider"><span>أو</span></div>
+        <button className="google-auth" disabled={busy} onClick={async () => {
+          setBusy(true);
+          const result = await auth.signInWithGoogle();
+          setNotice(result.message);
+          if (!result.ok) setBusy(false);
+        }}><b>G</b> المتابعة باستخدام Google</button>
+        <button className="auth-guest-play" type="button" onClick={onClose}><Gamepad2/> أكمل اللعب كضيف</button>
+        <small className="auth-guest-hint">الحساب اختياري. الأونلاين والغرف يشتغلون بدون تسجيل دخول.</small>
+      </>}
       {(mode === 'forgot' || mode === 'recovery') && <button className="auth-back" onClick={() => { setMode('signin'); setNotice(''); }}><ArrowRight/> الرجوع لتسجيل الدخول</button>}
       {notice && <div className="auth-notice" role="status" aria-live="polite">{notice}</div>}
-      <small className="auth-privacy">بيانات الدخول تُرسل مباشرة إلى خدمة الحسابات المشفّرة ولا تُحفظ داخل صفحات قدّها.</small>
+      <small className="auth-privacy">بيانات الدخول تُرسل مباشرة إلى خدمة الحسابات ولا تُحفظ داخل صفحات قدّها.</small>
     </section>
   </div>;
 }
