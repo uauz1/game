@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Peer, { type DataConnection } from 'peerjs';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import QRCode from 'qrcode';
 import { ArrowRight, Check, Copy, Crown, Eye, Gamepad2, Link2, Minus, Pause, Play, Plus, QrCode, RefreshCw, RotateCcw, Settings2, Share2, Shuffle, Trash2, Trophy, Users, Wifi, WifiOff } from 'lucide-react';
+import { getAuthClient } from '../../utils/authClient';
 
 type GameOption = { id: string; title: string; tag: string };
 type Player = { id: string; name: string; team: 0 | 1; ready: boolean; host: boolean; connected: boolean; seenAt: number };
@@ -18,13 +19,12 @@ type ClientMessage =
   | { type: 'ready'; playerId: string; ready: boolean }
   | { type: 'team'; playerId: string; team: 0 | 1 }
   | { type: 'sync-request' | 'heartbeat'; playerId: string };
-type ServerError = { type: 'room-error'; reason: 'duplicate-name' | 'room-full' | 'game-started' | 'removed' | 'host-left'; text: string };
+type ServerError = { type: 'room-error'; reason: 'duplicate-name' | 'room-full' | 'game-started' | 'removed' | 'host-left'; text: string; targetId?: string };
 
 const PLAYER_KEY = 'qaddha.online.player-id';
 const ROOM_KEY = 'qaddha.online.host-room.v2';
 const MAX_PLAYERS = 12;
 const categories = ['الكل', 'عام', 'رياضة', 'ترفيه', 'إسلامي', 'علوم'];
-const peerId = (code: string) => `qaddha-room-${code.toLowerCase()}`;
 const cleanCode = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
 const cleanName = (value: string) => value.trim().replace(/\s+/g, ' ').slice(0, 18);
 const makeCode = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), n => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[n % 32]).join('');
@@ -77,8 +77,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const [qr, setQr] = useState('');
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const guestConnection = useRef<DataConnection | null>(null);
-  const connections = useRef(new Map<string, DataConnection>());
+  const channelRef = useRef<RealtimeChannel | null>(null);
   const roomRef = useRef<Room | null>(room);
   roomRef.current = room;
   const me = useMemo(getPlayerId, []);
@@ -91,65 +90,198 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     try { sessionStorage.setItem(ROOM_KEY, JSON.stringify(next)); } catch {/* optional */}
     return next;
   }), []);
-  useEffect(() => { if (mode === 'host' && room) connections.current.forEach(c => c.open && c.send(room)); }, [mode, room]);
+  useEffect(() => {
+    if (mode !== 'host' || !room || !connected || !channelRef.current) return;
+    void channelRef.current.send({ type: 'broadcast', event: 'server-message', payload: room });
+  }, [mode, room, connected]);
   useEffect(() => { if (room?.phase !== 'countdown' && room?.phase !== 'playing') return; const timer = window.setInterval(() => setNow(Date.now()), 250); return () => window.clearInterval(timer); }, [room?.phase]);
   useEffect(() => { if (roomUrl) QRCode.toDataURL(roomUrl, { width: 300, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#090909', light: '#fff8df' } }).then(setQr).catch(() => setQr('')); }, [roomUrl]);
 
   useEffect(() => {
     if (mode !== 'host' || !room?.code) return;
-    const peer = new Peer(peerId(room.code));
-    const active = connections.current;
-    peer.on('open', () => setConnected(true));
-    peer.on('connection', connection => {
-      let joinedId = '';
-      const reject = (reason: ServerError['reason'], text: string) => { if (connection.open) connection.send({ type: 'room-error', reason, text } satisfies ServerError); window.setTimeout(() => connection.close(), 250); };
-      connection.on('data', raw => {
-        if (!raw || typeof raw !== 'object') return;
-        const message = raw as ClientMessage;
-        if (message.type === 'join') {
-          const current = roomRef.current; if (!current) return;
-          const name = cleanName(message.name); const existing = current.players.find(p => p.id === message.playerId);
-          if (!existing && current.phase !== 'lobby') return reject('game-started', 'اللعبة بدأت بالفعل. انتظر المباراة القادمة.');
-          if (!existing && current.players.length >= current.maxPlayers) return reject('room-full', 'الغرفة ممتلئة حاليًا.');
-          if (current.players.some(p => p.id !== message.playerId && p.name.localeCompare(name, 'ar', { sensitivity: 'base' }) === 0)) return reject('duplicate-name', 'الاسم مستخدم داخل الغرفة. اختر اسمًا مختلفًا.');
-          joinedId = message.playerId; active.get(joinedId)?.close(); active.set(joinedId, connection);
-          update(value => ({ ...value, players: existing ? value.players.map(p => p.id === joinedId ? { ...p, name, connected: true, seenAt: Date.now() } : p) : [...value.players, { id: joinedId, name, team: value.players.filter(p => p.team === 0).length <= value.players.filter(p => p.team === 1).length ? 0 : 1, ready: false, host: false, connected: true, seenAt: Date.now() }] }));
-          setNotice(`${name} انضم للغرفة`);
-        } else if (message.type === 'ready' && joinedId === message.playerId) update(r => ({ ...r, players: r.players.map(p => p.id === joinedId ? { ...p, ready: message.ready, seenAt: Date.now() } : p) }));
-        else if (message.type === 'team' && joinedId === message.playerId && roomRef.current?.phase === 'lobby') update(r => ({ ...r, players: r.players.map(p => p.id === joinedId ? { ...p, team: message.team, seenAt: Date.now() } : p) }));
-        else if (message.type === 'heartbeat' && joinedId === message.playerId) update(r => ({ ...r, players: r.players.map(p => p.id === joinedId ? { ...p, connected: true, seenAt: Date.now() } : p) }));
-        else if (message.type === 'sync-request' && connection.open && roomRef.current) connection.send(roomRef.current);
+    let active = true;
+    let stale = 0;
+    let client: Awaited<ReturnType<typeof getAuthClient>> | null = null;
+    const topic = `qaddha-room:${room.code.toLowerCase()}`;
+
+    void getAuthClient().then(instance => {
+      if (!active) return;
+      client = instance;
+      const channel = instance.channel(topic, {
+        config: {
+          broadcast: { ack: true, self: false },
+          presence: { key: `host-${me}` },
+        },
       });
-      connection.on('close', () => { if (joinedId && active.get(joinedId) === connection) active.delete(joinedId); if (joinedId) update(r => ({ ...r, players: r.players.map(p => p.id === joinedId ? { ...p, connected: false } : p) })); });
+      channelRef.current = channel;
+
+      const reject = (playerId: string, reason: ServerError['reason'], text: string) => {
+        void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'room-error', reason, text, targetId: playerId } satisfies ServerError });
+      };
+
+      channel.on('broadcast', { event: 'client-message' }, message => {
+        const raw = message.payload;
+        if (!raw || typeof raw !== 'object') return;
+        const incoming = raw as ClientMessage;
+        const current = roomRef.current;
+        if (!current) return;
+
+        if (incoming.type === 'join') {
+          const name = cleanName(incoming.name);
+          const existing = current.players.find(p => p.id === incoming.playerId);
+          if (!existing && current.phase !== 'lobby') return reject(incoming.playerId, 'game-started', 'اللعبة بدأت بالفعل. انتظر المباراة القادمة.');
+          if (!existing && current.players.length >= current.maxPlayers) return reject(incoming.playerId, 'room-full', 'الغرفة ممتلئة حاليًا.');
+          if (current.players.some(p => p.id !== incoming.playerId && p.name.localeCompare(name, 'ar', { sensitivity: 'base' }) === 0)) return reject(incoming.playerId, 'duplicate-name', 'الاسم مستخدم داخل الغرفة. اختر اسمًا مختلفًا.');
+          update(value => ({
+            ...value,
+            players: existing
+              ? value.players.map(p => p.id === incoming.playerId ? { ...p, name, connected: true, seenAt: Date.now() } : p)
+              : [...value.players, {
+                  id: incoming.playerId,
+                  name,
+                  team: value.players.filter(p => p.team === 0).length <= value.players.filter(p => p.team === 1).length ? 0 : 1,
+                  ready: false,
+                  host: false,
+                  connected: true,
+                  seenAt: Date.now(),
+                }],
+          }));
+          setNotice(`${name} انضم للغرفة`);
+        } else if (incoming.type === 'ready') {
+          update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, ready: incoming.ready, connected: true, seenAt: Date.now() } : p) }));
+        } else if (incoming.type === 'team' && current.phase === 'lobby') {
+          update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, team: incoming.team, connected: true, seenAt: Date.now() } : p) }));
+        } else if (incoming.type === 'heartbeat') {
+          update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, connected: true, seenAt: Date.now() } : p) }));
+        } else if (incoming.type === 'sync-request') {
+          const snapshot = roomRef.current;
+          if (snapshot) void channel.send({ type: 'broadcast', event: 'server-message', payload: snapshot });
+        }
+      });
+
+      channel.subscribe(async status => {
+        if (!active) return;
+        if (status === 'SUBSCRIBED') {
+          setConnected(true);
+          setNotice('');
+          await channel.track({ role: 'host', playerId: me, onlineAt: Date.now() });
+          if (roomRef.current) void channel.send({ type: 'broadcast', event: 'server-message', payload: roomRef.current });
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          setConnected(false);
+          setNotice('نعيد الاتصال بالغرفة…');
+        }
+      });
+
+      stale = window.setInterval(() => update(r => ({
+        ...r,
+        players: r.players.map(p => p.host || Date.now() - p.seenAt < 20000 ? p : { ...p, connected: false }),
+      })), 7000);
+    }).catch(() => {
+      if (!active) return;
+      setConnected(false);
+      setNotice('تعذر تشغيل المزامنة الآن.');
     });
-    peer.on('error', error => { setConnected(false); setNotice(error.type === 'unavailable-id' ? 'الكود مستخدم، أنشئ غرفة جديدة' : 'تعذر الاتصال الآن'); });
-    const stale = window.setInterval(() => update(r => ({ ...r, players: r.players.map(p => p.host || Date.now() - p.seenAt < 20000 ? p : { ...p, connected: false }) })), 7000);
-    return () => { window.clearInterval(stale); active.forEach(c => { if (c.open) c.send({ type: 'room-error', reason: 'host-left', text: 'غادر المضيف وأُغلقت الغرفة.' } satisfies ServerError); c.close(); }); active.clear(); peer.destroy(); };
-  }, [mode, room?.code, update]);
+
+    return () => {
+      active = false;
+      window.clearInterval(stale);
+      const channel = channelRef.current;
+      channelRef.current = null;
+      if (channel) {
+        void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'room-error', reason: 'host-left', text: 'غادر المضيف وأُغلقت الغرفة.' } satisfies ServerError });
+        void channel.untrack();
+        if (client) void client.removeChannel(channel);
+      }
+    };
+  }, [mode, room?.code, me, update]);
 
   useEffect(() => {
     if (mode !== 'guest' || !join.code || !join.name) return;
-    const peer = new Peer(); let connection: DataConnection | null = null; let retry = 0; let heartbeat = 0; let attempts = 0; let stopped = false;
-    const connect = () => {
-      if (stopped || peer.destroyed) return;
-      setConnected(false); connection?.close(); connection = peer.connect(peerId(join.code), { reliable: true, serialization: 'json' }); guestConnection.current = connection;
-      connection.on('open', () => { attempts = 0; setConnected(true); setJoinError(''); connection?.send({ type: 'join', playerId: me, name: join.name } satisfies ClientMessage); connection?.send({ type: 'sync-request', playerId: me } satisfies ClientMessage); heartbeat = window.setInterval(() => connection?.open && connection.send({ type: 'heartbeat', playerId: me } satisfies ClientMessage), 5000); });
-      connection.on('data', raw => {
-        if (!raw || typeof raw !== 'object') return;
-        if ((raw as ServerError).type === 'room-error') { const error = raw as ServerError; setJoinError(error.text); setNotice(error.text); if (error.reason !== 'host-left') setMode('join'); return; }
-        if ((raw as Room).type === 'room-snapshot') setRoom(current => !current || (raw as Room).version >= current.version ? normalize(raw as Room) : current);
+    let active = true;
+    let heartbeat = 0;
+    let roomTimeout = 0;
+    let receivedSnapshot = false;
+    let client: Awaited<ReturnType<typeof getAuthClient>> | null = null;
+    const topic = `qaddha-room:${join.code.toLowerCase()}`;
+
+    void getAuthClient().then(instance => {
+      if (!active) return;
+      client = instance;
+      const channel = instance.channel(topic, {
+        config: {
+          broadcast: { ack: true, self: false },
+          presence: { key: `guest-${me}` },
+        },
       });
-      connection.on('close', () => { window.clearInterval(heartbeat); setConnected(false); if (!stopped && mode === 'guest') retry = window.setTimeout(connect, 2400); });
-      connection.on('error', () => setConnected(false));
+      channelRef.current = channel;
+
+      channel.on('broadcast', { event: 'server-message' }, message => {
+        const raw = message.payload;
+        if (!raw || typeof raw !== 'object') return;
+        if ((raw as ServerError).type === 'room-error') {
+          const error = raw as ServerError;
+          if (error.targetId && error.targetId !== me) return;
+          setJoinError(error.text);
+          setNotice(error.text);
+          setConnected(false);
+          if (error.reason !== 'host-left') setMode('join');
+          return;
+        }
+        if ((raw as Room).type === 'room-snapshot') {
+          receivedSnapshot = true;
+          window.clearTimeout(roomTimeout);
+          setConnected(true);
+          setJoinError('');
+          setRoom(current => !current || (raw as Room).version >= current.version ? normalize(raw as Room) : current);
+        }
+      });
+
+      channel.subscribe(async status => {
+        if (!active) return;
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ role: 'guest', playerId: me, name: join.name, onlineAt: Date.now() });
+          await channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'join', playerId: me, name: join.name } satisfies ClientMessage });
+          await channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'sync-request', playerId: me } satisfies ClientMessage });
+          window.clearInterval(heartbeat);
+          heartbeat = window.setInterval(() => {
+            void channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'heartbeat', playerId: me } satisfies ClientMessage });
+          }, 5000);
+          window.clearTimeout(roomTimeout);
+          roomTimeout = window.setTimeout(() => {
+            if (!receivedSnapshot && active) {
+              setConnected(false);
+              setJoinError('الغرفة غير موجودة أو الكود غير صحيح.');
+              setMode('join');
+            }
+          }, 6500);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          setConnected(false);
+          setNotice('نعيد الاتصال بالغرفة…');
+        }
+      });
+    }).catch(() => {
+      if (!active) return;
+      setConnected(false);
+      setJoinError('تعذر الاتصال بخدمة الغرف الآن.');
+      setMode('join');
+    });
+
+    return () => {
+      active = false;
+      window.clearInterval(heartbeat);
+      window.clearTimeout(roomTimeout);
+      const channel = channelRef.current;
+      channelRef.current = null;
+      if (channel) {
+        void channel.untrack();
+        if (client) void client.removeChannel(channel);
+      }
     };
-    peer.on('open', connect);
-    peer.on('error', error => { if (!stopped && (error.type === 'peer-unavailable' || error.type === 'network') && attempts++ < 2) retry = window.setTimeout(connect, 1800); else { setJoinError('الغرفة غير موجودة أو الكود غير صحيح.'); setMode('join'); } });
-    return () => { stopped = true; window.clearTimeout(retry); window.clearInterval(heartbeat); connection?.close(); guestConnection.current = null; peer.destroy(); };
   }, [join, me, mode]);
 
   const create = () => { const code = makeCode(); const next = newRoom(code, hostName, games[0]?.id || 'teams'); try { localStorage.setItem('qaddha.online.name', cleanName(hostName)); sessionStorage.setItem(ROOM_KEY, JSON.stringify(next)); } catch {/* optional */} window.history.replaceState({}, '', `${window.location.pathname}?onlineHost=${code}`); setRoom(next); setMode('host'); };
   const joinRoom = (code: string, name: string) => { setJoin({ code, name }); setRoom(null); setNotice(''); setJoinError(''); setMode('guest'); };
-  const send = (message: ClientMessage) => guestConnection.current?.open && guestConnection.current.send(message);
+  const send = (message: ClientMessage) => { const channel = channelRef.current; if (channel) void channel.send({ type: 'broadcast', event: 'client-message', payload: message }); };
   const localPlayer = room?.players.find(p => p.id === me);
   const allReady = !!room && room.players.filter(p => p.connected).length >= 2 && room.players.filter(p => p.connected).every(p => p.host || p.ready);
   const copy = async () => { try { await navigator.clipboard.writeText(roomUrl); setCopied(true); window.setTimeout(() => setCopied(false), 1600); } catch { setNotice('انسخ الرابط من شريط المتصفح'); } };
@@ -158,7 +290,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const lobby = () => update(r => ({ ...r, phase: 'lobby', scores: [0, 0], round: 1, startedAt: null, roundEndsAt: null, pausedAt: null, answerRevealed: false, players: r.players.map(p => ({ ...p, ready: p.host })) }));
   const next = () => update(r => r.round >= r.totalRounds ? { ...r, phase: 'results', winner: r.scores[0] === r.scores[1] ? null : r.scores[0] > r.scores[1] ? 0 : 1, roundEndsAt: null, pausedAt: null } : { ...r, round: r.round + 1, roundEndsAt: Date.now() + r.timerSeconds * 1000, pausedAt: null, answerRevealed: false });
   const pause = () => update(r => r.pausedAt ? { ...r, roundEndsAt: r.roundEndsAt ? r.roundEndsAt + Date.now() - r.pausedAt : null, pausedAt: null } : { ...r, pausedAt: Date.now() });
-  const remove = (id: string) => { const c = connections.current.get(id); if (c?.open) c.send({ type: 'room-error', reason: 'removed', text: 'أزالك المضيف من الغرفة.' } satisfies ServerError); c?.close(); connections.current.delete(id); update(r => ({ ...r, players: r.players.filter(p => p.id !== id) })); };
+  const remove = (id: string) => { const channel = channelRef.current; if (channel) void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'room-error', reason: 'removed', text: 'أزالك المضيف من الغرفة.', targetId: id } satisfies ServerError }); update(r => ({ ...r, players: r.players.filter(p => p.id !== id) })); };
   useEffect(() => { if (mode !== 'host' || room?.phase !== 'countdown' || !room.startedAt) return; const timer = window.setTimeout(() => update(r => ({ ...r, phase: 'playing' })), Math.max(0, room.startedAt - Date.now())); return () => window.clearTimeout(timer); }, [mode, room?.phase, room?.startedAt, update]);
 
   if (mode === 'entry') return <section className="online-room online-entry" dir="rtl"><button className="quiet online-back" onClick={onBack}><ArrowRight/> الرئيسية</button><div className="online-entry-hero"><span><Wifi/></span><small>قدّها أونلاين</small><h1>غرفة واحدة.<br/><em>والحماس عند الكل.</em></h1><p>سوّ غرفة وشارك الكود، أو ادخل على أصحابك. الفرق والنقاط والجولات تبقى متزامنة.</p></div><div className="online-entry-actions"><article><Crown/><h2>إنشاء غرفة</h2><label><span>اسمك</span><input maxLength={18} value={hostName} onChange={e => setHostName(e.target.value)}/></label><button className="primary" disabled={cleanName(hostName).length < 2} onClick={create}>إنشاء غرفة جديدة</button></article><article><Link2/><h2>عندي كود</h2><p>ادخل باسمك واختر فريقك ثم أعلن جاهزيتك.</p><button className="secondary" onClick={() => setMode('join')}>الانضمام لغرفة</button></article></div></section>;
