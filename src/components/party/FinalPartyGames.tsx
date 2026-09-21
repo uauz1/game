@@ -5,6 +5,14 @@ import Countdown from './Countdown';
 type Props = { onHome: () => void };
 type Team = { name: string; color: string; score: number };
 const palette = ['#45b6ff', '#ff70b5'];
+const ONLINE_PARAMS = new URLSearchParams(window.location.search);
+const ONLINE_EMBED = ONLINE_PARAMS.get('onlineEmbed') === '1';
+const ONLINE_TEAM_NAMES: [string, string] = [
+  ONLINE_PARAMS.get('onlineTeam0')?.trim() || 'الفريق الأول',
+  ONLINE_PARAMS.get('onlineTeam1')?.trim() || 'الفريق الثاني',
+];
+const ONLINE_TIMER = Number(ONLINE_PARAMS.get('onlineTimer') || '45');
+const ONLINE_ROUNDS = Number(ONLINE_PARAMS.get('onlineRounds') || '8');
 const charades = ['يصوّر سيلفي','يطبخ كبسة','يلعب كرة قدم','يبحث عن جواله','يركب طائرة','يفتح هدية','يخاف من حشرة','يتأخر عن الدوام','يشاهد مباراة','يطلب قهوة','يقود سيارة','ينام في اجتماع','يرقص في عرس','يحاول فتح مظلة','يصور غروب الشمس','يلعب بلايستيشن','يركب دراجة','يتسوق بسرعة','ينفخ بالونًا','يصلح جهازًا'];
 const spySets = [
   { place:'المطار', words:['بوابة الصعود','جواز السفر','حقيبة السفر','برج المراقبة'] },
@@ -36,15 +44,19 @@ function Result({ teams, onReplay, onSetup }: { teams:Team[]; onReplay:()=>void;
 }
 
 export function SilentActingGame({ onHome }: Props) {
-  const [teams,setTeams] = useState<Team[]>([{name:'الفريق الأول',color:palette[0],score:0},{name:'الفريق الثاني',color:palette[1],score:0}]);
-  const [rounds,setRounds] = useState(8);
-  const [seconds,setSeconds] = useState(45);
+  const [teams,setTeams] = useState<Team[]>([
+    {name:ONLINE_EMBED?ONLINE_TEAM_NAMES[0]:'الفريق الأول',color:palette[0],score:0},
+    {name:ONLINE_EMBED?ONLINE_TEAM_NAMES[1]:'الفريق الثاني',color:palette[1],score:0},
+  ]);
+  const [rounds,setRounds] = useState(ONLINE_EMBED && [6,8,10].includes(ONLINE_ROUNDS) ? ONLINE_ROUNDS : 8);
+  const [seconds,setSeconds] = useState(ONLINE_EMBED && [30,45,60].includes(ONLINE_TIMER) ? ONLINE_TIMER : 45);
   const [round,setRound] = useState(0);
   const [deck,setDeck] = useState<string[]>([]);
   const [phase,setPhase] = useState<'setup'|'handoff'|'ready'|'play'|'result'>('setup');
   const current = deck[round];
   const turn = round % 2;
   const start = () => { setTeams(teams.map(team=>({...team,name:team.name.trim(),score:0}))); setDeck(shuffle(charades).slice(0,rounds)); setRound(0); setPhase('handoff'); };
+  useEffect(()=>{ if(ONLINE_EMBED && phase==='setup') start(); },[phase]);
   const finish = (won:boolean) => { if (phase !== 'play') return; if(won)setTeams(value=>value.map((team,index)=>index===turn?{...team,score:team.score+100}:team)); if(round+1>=deck.length)setPhase('result'); else { setRound(value=>value+1); setPhase('handoff'); } };
   return <Shell kind="acting-game" icon={<Theater/>} title="مثّلها" subtitle="تمثيل صامت، وقت يركض، وفريق لازم يلقط العبارة." onHome={onHome}>{phase==='setup'?<ActingSetup {...{teams,setTeams,rounds,setRounds,seconds,setSeconds}} onStart={start}/>:phase==='result'?<Result teams={teams} onReplay={start} onSetup={()=>setPhase('setup')}/>:<><Score teams={teams} round={round} total={deck.length}/><article className={`final-panel play-panel phase-${phase}`}><span className="turn-chip" style={{'--team':teams[turn].color} as CSSProperties}>الجولة لـ {teams[turn].name}</span>{phase==='handoff'?<><div className="handoff-icon"><Theater/></div><small>خصوصية العبارة</small><h2>مرّر الجهاز للممثّل</h2><p>البقية يبعدون نظرهم عن الشاشة. الممثل وحده يضغط التالي.</p><button className="primary" onClick={()=>setPhase('ready')}><ShieldCheck/> الجهاز معي</button></>:phase==='ready'?<><small>عبارتك لهذه الجولة</small><h2 className="prompt secret-prompt">{current}</h2><p>خذ لحظة واستعد. الوقت ما يبدأ إلا بعد ضغط الزر.</p><button className="primary pulse-start" onClick={()=>setPhase('play')}><Timer/> ابدأ {seconds} ثانية</button></>:<><small>مثّل الآن من دون كلام</small><h2 className="prompt">{current}</h2><p>ممنوع الكلام، الأصوات، أو تهجئة الحروف.</p><Countdown key={`${round}-${seconds}`} seconds={seconds} stopped={false} onExpire={()=>finish(false)}/><div className="play-actions"><button className="success" onClick={()=>finish(true)}><Check/> عرفوها · +100</button><button className="danger" onClick={()=>finish(false)}><X/> تخطي</button></div></>}</article></>}</Shell>;
 }
