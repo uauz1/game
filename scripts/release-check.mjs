@@ -109,6 +109,7 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes('gameRevision') && durableOnline.includes('const resyncGame') && durableOnline.includes('مزامنة اللعبة'), 'Host can force a live game reload and replay state across devices'],
     [durableOnline.includes('onlineTeam0=') && read('src/components/party/LettersGame.tsx').includes("onlineEmbed ? [] : loadUsedHuroofQuestions()") && read('src/components/party/LettersGame.tsx').includes("phase !== 'setup'"), 'Letters online mode shares room settings and ignores device-local question history'],
     [durableOnline.includes('roundOptionsForGame') && durableOnline.includes('timerOptionsForGame') && durableOnline.includes('closestAllowed'), 'Online lobby settings adapt to each selected game'],
+    [durableOnline.includes("!['auction','order','memory','missing','intruder'].includes(room.gameId)") && durableOnline.includes("['who','pressure','intruder'].includes(room.gameId)"), 'Online lobby hides settings that do not apply to the selected game'],
     [durableOnline.includes('resetLobbyReadiness') && durableOnline.includes('ready: player.host'), 'Host setting changes reset guest readiness before launch'],
     [durableOnline.includes("gameId === 'secret' && r.maxPlayers < 4 ? 4 : r.maxPlayers"), 'Selecting Secret Word expands room capacity for its three-player minimum'],
     [durableOnline.includes("room?.gameId === 'secret' ? 3 : 2") && durableOnline.includes('onlineRoster='), 'Secret Word online rooms require three players and pass the live roster'],
@@ -213,6 +214,9 @@ if (exists(whoGameFile) && exists(whoStorageFile)) {
 const extraGameFile = 'src/components/party/ExtraPartyGames.tsx';
 if (exists(extraGameFile)) {
   const extraGames = read(extraGameFile);
+  extraGames.includes('onlineRoundLimit') && extraGames.includes('ONLINE_ROUNDS')
+    ? pass('Extra party games honor shared online round counts')
+    : fail('Extra party games ignore shared online round counts');
   extraGames.includes('ONLINE_TEAM_NAMES') && extraGames.includes('{ONLINE_TEAM_NAMES[0]}')
     ? pass('Auction uses shared online room team names')
     : fail('Auction online team labels are not using shared room names');
@@ -242,6 +246,9 @@ if (exists(finalGameFile)) {
 
 if (exists(premiumGameFile)) {
   const premiumGames = read(premiumGameFile);
+  premiumGames.includes('ONLINE_ROUNDS') && premiumGames.includes('ONLINE_TIMER')
+    ? pass('Premium online games honor shared round and timer settings')
+    : fail('Premium online games do not fully honor shared round/timer settings');
   app.includes('readQaddhaPreferences().confirmExit')
     ? pass('Exit confirmation respects the saved preference')
     : fail('Exit confirmation preference is not wired');
