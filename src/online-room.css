@@ -160,3 +160,61 @@ html[data-theme="light"] .online-how-steps span{background:#fffaf1;border-color:
   padding:10px 16px;
   border-radius:14px;
 }
+
+
+.online-individual-board{
+  display:grid;
+  gap:14px;
+  margin-top:16px;
+  padding:18px;
+  border:1px solid rgba(215,169,59,.24);
+  border-radius:22px;
+  background:rgba(12,12,12,.78);
+}
+.online-individual-board > header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.online-individual-board > header div{
+  display:grid;
+}
+.online-individual-board > header small{
+  opacity:.7;
+}
+.online-individual-board ul{
+  display:grid;
+  gap:8px;
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+.online-individual-board li{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-height:48px;
+  padding:10px 12px;
+  border-radius:14px;
+  background:rgba(255,255,255,.045);
+}
+.online-individual-board li > span{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.online-individual-board li em{
+  font-style:normal;
+  font-size:.75rem;
+  opacity:.62;
+}
+.online-individual-board li > strong{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:.85rem;
+}
+.online-individual-board li.disconnected{
+  opacity:.52;
+}
