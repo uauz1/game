@@ -183,6 +183,14 @@ if (exists(contentIntelligenceFile)) {
 }
 
 const premiumGameFile = 'src/components/party/PremiumPartyGames.tsx';
+const finalGameFile = 'src/components/party/FinalPartyGames.tsx';
+if (exists(finalGameFile)) {
+  const finalGames = read(finalGameFile);
+  finalGames.includes('ONLINE_TEAM_NAMES') && finalGames.includes("if(ONLINE_EMBED && phase==='setup') start();")
+    ? pass('Acting auto-starts with shared online room settings')
+    : fail('Acting online mode is not using shared room settings');
+}
+
 if (exists(premiumGameFile)) {
   const premiumGames = read(premiumGameFile);
   app.includes('readQaddhaPreferences().confirmExit')
