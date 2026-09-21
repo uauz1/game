@@ -86,3 +86,24 @@ html[data-theme="light"] .online-how-steps span{background:#fffaf1;border-color:
     border-radius:18px;
   }
 }
+
+
+/* Embedded game runtime used inside a live online room. Keep only the game surface. */
+.app.party-app.online-embed{
+  min-height:100%;
+  background:#070707;
+}
+.app.party-app.online-embed > .tv-orientation-hint,
+.app.party-app.online-embed > .topbar,
+.app.party-app.online-embed > footer{
+  display:none!important;
+}
+.app.party-app.online-embed > main{
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:0;
+}
+.app.party-app.online-embed .game-loading{
+  min-height:55vh;
+}
