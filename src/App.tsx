@@ -81,13 +81,13 @@ export default function App() {
   const [playerOpen,setPlayerOpen]=useState(false);
   const [authOpen,setAuthOpen]=useState(false);
   const [helpOpen,setHelpOpen]=useState(false);
-  useEffect(()=>{if(auth.oauthMessage)setAuthOpen(true);},[auth.oauthMessage]);
   const [homeConfirm,setHomeConfirm]=useState(false);
   const [gameSearch,setGameSearch]=useState('');
   const [gameFilter,setGameFilter]=useState('الكل');
   const [lastGame,setLastGame]=useState(()=>{try{return localStorage.getItem('qaddha.last-game')||''}catch{return ''}});
   const [playerData,setPlayerData]=useState(readPlayerData);
   const auth=useAuth();
+  useEffect(()=>{if(auth.oauthMessage)setAuthOpen(true);},[auth.oauthMessage]);
   useQaddhaPreferences();
   usePWA();
   const savePlayerData=(next:typeof playerData)=>{setPlayerData(next);try{localStorage.setItem(PLAYER_KEY,JSON.stringify(next))}catch{/* Guest history stays available for this visit. */}};
