@@ -102,13 +102,20 @@ const INTRUDER_ROUNDS: IntruderRound[] = [
   {id:'i-h-12',difficulty:'hard',category:'جغرافيا',items:['الهيمالايا','الألب','الأنديز','الأمازون'],answer:3,explanation:'الأمازون نهر، والبقية سلاسل جبلية.'},
 ];
 
+const ONLINE_PARAMS = new URLSearchParams(window.location.search);
+const ONLINE_EMBED = ONLINE_PARAMS.get('onlineEmbed') === '1';
+const ONLINE_TEAM_NAMES: [string, string] = [
+  ONLINE_PARAMS.get('onlineTeam0')?.trim() || 'الفريق الأول',
+  ONLINE_PARAMS.get('onlineTeam1')?.trim() || 'الفريق الثاني',
+];
+const ONLINE_DIFFICULTY = (ONLINE_PARAMS.get('onlineDifficulty') || 'medium') as Difficulty;
 const PREMIUM_SESSION_TTL = 12 * 60 * 60 * 1000;
 const PRESSURE_SESSION_KEY = 'qaddha.pressure.session.v1';
 const INTRUDER_SESSION_KEY = 'qaddha.intruder.session.v1';
 
 function readGameSession<T>(key: string): T | null {
   try {
-    if (!readQaddhaPreferences().rememberProgress) return null;
+    if (ONLINE_EMBED || !readQaddhaPreferences().rememberProgress) return null;
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as { savedAt?: number; data?: T };
@@ -124,7 +131,7 @@ function readGameSession<T>(key: string): T | null {
 
 function writeGameSession<T>(key: string, data: T) {
   try {
-    if (!readQaddhaPreferences().rememberProgress) {
+    if (ONLINE_EMBED || !readQaddhaPreferences().rememberProgress) {
       localStorage.removeItem(key);
       return;
     }
@@ -161,8 +168,8 @@ export function PressureGame({ onHome }: { onHome: () => void }) {
     difficulty: Difficulty; teams: Team[]; phase: 'setup'|'playing'|'result'; rounds: number;
     deck: PressurePrompt[]; round: number; timeLeft: number; turn: number;
   }>(PRESSURE_SESSION_KEY), []);
-  const [difficulty,setDifficulty]=useState<Difficulty>(restoredPressure?.difficulty || 'mixed');
-  const [teams,setTeams]=useState<Team[]>(restoredPressure?.teams || [{name:'الفريق الأول',score:0},{name:'الفريق الثاني',score:0}]);
+  const [difficulty,setDifficulty]=useState<Difficulty>(ONLINE_EMBED ? ONLINE_DIFFICULTY : restoredPressure?.difficulty || 'mixed');
+  const [teams,setTeams]=useState<Team[]>(ONLINE_EMBED ? [{name:ONLINE_TEAM_NAMES[0],score:0},{name:ONLINE_TEAM_NAMES[1],score:0}] : restoredPressure?.teams || [{name:'الفريق الأول',score:0},{name:'الفريق الثاني',score:0}]);
   const [phase,setPhase]=useState<'setup'|'playing'|'result'>(restoredPressure?.phase || 'setup');
   const [rounds,setRounds]=useState(restoredPressure?.rounds || 8);
   const [deck,setDeck]=useState<PressurePrompt[]>(restoredPressure?.deck || []);
@@ -176,6 +183,8 @@ export function PressureGame({ onHome }: { onHome: () => void }) {
     writeGameSession(PRESSURE_SESSION_KEY,{difficulty,teams,phase,rounds,deck,round,timeLeft,turn});
   },[difficulty,teams,phase,rounds,deck,round,timeLeft,turn]);
   const validTeams=teams.every(team=>team.name.trim().length>=2)&&teams[0].name.trim().localeCompare(teams[1].name.trim(),'ar',{sensitivity:'base'})!==0;
+
+  useEffect(()=>{ if(ONLINE_EMBED && phase==='setup' && validTeams) startGame(); },[phase,validTeams]);
 
   const startGame=()=>{
     if(!validTeams)return;
@@ -217,8 +226,8 @@ export function IntruderGame({ onHome }: { onHome: () => void }) {
     difficulty: Difficulty; teams: Team[]; phase: 'setup'|'playing'|'result'; rounds: number;
     deck: IntruderRound[]; round: number; turn: number; picked: number|null; revealed: boolean;
   }>(INTRUDER_SESSION_KEY), []);
-  const [difficulty,setDifficulty]=useState<Difficulty>(restoredIntruder?.difficulty || 'mixed');
-  const [teams,setTeams]=useState<Team[]>(restoredIntruder?.teams || [{name:'الفريق الأول',score:0},{name:'الفريق الثاني',score:0}]);
+  const [difficulty,setDifficulty]=useState<Difficulty>(ONLINE_EMBED ? ONLINE_DIFFICULTY : restoredIntruder?.difficulty || 'mixed');
+  const [teams,setTeams]=useState<Team[]>(ONLINE_EMBED ? [{name:ONLINE_TEAM_NAMES[0],score:0},{name:ONLINE_TEAM_NAMES[1],score:0}] : restoredIntruder?.teams || [{name:'الفريق الأول',score:0},{name:'الفريق الثاني',score:0}]);
   const [phase,setPhase]=useState<'setup'|'playing'|'result'>(restoredIntruder?.phase || 'setup');
   const [rounds,setRounds]=useState(restoredIntruder?.rounds || 8);
   const [deck,setDeck]=useState<IntruderRound[]>(restoredIntruder?.deck || []);
@@ -232,6 +241,7 @@ export function IntruderGame({ onHome }: { onHome: () => void }) {
     writeGameSession(INTRUDER_SESSION_KEY,{difficulty,teams,phase,rounds,deck,round,turn,picked,revealed});
   },[difficulty,teams,phase,rounds,deck,round,turn,picked,revealed]);
   const validTeams=teams.every(team=>team.name.trim().length>=2)&&teams[0].name.trim().localeCompare(teams[1].name.trim(),'ar',{sensitivity:'base'})!==0;
+  useEffect(()=>{ if(ONLINE_EMBED && phase==='setup' && validTeams) startGame(); },[phase,validTeams]);
   useEffect(()=>{publishMultiplayerTeamNames([teams[0].name,teams[1].name]);},[teams]);
   useEffect(()=>{
     if(phase==='playing'&&current&&!revealed){
