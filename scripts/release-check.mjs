@@ -177,11 +177,12 @@ if (exists(autoTvFile)) {
     : fail('Automatic TV/mobile dataset wiring is missing');
 }
 const platformShellFile = 'src/components/party/PlatformShell.tsx';
+
 if (exists(platformShellFile)) {
   const platformShell = read(platformShellFile);
-  platformShell.includes('beforeinstallprompt') && platformShell.includes('appinstalled')
-    ? pass('PWA install prompt is wired to the platform shell')
-    : fail('PWA install prompt wiring is missing');
+  platformShell.includes('beforeinstallprompt') && platformShell.includes('appinstalled') && platformShell.includes("lazy(() => import('./MultiplayerHostLayer'))")
+    ? pass('PWA install prompt and lazy multiplayer shell are wired')
+    : fail('PWA install prompt or lazy multiplayer shell wiring is missing');
 }
 
 if (exists(pwaHookFile) && exists(serviceWorkerFile)) {
