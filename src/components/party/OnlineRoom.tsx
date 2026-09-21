@@ -212,6 +212,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
         } else if (incoming.type === 'game-loaded') {
           update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, gameLoadedId: incoming.gameId, connected: true, seenAt: Date.now() } : p) }), false);
         } else if (incoming.type === 'game-action') {
+          if (incoming.action.gameId !== current.gameId) return;
           const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
           frame?.contentWindow?.postMessage({ type: 'qaddha-online-replay', action: incoming.action }, window.location.origin);
           void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'game-action', action: incoming.action } });
@@ -318,6 +319,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
         }
         if ((raw as { type?: string }).type === 'game-action') {
           const action = (raw as { type: 'game-action'; action: OnlineGameAction }).action;
+          if (action?.gameId !== roomRef.current?.gameId) return;
           if (action?.sourceId !== me) {
             const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
             frame?.contentWindow?.postMessage({ type: 'qaddha-online-replay', action }, window.location.origin);
@@ -469,7 +471,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
       const message = event.data as { type?: string; action?: OnlineGameAction } | null;
       if (message?.type !== 'qaddha-online-action' || !message.action) return;
       const action = message.action;
-      if (action.sourceId !== me) return;
+      if (action.sourceId !== me || action.gameId !== room.gameId) return;
       const channel = channelRef.current;
       if (!channel) return;
       if (mode === 'host') {
