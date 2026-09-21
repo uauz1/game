@@ -123,6 +123,14 @@ if (exists(settingsFile)) {
     : fail('Display preference dataset wiring is incomplete');
 }
 
+const premiumCssFile = 'src/premium-games.css';
+if (exists(premiumCssFile)) {
+  const premiumCss = read(premiumCssFile);
+  premiumCss.includes('html[data-tv-mode="true"]') && !premiumCss.includes('body.tv-mode')
+    ? pass('Premium games 17/18 use the current TV mode selector')
+    : fail('Premium games still contain stale TV mode selectors');
+}
+
 if (!app.includes("cover:asset('pressure-cover.webp')")) fail('Pressure must use its production WebP cover');
 else pass('Pressure uses production WebP cover');
 if (!app.includes("cover:asset('intruder-cover.webp')")) fail('Intruder must use its production WebP cover');
