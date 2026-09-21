@@ -59,6 +59,14 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
   if (params.get('onlineEmbed') !== '1') return;
   const sourceId = params.get('onlinePlayer') || 'embedded-player';
   let replaying = false;
+  const seenActions = new Set<string>();
+  const rememberAction = (id: string) => {
+    seenActions.add(id);
+    if (seenActions.size > 300) {
+      const oldest = seenActions.values().next().value as string | undefined;
+      if (oldest) seenActions.delete(oldest);
+    }
+  };
 
   const emit = (kind: OnlineActionKind, element: Element, value?: string | boolean) => {
     if (replaying) return;
@@ -72,6 +80,7 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
       sourceId,
       sentAt: Date.now(),
     };
+    rememberAction(action.id);
     window.parent.postMessage({ type: 'qaddha-online-action', action }, window.location.origin);
   };
 
@@ -103,7 +112,8 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
     const message = event.data as { type?: string; action?: OnlineGameAction } | null;
     if (message?.type !== 'qaddha-online-replay' || !message.action) return;
     const action = message.action;
-    if (action.sourceId === sourceId) return;
+    if (action.sourceId === sourceId || seenActions.has(action.id)) return;
+    rememberAction(action.id);
     const element = document.querySelector(action.selector);
     if (!element) return;
     replaying = true;
