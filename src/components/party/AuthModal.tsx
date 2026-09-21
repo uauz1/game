@@ -18,14 +18,14 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
   useEffect(() => { if (auth.recoveryMode) setMode('recovery'); }, [auth.recoveryMode]);
   useEffect(() => {
     if (!open) return;
-    setNotice('');
+    setNotice(auth.oauthMessage || '');
     const previousOverflow = document.body.style.overflow;
     const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
     document.body.style.overflow = 'hidden';
     closeRef.current?.focus();
     window.addEventListener('keydown', onKeyDown);
     return () => { document.body.style.overflow = previousOverflow; window.removeEventListener('keydown', onKeyDown); };
-  }, [onClose, open]);
+  }, [auth.oauthMessage, onClose, open]);
 
   if (!open || !auth.configured) return null;
 
