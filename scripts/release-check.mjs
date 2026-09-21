@@ -167,7 +167,6 @@ if (exists(partyAudioFile) && exists(smartSessionFile)) {
     : fail('Preference consumers still bypass the central runtime');
 }
 
-const contentIntelligenceFile = 'src/utils/contentIntelligence.ts';
 if (exists(contentIntelligenceFile)) {
   const contentEngine = read(contentIntelligenceFile);
   contentEngine.includes('prefs.questionIntensity') && contentEngine.includes('prefs.repeatProtection')
