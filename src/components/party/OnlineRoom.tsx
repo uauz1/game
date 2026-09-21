@@ -103,6 +103,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const [hostToken, setHostToken] = useState(hostAccessToken);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const actionRateRef = useRef(new Map<string, { startedAt: number; count: number }>());
+  const actionPersistTimerRef = useRef(0);
   const roomRef = useRef<Room | null>(room);
   roomRef.current = room;
   const me = useMemo(getPlayerId, []);
@@ -125,8 +126,13 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     return next;
   }), [persistRoom]);
   const rememberGameAction = useCallback((action: OnlineGameAction) => {
-    update(r => r.gameId !== action.gameId ? r : ({ ...r, gameActions: [...(r.gameActions || []), action].slice(-120) }));
-  }, [update]);
+    update(r => r.gameId !== action.gameId ? r : ({ ...r, gameActions: [...(r.gameActions || []), action].slice(-120) }), false);
+    window.clearTimeout(actionPersistTimerRef.current);
+    actionPersistTimerRef.current = window.setTimeout(() => {
+      const snapshot = roomRef.current;
+      if (snapshot) void persistRoom(snapshot);
+    }, 450);
+  }, [persistRoom, update]);
   const allowGameAction = useCallback((playerId: string) => {
     const now = Date.now();
     const current = actionRateRef.current.get(playerId);
@@ -151,6 +157,8 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     if (mode !== 'host' || !room || !connected || !channelRef.current) return;
     void channelRef.current.send({ type: 'broadcast', event: 'server-message', payload: room });
   }, [mode, room, connected]);
+  useEffect(() => () => window.clearTimeout(actionPersistTimerRef.current), []);
+
   useEffect(() => {
     if (!room || (room.phase !== 'countdown' && room.phase !== 'playing')) return;
     replayStoredActions(room);
