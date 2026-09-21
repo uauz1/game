@@ -103,6 +103,7 @@ if (exists(durableOnlineFile)) {
     [read('src/utils/onlineEmbedBridge.ts').includes('seenActions') && read('src/utils/onlineEmbedBridge.ts').includes('rememberAction'), 'Realtime online actions are deduplicated before replay'],
     [read('src/utils/onlineEmbedBridge.ts').includes('action.gameId !== gameId') && durableOnline.includes('action.gameId !== room.gameId') && durableOnline.includes('action.gameId !== snapshot.gameId'), 'Stale online actions are scoped to the active game'],
     [durableOnline.includes('gameActions: OnlineGameAction[]') && durableOnline.includes('replayStoredActions') && durableOnline.includes('slice(-120)'), 'Online game actions persist for reconnect recovery'],
+    [durableOnline.includes('room?.gameActions?.length') && durableOnline.includes('replayStoredActions(room)'), 'Persisted online actions replay after missed realtime events'],
     [durableOnline.includes('normalizeGameAction') && read('src/utils/onlineEmbedBridge.ts').includes('selector.length > 500'), 'Online action payloads are bounded and host-normalized'],
     [durableOnline.includes('gameRevision') && durableOnline.includes('const resyncGame') && durableOnline.includes('مزامنة اللعبة'), 'Host can force a live game reload and replay state across devices'],
     [durableOnline.includes("type: 'resync-game'") && durableOnline.includes('online-guest-live-tools'), 'Guests can request full live-game resync recovery'],
