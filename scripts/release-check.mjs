@@ -102,6 +102,7 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes("type: 'game-action'") && durableOnline.includes('qaddha-online-replay') && exists('src/utils/onlineEmbedBridge.ts'), 'Online game interactions relay between room devices'],
     [read('src/utils/onlineEmbedBridge.ts').includes('seenActions') && read('src/utils/onlineEmbedBridge.ts').includes('rememberAction'), 'Realtime online actions are deduplicated before replay'],
     [read('src/utils/onlineEmbedBridge.ts').includes('action.gameId !== gameId') && durableOnline.includes('action.gameId !== current.gameId'), 'Stale online actions are scoped to the active game'],
+    [durableOnline.includes('gameActions: OnlineGameAction[]') && durableOnline.includes('replayStoredActions') && durableOnline.includes('slice(-120)'), 'Online game actions persist for reconnect recovery'],
     [durableOnline.includes('pullPersistedRoom') && durableOnline.includes('4000'), 'Guest room has persisted-state resync fallback'],
     [durableOnline.includes('qaddha_guest_get_room'), 'Guest room restore is wired'],
     [durableOnline.includes('qaddha_guest_save_room'), 'Guest room persistence is wired'],
