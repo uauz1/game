@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Brain, Check, ChevronLeft, Clock3, Flame, RefreshCw, RotateCcw, ShieldQuestion, Sparkles, Trophy, Users, X, Zap } from 'lucide-react';
+import { ArrowLeft, Brain, Check, ChevronLeft, Clock3, Flame, RefreshCw, RotateCcw, ShieldQuestion, Sparkles, Trophy, X, Zap } from 'lucide-react';
 import { clearMultiplayerChallenge, publishMultiplayerChallenge, publishMultiplayerTeamNames } from '../../utils/multiplayerSession';
 
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';

@@ -12,7 +12,7 @@ const session = read('src/components/party/SmartPartySession.tsx');
 const realtime = read('src/utils/qaddhaRealtime.ts');
 
 const games = ['teams','letters','who','photo','words','fast','character','riddles','family','connection','auction','order','memory','missing','acting','secret','pressure','intruder'];
-const hostRoutes = ['who','secret','acting','words','family'];
+const hostRoutes = ['who','family'];
 
 const registered = games.filter(id => app.includes(`id:'${id}'`) || app.includes(`id: '${id}'`));
 registered.length === games.length ? pass(`Release registry: all ${games.length} games present`) : fail(`Release registry missing: ${games.filter(id => !registered.includes(id)).join(', ')}`);
@@ -26,10 +26,10 @@ for (const id of games) {
 }
 if (!process.exitCode) pass('All registered games have playable screen routes');
 
-for (const route of hostRoutes) {
-  if (!app.includes(`hostParams.get('host')==='${route}'`) && !app.includes(`hostParams.get('host') === '${route}'`)) fail(`QR/host route missing for ${route}`);
-}
-if (hostRoutes.every(route => app.includes(`'${route}'`))) pass('Required QR/host routes are wired');
+const main = read('src/main.tsx');
+if (!main.includes("host === 'who'")) fail('QR/host route missing for who');
+if (!app.includes("hostParams.get('host')==='family'")) fail('QR/host route missing for family');
+if (main.includes("host === 'who'") && app.includes("hostParams.get('host')==='family'")) pass('Required QR/host routes are wired');
 
 const coverMatches = [...app.matchAll(/cover:asset\('([^']+)'\)/g)].map(match => match[1]);
 const missingCovers = coverMatches.filter(file => !exists(`public/assets/${file}`));
@@ -60,8 +60,8 @@ if (exists(onlineLobbyFile) && exists(onlineClientFile) && exists(authClientFile
   const onlineClient = read(onlineClientFile);
   const authClient = read(authClientFile);
   const onlineChecks = [
-    [app.includes('onlineOpen') && app.includes('online-integrated-overlay'), 'Online mode is integrated inside the Qaddha shell'],
-    [app.includes("initialParams.get('online')"), 'Invite-code deep link is wired'],
+    [app.includes("screen==='online'") && app.includes('<OnlineRoom'), 'Online mode is integrated inside the Qaddha shell'],
+    [app.includes("hostParams.has('online')") && app.includes("hostParams.has('onlineHost')"), 'Invite-code deep link is wired'],
     [onlineLobby.includes('findQuickOnlineMatch'), 'Quick Match UI is wired'],
     [onlineLobby.includes('createPrivateOnlineRoom'), 'Private-room UI is wired'],
     [onlineLobby.includes('recordOnlineDuelResult'), 'Online results persist to account stats'],

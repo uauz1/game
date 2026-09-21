@@ -21,6 +21,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) return;
 
+  const requestUrl = new URL(event.request.url);
+  if (event.request.mode === 'navigate' && (requestUrl.pathname.endsWith('/admin') || requestUrl.pathname.endsWith('/admin.html'))) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
+
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)

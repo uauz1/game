@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { ArrowLeft, Check, Flag, Lightbulb, RotateCcw, Sparkles, Trophy, Users, X } from 'lucide-react';
+import { ArrowLeft, Check, Flag, Lightbulb, RotateCcw, Sparkles, Trophy, Users } from 'lucide-react';
 import { realCharacterCards, type RealCharacterCard } from '../../data/realCharacterCards';
 import { loadHuroofPreferences } from '../../utils/huroofStorage';
 import { drawWithoutRepeats } from '../../utils/newGameRotation';

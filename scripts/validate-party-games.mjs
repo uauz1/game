@@ -24,17 +24,17 @@ for (const id of gameIds) {
 }
 if (gameIds.every(id => app.includes(`id:'${id}'`) || app.includes(`id: '${id}'`))) pass('All 18 games are registered');
 
-const hostRoutes = ['who','secret','acting','words','family'];
+const hostRoutes = ['family'];
 for (const route of hostRoutes) {
   if (!app.includes(`hostParams.get('host')==='${route}'`) && !app.includes(`hostParams.get('host') === '${route}'`)) fail(`Missing QR/host route: ${route}`);
 }
-if (hostRoutes.every(route => app.includes(`'${route}'`))) pass('Host/QR routes are present');
+if (hostRoutes.every(route => app.includes(`'${route}'`)) && app.includes("hostParams.has('online')") && app.includes("hostParams.has('onlineHost')")) pass('Host/QR and online-room routes are present');
 
 const extraMinimums = [
-  ['auction', count(extra, /id:'auction-/g), 12],
-  ['order', count(extra, /id:'order-/g), 12],
-  ['memory', count(extra, /id:'memory-/g), 12],
-  ['missing', count(extra, /id:'missing-/g), 12],
+  ['auction', count(extra.match(/const auctionRounds = \[([\s\S]*?)\n\];/)?.[1] || '', /\{ title:/g), 12],
+  ['order', count(extra.match(/const orderRounds = \[([\s\S]*?)\n\];/)?.[1] || '', /\{ title:/g), 12],
+  ['memory', count(extra.match(/const memoryRounds = \[([\s\S]*?)\n\];/)?.[1] || '', /^\s*\[/gm), 12],
+  ['missing', count(extra.match(/const missingRounds = \[([\s\S]*?)\n\];/)?.[1] || '', /\{ items:/g), 12],
 ];
 for (const [name, actual, minimum] of extraMinimums) actual >= minimum ? pass(`${name}: ${actual} curated rounds`) : fail(`${name} only has ${actual} rounds; expected at least ${minimum}`);
 

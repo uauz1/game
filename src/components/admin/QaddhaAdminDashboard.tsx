@@ -295,7 +295,7 @@ export default function QaddhaAdminDashboard(){
       </section>
 
       <section className="grid md:grid-cols-3 gap-4">
-        {[['المحتوى',config.content_enabled,'content_enabled',Power],['الأونلاين والجلسات',config.sessions_enabled,'sessions_enabled',UsersRound],['QR والمضيف',config.qr_enabled,'qr_enabled',QrCode]].map(([label,value,key,Icon])=>{const I=Icon as typeof Power;return <div key={String(key)} className="rounded-[24px] border border-white/10 bg-[#111] p-5"><div className="flex items-center justify-between"><div className="flex items-center gap-3"><I className="text-amber-300"/><span className="font-black">{String(label)}</span></div><Toggle value={Boolean(value)} onChange={v=>setBool(key as keyof QaddhaRemoteConfig,v)}/></div><p className="mt-3 text-xs text-zinc-500">{Boolean(value)?'مفعّل الآن':'متوقف بعد الحفظ والنشر'}</p></div>})}
+        {[['المحتوى',config.content_enabled,'content_enabled',Power],['الأونلاين والجلسات',config.sessions_enabled,'sessions_enabled',UsersRound],['QR والمضيف',config.qr_enabled,'qr_enabled',QrCode]].map(([label,value,key,Icon])=>{const I=Icon as typeof Power;return <div key={String(key)} className="rounded-[24px] border border-white/10 bg-[#111] p-5"><div className="flex items-center justify-between"><div className="flex items-center gap-3"><I className="text-amber-300"/><span className="font-black">{String(label)}</span></div><Toggle value={Boolean(value)} onChange={v=>setBool(key as keyof QaddhaRemoteConfig,v)}/></div><p className="mt-3 text-xs text-zinc-500">{value?'مفعّل الآن':'متوقف بعد الحفظ والنشر'}</p></div>})}
       </section>
 
       <section className="rounded-[28px] border border-white/10 bg-[#111] p-5">

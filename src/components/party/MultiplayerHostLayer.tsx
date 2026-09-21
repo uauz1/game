@@ -49,8 +49,10 @@ export default function MultiplayerHostLayer(){
 
   useEffect(()=>{
     const refreshTeams=(event:Event)=>{const detail=(event as CustomEvent<[string,string]>).detail;if(Array.isArray(detail)&&detail.length===2)void channelRef.current?.send({type:'broadcast',event:'team-info',payload:{teams:detail}});};
+    const removePlayer=(event:Event)=>{const playerId=(event as CustomEvent<{playerId?:string}>).detail?.playerId;if(playerId)void channelRef.current?.send({type:'broadcast',event:'player-remove',payload:{playerId}});};
     window.addEventListener('qaddha:multiplayer-team-names',refreshTeams);
-    return()=>window.removeEventListener('qaddha:multiplayer-team-names',refreshTeams);
+    window.addEventListener('qaddha:remove-player',removePlayer);
+    return()=>{window.removeEventListener('qaddha:multiplayer-team-names',refreshTeams);window.removeEventListener('qaddha:remove-player',removePlayer);};
   },[]);
 
   useEffect(()=>{

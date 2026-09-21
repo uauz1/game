@@ -217,7 +217,7 @@ export default function OnlineLobby({ onBack, onRequireAuth, initialCode = '' }:
   useEffect(()=>{let active=true;if(!shareUrl){setQrDataUrl('');return;}void QRCode.toDataURL(shareUrl,{width:260,margin:1}).then(url=>{if(active)setQrDataUrl(url);}).catch(()=>{});return()=>{active=false;};},[shareUrl]);
   const copy=async()=>{try{await navigator.clipboard.writeText(shareUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1400);}catch{/* code remains visible */}};
   const shareRoom=async()=>{if(!shareUrl)return;try{if(navigator.share){await navigator.share({title:'قدّها أونلاين',text:`ادخل غرفتي في قدّها · الكود ${snapshot?.room.code||''}`,url:shareUrl});}else await copy();}catch{/* user cancelled share */}};
-  const loadFriends=useCallback(async()=>{if(!auth.session)return;try{setFriends(await getMyFriends());}catch{}},[auth.session?.user.id]);
+  const loadFriends=useCallback(async()=>{if(!auth.session)return;try{setFriends(await getMyFriends());}catch{/* Social data can be retried without blocking the room. */}},[auth.session?.user.id]);
   useEffect(()=>{if(socialOpen)void loadFriends();},[socialOpen,loadFriends]);
   const searchPlayers=async(event:FormEvent)=>{event.preventDefault();if(playerQuery.trim().length<2)return;setSocialBusy(true);try{setPlayers(await findOnlinePlayers(playerQuery));}finally{setSocialBusy(false);}};
   const socialAction=async(action:()=>Promise<void>)=>{setSocialBusy(true);try{await action();await loadFriends();}finally{setSocialBusy(false);}};
