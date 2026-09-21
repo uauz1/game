@@ -107,3 +107,19 @@ html[data-theme="light"] .online-how-steps span{background:#fffaf1;border-color:
 .app.party-app.online-embed .game-loading{
   min-height:55vh;
 }
+
+
+.online-live-game.preloading{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  min-height:0!important;
+  opacity:0!important;
+  overflow:hidden!important;
+  pointer-events:none!important;
+}
+.online-live-game.preloading iframe{
+  width:1px!important;
+  height:1px!important;
+  min-height:0!important;
+}
