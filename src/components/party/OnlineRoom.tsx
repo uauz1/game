@@ -23,6 +23,7 @@ type ServerError = { type: 'room-error'; reason: 'duplicate-name' | 'room-full' 
 
 const PLAYER_KEY = 'qaddha.online.player-id';
 const ROOM_KEY_PREFIX = 'qaddha.online.host-room.v3:';
+const HOST_TOKEN_PREFIX = 'qaddha.online.host-token.v1:';
 const MAX_PLAYERS = 12;
 const categories = ['الكل', 'عام', 'رياضة', 'ترفيه', 'إسلامي', 'علوم'];
 const cleanCode = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
@@ -32,6 +33,9 @@ const getPlayerId = () => {
   try { const saved = localStorage.getItem(PLAYER_KEY); if (saved) return saved; const id = crypto.randomUUID(); localStorage.setItem(PLAYER_KEY, id); return id; }
   catch { return crypto.randomUUID(); }
 };
+const makeHostToken = () => `${crypto.randomUUID()}-${crypto.randomUUID()}`;
+const getHostToken = (code: string) => { try { return localStorage.getItem(`${HOST_TOKEN_PREFIX}${code}`) || ''; } catch { return ''; } };
+const saveHostToken = (code: string, token: string) => { try { localStorage.setItem(`${HOST_TOKEN_PREFIX}${code}`, token); } catch {/* optional */} };
 const newRoom = (code: string, name: string, gameId: string): Room => ({
   type: 'room-snapshot', version: 1, code, phase: 'lobby', gameId,
   players: [{ id: getPlayerId(), name: cleanName(name) || 'المضيف', team: 0, ready: true, host: true, connected: true, seenAt: Date.now() }],
@@ -77,25 +81,48 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const [qr, setQr] = useState('');
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [hostToken, setHostToken] = useState(() => queryHost ? getHostToken(queryHost) : '');
   const channelRef = useRef<RealtimeChannel | null>(null);
   const roomRef = useRef<Room | null>(room);
   roomRef.current = room;
   const me = useMemo(getPlayerId, []);
   const roomUrl = useMemo(() => { if (!room) return ''; const url = new URL(window.location.href); url.search = ''; url.searchParams.set('online', room.code); return url.toString(); }, [room]);
 
+  const persistRoom = useCallback(async (snapshot: Room, token = hostToken) => {
+    if (!token) return;
+    try {
+      const client = await getAuthClient();
+      await client.rpc('qaddha_guest_save_room', { p_code: snapshot.code, p_host_token: token, p_state: snapshot });
+    } catch { /* realtime remains primary; local cache is fallback */ }
+  }, [hostToken]);
+
   const update = useCallback((fn: (current: Room) => Room) => setRoom(current => {
     if (!current) return current;
     const next = { ...fn(current), version: current.version + 1 };
     roomRef.current = next;
     try { localStorage.setItem(`${ROOM_KEY_PREFIX}${next.code}`, JSON.stringify(next)); } catch {/* optional */}
+    void persistRoom(next);
     return next;
-  }), []);
+  }), [persistRoom]);
   useEffect(() => {
     if (mode !== 'host' || !room || !connected || !channelRef.current) return;
     void channelRef.current.send({ type: 'broadcast', event: 'server-message', payload: room });
   }, [mode, room, connected]);
   useEffect(() => { if (room?.phase !== 'countdown' && room?.phase !== 'playing') return; const timer = window.setInterval(() => setNow(Date.now()), 250); return () => window.clearInterval(timer); }, [room?.phase]);
   useEffect(() => { if (roomUrl) QRCode.toDataURL(roomUrl, { width: 300, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#090909', light: '#fff8df' } }).then(setQr).catch(() => setQr('')); }, [roomUrl]);
+
+  useEffect(() => {
+    if (mode !== 'host' || !queryHost || hostToken || room?.players.some(p => p.host && p.id === me)) return;
+    let cancelled = false;
+    void getAuthClient().then(client => client.rpc('qaddha_guest_get_room', { p_code: queryHost })).then(({ data }) => {
+      if (cancelled || !Array.isArray(data) || !data[0]?.state) return;
+      const restored = normalize(data[0].state as Room);
+      setRoom(restored);
+      roomRef.current = restored;
+      try { localStorage.setItem(`${ROOM_KEY_PREFIX}${queryHost}`, JSON.stringify(restored)); } catch {/* optional */}
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [mode, queryHost, hostToken, me, room?.players]);
 
   useEffect(() => {
     if (mode !== 'host' || !room?.code) return;
@@ -279,15 +306,43 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     };
   }, [join, me, mode]);
 
-  const create = () => { const code = makeCode(); const next = newRoom(code, hostName, games[0]?.id || 'teams'); try { localStorage.setItem('qaddha.online.name', cleanName(hostName)); localStorage.setItem(`${ROOM_KEY_PREFIX}${code}`, JSON.stringify(next)); } catch {/* optional */} window.history.replaceState({}, '', `${window.location.pathname}?onlineHost=${code}`); setRoom(next); setMode('host'); };
+  const create = async () => {
+    const name = cleanName(hostName);
+    if (name.length < 2) return;
+    setNotice('نجهز الغرفة…');
+    try {
+      const client = await getAuthClient();
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const code = makeCode();
+        const token = makeHostToken();
+        const next = newRoom(code, name, games[0]?.id || 'teams');
+        const { error } = await client.rpc('qaddha_guest_create_room', { p_code: code, p_host_token: token, p_state: next });
+        if (error) {
+          if (String(error.message || '').includes('ROOM_CODE_TAKEN')) continue;
+          throw error;
+        }
+        saveHostToken(code, token);
+        setHostToken(token);
+        try { localStorage.setItem('qaddha.online.name', name); localStorage.setItem(`${ROOM_KEY_PREFIX}${code}`, JSON.stringify(next)); } catch {/* optional */}
+        window.history.replaceState({}, '', `${window.location.pathname}?onlineHost=${code}`);
+        setRoom(next);
+        roomRef.current = next;
+        setMode('host');
+        setNotice('');
+        return;
+      }
+      throw new Error('ROOM_CODE_RETRY_FAILED');
+    } catch {
+      setNotice('تعذر إنشاء الغرفة الآن. جرّب مرة ثانية.');
+    }
+  };
   const joinRoom = (code: string, name: string) => { setJoin({ code, name }); setRoom(null); setNotice(''); setJoinError(''); setMode('guest'); };
   const send = (message: ClientMessage) => { const channel = channelRef.current; if (channel) void channel.send({ type: 'broadcast', event: 'client-message', payload: message }); };
   const localPlayer = room?.players.find(p => p.id === me);
   const allReady = !!room && room.players.filter(p => p.connected).length >= 2 && room.players.filter(p => p.connected).every(p => p.host || p.ready);
   const copy = async () => { try { await navigator.clipboard.writeText(roomUrl); setCopied(true); window.setTimeout(() => setCopied(false), 1600); } catch { setNotice('انسخ الرابط من شريط المتصفح'); } };
-  const copyCode = async () => { if (!room) return; try { await navigator.clipboard.writeText(room.code); setNotice('تم نسخ كود الغرفة'); window.setTimeout(() => setNotice(''), 1600); } catch { setNotice(`كود الغرفة: ${room.code}`); } };
-  const copyCode = async () => { try { if (!room) return; await navigator.clipboard.writeText(room.code); setCopied(true); setNotice('تم نسخ كود الغرفة'); window.setTimeout(() => { setCopied(false); setNotice(''); }, 1600); } catch { setNotice('تعذر نسخ الكود الآن.'); } };
-  const exitOnline = () => { const url = new URL(window.location.href); url.searchParams.delete('online'); url.searchParams.delete('onlineHost'); window.history.replaceState({}, '', url); try { sessionStorage.removeItem(ROOM_KEY); } catch {/* optional */} onBack(); };
+  const copyCode = async () => { try { if (!room) return; await navigator.clipboard.writeText(room.code); setCopied(true); setNotice('تم نسخ كود الغرفة'); window.setTimeout(() => { setCopied(false); setNotice(''); }, 1600); } catch { setNotice(`كود الغرفة: ${room?.code || ''}`); } };
+  const exitOnline = () => { const url = new URL(window.location.href); url.searchParams.delete('online'); url.searchParams.delete('onlineHost'); window.history.replaceState({}, '', url); onBack(); };
   const share = async () => navigator.share ? navigator.share({ title: `غرفة قدّها ${room?.code}`, text: `ادخل غرفة قدّها بالكود ${room?.code}`, url: roomUrl }) : copy();
   const start = () => update(r => ({ ...r, phase: 'countdown', scores: [0, 0], round: 1, startedAt: Date.now() + 3500, roundEndsAt: Date.now() + 3500 + r.timerSeconds * 1000, pausedAt: null, answerRevealed: false, winner: null }));
   const lobby = () => update(r => ({ ...r, phase: 'lobby', scores: [0, 0], round: 1, startedAt: null, roundEndsAt: null, pausedAt: null, answerRevealed: false, players: r.players.map(p => ({ ...p, ready: p.host })) }));
