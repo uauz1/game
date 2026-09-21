@@ -39,9 +39,18 @@ const TEAM_COLORS = [
   { value: '#a77bff', name: 'بنفسجي' },
   { value: '#ffd45a', name: 'ذهبي' },
 ];
+const ONLINE_PARAMS = new URLSearchParams(window.location.search);
+const ONLINE_EMBED = ONLINE_PARAMS.get('onlineEmbed') === '1';
+const ONLINE_TEAM_NAMES: [string,string] = [
+  ONLINE_PARAMS.get('onlineTeam0')?.trim() || 'الفريق الأول',
+  ONLINE_PARAMS.get('onlineTeam1')?.trim() || 'الفريق الثاني',
+];
+const ONLINE_TIMER = Number(ONLINE_PARAMS.get('onlineTimer') || '45');
+const ONLINE_ROUNDS = Number(ONLINE_PARAMS.get('onlineRounds') || '8');
+const ONLINE_DIFFICULTY = ONLINE_PARAMS.get('onlineDifficulty') as WhoAmIDifficulty | null;
 
-function useWhoRoom(state: HostState, onCommand: (command: HostCommand) => void) {
-  const [status, setStatus] = useState<RoomStatus>('starting');
+function useWhoRoom(state: HostState, onCommand: (command: HostCommand) => void, enabled = true) {
+  const [status, setStatus] = useState<RoomStatus>(enabled ? 'starting' : 'connected');
   const [hostUrl, setHostUrl] = useState('');
   const [qrCode, setQrCode] = useState('');
   const channelRef = useRef<ReturnType<typeof createRealtimeRoomChannel> | null>(null);
@@ -51,6 +60,7 @@ function useWhoRoom(state: HostState, onCommand: (command: HostCommand) => void)
   commandRef.current = onCommand;
 
   useEffect(() => {
+    if (!enabled) { setStatus('connected'); return; }
     const roomId = createRealtimeRoomId('who');
     const token = createRealtimeRoomToken();
     const nextUrl = buildRealtimeJoinUrl('who', roomId, token);
@@ -75,7 +85,7 @@ function useWhoRoom(state: HostState, onCommand: (command: HostCommand) => void)
         else if (nextStatus === 'CLOSED') setStatus('disconnected');
       });
     return () => { channelRef.current = null; void removeRealtimeChannel(channel); };
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     const channel = channelRef.current;
@@ -95,12 +105,12 @@ function Pairing({ status, hostUrl, qrCode, compact = false }: { status: RoomSta
 export default function WhoAmIPrivate({ onHome }: { onHome: () => void }) {
   const [preferences] = useState(loadWhoAmIPreferences);
   const [teams, setTeams] = useState<Team[]>([
-    { name: preferences.teamNames[0], color: preferences.teamColors[0], score: 0, answers: 0 },
-    { name: preferences.teamNames[1], color: preferences.teamColors[1], score: 0, answers: 0 },
+    { name: ONLINE_EMBED ? ONLINE_TEAM_NAMES[0] : preferences.teamNames[0], color: preferences.teamColors[0], score: 0, answers: 0 },
+    { name: ONLINE_EMBED ? ONLINE_TEAM_NAMES[1] : preferences.teamNames[1], color: preferences.teamColors[1], score: 0, answers: 0 },
   ]);
-  const [difficulty, setDifficulty] = useState<WhoAmIDifficulty>(preferences.difficulty);
-  const [seconds, setSeconds] = useState(preferences.seconds);
-  const [roundCount, setRoundCount] = useState(preferences.roundCount);
+  const [difficulty, setDifficulty] = useState<WhoAmIDifficulty>(ONLINE_EMBED && ['easy','medium','hard','mixed'].includes(ONLINE_DIFFICULTY || '') ? ONLINE_DIFFICULTY as WhoAmIDifficulty : preferences.difficulty);
+  const [seconds, setSeconds] = useState(ONLINE_EMBED && [30,45,60].includes(ONLINE_TIMER) ? ONLINE_TIMER : preferences.seconds);
+  const [roundCount, setRoundCount] = useState(ONLINE_EMBED && [6,8,10].includes(ONLINE_ROUNDS) ? ONLINE_ROUNDS : preferences.roundCount);
   const [phase, setPhase] = useState<Phase>('setup');
   const [round, setRound] = useState(0);
   const [deck, setDeck] = useState<WhoAmICard[]>([]);
@@ -114,6 +124,7 @@ export default function WhoAmIPrivate({ onHome }: { onHome: () => void }) {
   const winner = useMemo(() => teams[0].score === teams[1].score ? null : teams[0].score > teams[1].score ? 0 : 1, [teams]);
 
   useEffect(() => {
+    if (ONLINE_EMBED) return;
     saveWhoAmIPreferences({ teamNames: [teams[0].name, teams[1].name], teamColors: [teams[0].color, teams[1].color], seconds, difficulty, roundCount });
   }, [difficulty, roundCount, seconds, teams]);
 
@@ -139,10 +150,10 @@ export default function WhoAmIPrivate({ onHome }: { onHome: () => void }) {
   const room = useWhoRoom(state, command => {
     if (command.type === 'more-clue') { if (phase === 'playing' && currentCard) setClueCount(value => Math.min(currentCard.clues.length, value + 1)); return; }
     judge(command.team);
-  });
+  }, !ONLINE_EMBED);
 
   const startGame = () => {
-    if (!validNames || room.status !== 'connected') return;
+    if (!validNames || (!ONLINE_EMBED && room.status !== 'connected')) return;
     const nextDeck = drawWhoAmICards(cardsForDifficulty(difficulty), roundCount, difficulty);
     if (!nextDeck.length) return;
     setTeams(current => current.map(team => ({ ...team, name: team.name.trim(), score: 0, answers: 0 })));
@@ -150,12 +161,13 @@ export default function WhoAmIPrivate({ onHome }: { onHome: () => void }) {
     setDeck(nextDeck); setRound(0); setClueCount(1); setTimedOut(false); setPhase('playing');
   };
   const restart = () => { const nextDeck = drawWhoAmICards(cardsForDifficulty(difficulty), roundCount, difficulty); if (!nextDeck.length) return; setAnswerReveal(null); setDeck(nextDeck); setTeams(current => current.map(team => ({ ...team, score: 0, answers: 0 }))); setRound(0); setClueCount(1); setTimedOut(false); setPhase('playing'); };
+  useEffect(() => { if (ONLINE_EMBED && phase === 'setup' && validNames) startGame(); }, [phase, validNames]);
   const updateTeam = (index: number, patch: Partial<Team>) => setTeams(current => current.map((team, teamIndex) => teamIndex === index ? { ...team, ...patch } : team));
 
   return <section className="arena who-arena" aria-label="لعبة من أنا">
     <div className="arena-heading"><div><span className="eyebrow"><Brain size={16}/> من أنا؟</span><h1>{phase === 'setup' ? 'الإجابة عند المقدم فقط.' : phase === 'result' ? 'انكشفت الشخصيات!' : `الشخصية ${round + 1} من ${deck.length}`}</h1></div><button className="quiet" onClick={onHome}>الألعاب <ArrowLeft size={17}/></button></div>
-    {phase === 'setup' ? <div className="who-setup"><div className="section-heading"><h2>جهّزوا المواجهة والمقدم</h2><p>الشاشة الكبيرة تعرض التلميحات فقط. الإجابة والتحكيم تبقى على جوال المقدم.</p></div><div className="team-setup">{teams.map((team,index)=><div className="team-editor" key={index} style={{'--team':team.color} as CSSProperties}><div className="team-emblem"><Users size={36}/><span>0{index+1}</span></div><label>اسم الفريق {index===0?'الأول':'الثاني'}</label><input maxLength={22} value={team.name} onChange={event=>updateTeam(index,{name:event.target.value})}/><div className="color-choices">{TEAM_COLORS.map(color=><button key={color.value} aria-pressed={team.color===color.value} disabled={teams[1-index].color===color.value} style={{background:color.value}} onClick={()=>updateTeam(index,{color:color.value})}>{team.color===color.value?<Check size={17}/>:null}</button>)}</div></div>)}</div><div className="match-settings who-settings"><div><Flag/><b>إعدادات الجولة</b></div><label>مدة الشخصية<select value={seconds} onChange={event=>setSeconds(Number(event.target.value))}><option value={30}>30 ثانية</option><option value={45}>45 ثانية</option><option value={60}>60 ثانية</option></select></label><label>المستوى<select value={difficulty} onChange={event=>setDifficulty(event.target.value as WhoAmIDifficulty)}><option value="easy">سهل</option><option value="medium">متوسط</option><option value="hard">صعب</option><option value="mixed">عشوائي</option></select></label><label>عدد الشخصيات<select value={roundCount} onChange={event=>setRoundCount(Number(event.target.value))}><option value={6}>6 شخصيات</option><option value={8}>8 شخصيات</option><option value={10}>10 شخصيات</option></select></label></div><Pairing {...room}/>{!validNames?<p className="validation">اكتبوا اسمين مختلفين وغير فارغين.</p>:room.status!=='connected'?<p className="validation">وصّل جوال المقدم أولًا.</p>:null}<div className="arena-actions"><span>المقدم يتحكم بالتلميحات والنتيجة من جواله.</span><button className="primary" disabled={!validNames||room.status!=='connected'} onClick={startGame}>ابدأوا التخمين</button></div></div> : null}
-    {phase === 'playing' && currentCard ? <><Pairing {...room} compact/><div className="who-scorebar">{teams.map((team,index)=><div key={team.name} className={`who-team-score ${turn===index?'is-turn':''}`} style={{'--team':team.color} as CSSProperties}><span>{team.name}</span><strong>{team.score}</strong><small>{team.answers} صحيحة</small></div>)}<div className="who-round"><small>الدور الأساسي</small><b>{teams[turn].name}</b><span>{currentCard.category}</span></div></div><div className="who-stage"><div className="mystery-avatar"><span>؟</span><Sparkles/></div><div className="who-value"><small>قيمة الإجابة الآن</small><strong>{timedOut?0:availablePoints}</strong><span>نقطة</span></div><div className="who-clues">{currentCard.clues.slice(0,clueCount).map((clue,index)=><div className="who-clue" key={clue}><span>{index+1}</span><p>{clue}</p></div>)}</div><Countdown key={currentCard.id} seconds={seconds} stopped={timedOut} onExpire={()=>setTimedOut(true)}/><div className="who-actions"><button className="secondary" disabled={timedOut||clueCount===currentCard.clues.length} onClick={()=>setClueCount(value=>Math.min(currentCard.clues.length,value+1))}><Lightbulb/> تلميح إضافي</button>{timedOut?<button className="primary" onClick={()=>judge(null)}>انتهى الوقت · الشخصية التالية</button>:<span className="validation" style={{margin:0}}>التحكيم والإجابة عند المقدم على الجوال</span>}</div></div></> : null}
+    {phase === 'setup' ? <div className="who-setup"><div className="section-heading"><h2>جهّزوا المواجهة والمقدم</h2><p>الشاشة الكبيرة تعرض التلميحات فقط. الإجابة والتحكيم تبقى على جوال المقدم.</p></div><div className="team-setup">{teams.map((team,index)=><div className="team-editor" key={index} style={{'--team':team.color} as CSSProperties}><div className="team-emblem"><Users size={36}/><span>0{index+1}</span></div><label>اسم الفريق {index===0?'الأول':'الثاني'}</label><input maxLength={22} value={team.name} onChange={event=>updateTeam(index,{name:event.target.value})}/><div className="color-choices">{TEAM_COLORS.map(color=><button key={color.value} aria-pressed={team.color===color.value} disabled={teams[1-index].color===color.value} style={{background:color.value}} onClick={()=>updateTeam(index,{color:color.value})}>{team.color===color.value?<Check size={17}/>:null}</button>)}</div></div>)}</div><div className="match-settings who-settings"><div><Flag/><b>إعدادات الجولة</b></div><label>مدة الشخصية<select value={seconds} onChange={event=>setSeconds(Number(event.target.value))}><option value={30}>30 ثانية</option><option value={45}>45 ثانية</option><option value={60}>60 ثانية</option></select></label><label>المستوى<select value={difficulty} onChange={event=>setDifficulty(event.target.value as WhoAmIDifficulty)}><option value="easy">سهل</option><option value="medium">متوسط</option><option value="hard">صعب</option><option value="mixed">عشوائي</option></select></label><label>عدد الشخصيات<select value={roundCount} onChange={event=>setRoundCount(Number(event.target.value))}><option value={6}>6 شخصيات</option><option value={8}>8 شخصيات</option><option value={10}>10 شخصيات</option></select></label></div>{!ONLINE_EMBED && <Pairing {...room}/>}{!validNames?<p className="validation">اكتبوا اسمين مختلفين وغير فارغين.</p>:!ONLINE_EMBED&&room.status!=='connected'?<p className="validation">وصّل جوال المقدم أولًا.</p>:null}<div className="arena-actions"><span>المقدم يتحكم بالتلميحات والنتيجة من جواله.</span><button className="primary" disabled={!validNames||(!ONLINE_EMBED&&room.status!=='connected')} onClick={startGame}>ابدأوا التخمين</button></div></div> : null}
+    {phase === 'playing' && currentCard ? <>{!ONLINE_EMBED && <Pairing {...room} compact/>}<div className="who-scorebar">{teams.map((team,index)=><div key={team.name} className={`who-team-score ${turn===index?'is-turn':''}`} style={{'--team':team.color} as CSSProperties}><span>{team.name}</span><strong>{team.score}</strong><small>{team.answers} صحيحة</small></div>)}<div className="who-round"><small>الدور الأساسي</small><b>{teams[turn].name}</b><span>{currentCard.category}</span></div></div><div className="who-stage"><div className="mystery-avatar"><span>؟</span><Sparkles/></div><div className="who-value"><small>قيمة الإجابة الآن</small><strong>{timedOut?0:availablePoints}</strong><span>نقطة</span></div><div className="who-clues">{currentCard.clues.slice(0,clueCount).map((clue,index)=><div className="who-clue" key={clue}><span>{index+1}</span><p>{clue}</p></div>)}</div><Countdown key={currentCard.id} seconds={seconds} stopped={timedOut} onExpire={()=>setTimedOut(true)}/><div className="who-actions"><button className="secondary" disabled={timedOut||clueCount===currentCard.clues.length} onClick={()=>setClueCount(value=>Math.min(currentCard.clues.length,value+1))}><Lightbulb/> تلميح إضافي</button>{timedOut?<button className="primary" onClick={()=>judge(null)}>انتهى الوقت · الشخصية التالية</button>:<span className="validation" style={{margin:0}}>التحكيم والإجابة عند المقدم على الجوال</span>}</div></div></> : null}
     {phase === 'result' ? <div className="who-result"><Trophy size={70}/><span className="eyebrow">نهاية التحدّي</span><h2>{winner===null?'تعادل يستاهل جولة ثانية!':`${teams[winner].name}… عرفوها!`}</h2><div className="who-result-scores">{teams.map(team=><span key={team.name} style={{'--team':team.color} as CSSProperties}><small>{team.name}</small><strong>{team.score}</strong><em>{team.answers} صحيحة</em></span>)}</div><div className="result-actions"><button className="primary" onClick={restart}><RotateCcw/> إعادة بنفس الإعدادات</button><button className="secondary" onClick={()=>{setAnswerReveal(null);setPhase('setup');}}>تعديل الإعدادات</button></div></div> : null}
     {answerReveal ? <WhoAnswerReveal card={answerReveal.card} teamName={answerReveal.teamName} onClose={()=>setAnswerReveal(null)}/> : null}
   </section>;
