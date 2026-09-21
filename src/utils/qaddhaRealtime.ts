@@ -1,13 +1,10 @@
 import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
 import QRCode from 'qrcode';
-
-const SUPABASE_URL = 'https://uhbtcjlapgpsohbkotpd.supabase.co';
-// Public browser anon key. Never replace this with a service-role/private key.
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zviAFEw4s4YDpW2pdo-W1g_aCDWMpvO';
+import { supabasePublishableKey, supabaseUrl } from './authClient';
 const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789';
 const roomAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-const client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+const client = createClient(supabaseUrl, supabasePublishableKey, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   realtime: {
     params: { eventsPerSecond: 20 },
@@ -33,6 +30,7 @@ function installReconnectLifecycle() {
     if (navigator.onLine) ensureRealtimeConnected();
   };
   window.addEventListener('online', reconnect);
+  window.addEventListener('pageshow', reconnect);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') reconnect();
   });
@@ -53,7 +51,7 @@ export function createPartyCode(length = 6) {
 }
 
 export function normalizePartyCode(value: string) {
-  return value.toUpperCase().replace(/[^A-Z2-9]/g, '').slice(0, 6);
+  return value.toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g, '').slice(0, 6);
 }
 
 export function isValidPartyCode(value: string) {
