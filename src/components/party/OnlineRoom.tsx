@@ -55,8 +55,14 @@ function TeamBoard({ room, canRemove, onRemove }: { room: Room; canRemove?: bool
 function JoinCard({ code: firstCode, error, onJoin, onBack }: { code: string; error: string; onJoin: (code: string, name: string) => void | Promise<void>; onBack: () => void }) {
   const [code, setCode] = useState(firstCode);
   const [name, setName] = useState(() => { try { return localStorage.getItem('qaddha.online.name') || ''; } catch { return ''; } });
+  const [joining, setJoining] = useState(false);
   const valid = cleanCode(code).length === 6 && cleanName(name).length >= 2;
-  return <section className="online-entry-card"><button className="quiet online-back" onClick={onBack}><ArrowRight/> الرئيسية</button><div className="online-entry-icon"><Link2/></div><small>دخول سريع · بدون حساب</small><h1>انضم للغرفة</h1><p>اكتب كود الغرفة واسمك فقط. ما تحتاج تسجيل دخول عشان تلعب مع أصحابك.</p>{error && <p className="online-form-error" role="alert">{error}</p>}<label><span>كود الغرفة</span><input dir="ltr" autoCapitalize="characters" maxLength={6} value={code} onChange={e => setCode(cleanCode(e.target.value))} placeholder="QDH123"/></label><label><span>اسم اللاعب</span><input maxLength={18} value={name} onChange={e => setName(e.target.value)} placeholder="مثال: نواف"/></label><button className="primary" disabled={!valid} onClick={() => { const value = cleanName(name); try { localStorage.setItem('qaddha.online.name', value); } catch {/* optional */} onJoin(cleanCode(code), value); }}>دخول الغرفة</button></section>;
+  return <section className="online-entry-card"><button className="quiet online-back" onClick={onBack}><ArrowRight/> الرئيسية</button><div className="online-entry-icon"><Link2/></div><small>دخول سريع · بدون حساب</small><h1>انضم للغرفة</h1><p>اكتب كود الغرفة واسمك فقط. ما تحتاج تسجيل دخول عشان تلعب مع أصحابك.</p>{error && <p className="online-form-error" role="alert">{error}</p>}<label><span>كود الغرفة</span><input dir="ltr" autoCapitalize="characters" maxLength={6} value={code} onChange={e => setCode(cleanCode(e.target.value))} placeholder="QDH123"/></label><label><span>اسم اللاعب</span><input maxLength={18} value={name} onChange={e => setName(e.target.value)} placeholder="مثال: نواف"/></label><button className="primary" disabled={!valid || joining} onClick={async () => {
+  const value = cleanName(name);
+  try { localStorage.setItem('qaddha.online.name', value); } catch {/* optional */}
+  setJoining(true);
+  try { await onJoin(cleanCode(code), value); } finally { setJoining(false); }
+}}>{joining ? 'نتأكد من الغرفة…' : 'دخول الغرفة'}</button></section>;
 }
 
 function Header({ room, connected, host, onBack }: { room: Room; connected: boolean; host: boolean; onBack: () => void }) {
