@@ -210,6 +210,9 @@ if (exists(finalGameFile)) {
   finalGames.includes('ONLINE_ROSTER') && finalGames.includes('ONLINE_PLAYER_NAME') && finalGames.includes('data-online-local')
     ? pass('Secret Word gives each online player a private role view')
     : fail('Secret Word online private-role support is missing');
+  finalGames.includes("pointerEvents:'none'") && finalGames.includes('aria-disabled={onlineWaiting||undefined}')
+    ? pass('Secret Word vote actions remain replayable while non-turn devices are locally locked')
+    : fail('Secret Word online vote replay/local-lock handling is missing');
 }
 
 if (exists(premiumGameFile)) {
