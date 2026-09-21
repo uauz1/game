@@ -8,6 +8,7 @@ import QaddhaRemoteControl from './components/admin/QaddhaRemoteControl.tsx';
 import './utils/sessionResultObserver.ts';
 import './utils/autoTvMode.ts';
 import { installOnlineDeterminism } from './utils/onlineDeterminism.ts';
+import { installOnlineEmbedBridge } from './utils/onlineEmbedBridge.ts';
 import './index.css';
 import './huroof.css';
 import './whoami.css';
@@ -33,6 +34,7 @@ const WhoAmIPhone = lazy(() => import('./components/party/WhoAmIPrivate.tsx').th
 const QaddhaAdminDashboard = lazy(() => import('./components/admin/QaddhaAdminDashboard.tsx'));
 const params = new URLSearchParams(window.location.search);
 installOnlineDeterminism(params.get('onlineSeed'));
+installOnlineEmbedBridge(params);
 const host = params.get('host');
 const isWhoHost = host === 'who';
 const playRoom = params.get('playroom');
