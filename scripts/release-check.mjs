@@ -123,6 +123,17 @@ if (exists(settingsFile)) {
     : fail('Display preference dataset wiring is incomplete');
 }
 
+const premiumGameFile = 'src/components/party/PremiumPartyGames.tsx';
+if (exists(premiumGameFile)) {
+  const premiumGames = read(premiumGameFile);
+  app.includes('readQaddhaPreferences().confirmExit')
+    ? pass('Exit confirmation respects the saved preference')
+    : fail('Exit confirmation preference is not wired');
+  premiumGames.includes('readQaddhaPreferences().rememberProgress')
+    ? pass('Premium game resume respects remember-progress preference')
+    : fail('Remember-progress preference is not wired to premium game sessions');
+}
+
 const premiumCssFile = 'src/premium-games.css';
 if (exists(premiumCssFile)) {
   const premiumCss = read(premiumCssFile);

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, BookOpen, Cast, ChevronLeft, Trophy, Users, Sparkles, Brain, Camera, Search, Shuffle, Zap, UserRound, Puzzle, Gamepad2, Heart, Link2, Monitor, Settings as SettingsIcon, WandSparkles, Wifi, Flame, ShieldQuestion } from 'lucide-react';
-import { useQaddhaPreferences } from './utils/sitePreferences';
+import { readQaddhaPreferences, useQaddhaPreferences } from './utils/sitePreferences';
 import type { PlayerActivity } from './components/party/PlayerPanel';
 import { useAuth } from './contexts/AuthContext';
 import { usePWA } from './hooks/usePWA';
@@ -101,7 +101,7 @@ export default function App() {
       const requested=new URLSearchParams(window.location.search).get('play')||'';
       const next=games.some(game=>game.id===requested)?requested:'home';
       const playingNow=games.some(game=>game.id===screen);
-      if(playingNow&&next==='home'){
+      if(playingNow&&next==='home'&&readQaddhaPreferences().confirmExit){
         const restoreUrl=new URL(window.location.href);
         restoreUrl.searchParams.set('play',screen);
         window.history.pushState({qaddhaScreen:screen},'',restoreUrl);
@@ -116,7 +116,7 @@ export default function App() {
     return()=>window.removeEventListener('popstate',syncFromHistory);
   },[screen]);
   useEffect(()=>{
-    if(!isGame)return;
+    if(!isGame||!readQaddhaPreferences().confirmExit)return;
     const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue='';};
     window.addEventListener('beforeunload',warn);
     return()=>window.removeEventListener('beforeunload',warn);
@@ -136,7 +136,7 @@ export default function App() {
   if(hostParams.get('host')==='family')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><FamilyHostController roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
   if(hostParams.has('online')||hostParams.has('onlineHost'))return <div className="app party-app" dir="rtl"><Suspense fallback={<GameLoading/>}><OnlineRoom games={games.map(({id,title,tag})=>({id,title,tag}))} onBack={()=>{window.location.href=window.location.pathname;}}/></Suspense></div>;
 
-  return <div className="app party-app" dir="rtl"><div className="tv-orientation-hint" role="status"><Cast aria-hidden="true"/><span><b>عرض التلفزيون جاهز</b> لفّ الجوال بالعرض ثم فعّل ملء الشاشة لأفضل نتيجة.</span></div><header className="topbar"><button className="brand" aria-label="قدّها الرئيسية" onClick={()=>{if(screen==='home')window.scrollTo({top:0,behavior:'smooth'});else if(isGame)setHomeConfirm(true);else go('home');}} style={{padding:0,background:'transparent',border:0,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:'12px',minWidth:'190px'}}>
+  return <div className="app party-app" dir="rtl"><div className="tv-orientation-hint" role="status"><Cast aria-hidden="true"/><span><b>عرض التلفزيون جاهز</b> لفّ الجوال بالعرض ثم فعّل ملء الشاشة لأفضل نتيجة.</span></div><header className="topbar"><button className="brand" aria-label="قدّها الرئيسية" onClick={()=>{if(screen==='home')window.scrollTo({top:0,behavior:'smooth'});else if(isGame&&readQaddhaPreferences().confirmExit)setHomeConfirm(true);else go('home');}} style={{padding:0,background:'transparent',border:0,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:'12px',minWidth:'190px'}}>
     <span aria-hidden="true" style={{width:'56px',height:'56px',borderRadius:'17px',display:'grid',placeItems:'center',position:'relative',flex:'0 0 auto',background:'linear-gradient(145deg,#080808,#1a1a1a)',border:'1px solid #d7a93b',boxShadow:'inset 0 0 0 1px #f5d36a22,0 8px 22px #0008,0 0 24px #d7a93b18'}}>
       <Gamepad2 size={34} strokeWidth={1.9} style={{color:'#e7bc4f',filter:'drop-shadow(0 1px 3px #000)'}}/>
       <span style={{position:'absolute',top:'6px',right:'7px',width:'6px',height:'6px',borderRadius:'50%',background:'#f4d36f',boxShadow:'-9px 2px 0 #c99428'}}/>

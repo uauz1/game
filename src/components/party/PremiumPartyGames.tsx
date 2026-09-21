@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Brain, Check, ChevronLeft, Clock3, Flame, RefreshCw, RotateCcw, ShieldQuestion, Sparkles, Trophy, X, Zap } from 'lucide-react';
 import { clearMultiplayerChallenge, publishMultiplayerChallenge, publishMultiplayerTeamNames } from '../../utils/multiplayerSession';
+import { readQaddhaPreferences } from '../../utils/sitePreferences';
 
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 type Team = { name: string; score: number };
@@ -107,6 +108,7 @@ const INTRUDER_SESSION_KEY = 'qaddha.intruder.session.v1';
 
 function readGameSession<T>(key: string): T | null {
   try {
+    if (!readQaddhaPreferences().rememberProgress) return null;
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as { savedAt?: number; data?: T };
@@ -121,7 +123,13 @@ function readGameSession<T>(key: string): T | null {
 }
 
 function writeGameSession<T>(key: string, data: T) {
-  try { localStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), data })); } catch {/* optional */}
+  try {
+    if (!readQaddhaPreferences().rememberProgress) {
+      localStorage.removeItem(key);
+      return;
+    }
+    localStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), data }));
+  } catch {/* optional */}
 }
 
 function shuffle<T>(input: T[]) {
