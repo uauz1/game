@@ -238,6 +238,22 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
         void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'room-error', reason, text, targetId: playerId } satisfies ServerError });
       };
 
+      channel.on('presence', { event: 'sync' }, () => {
+        const presence = channel.presenceState();
+        const onlineGuests = new Set(
+          Object.values(presence).flat()
+            .filter((item: any) => item?.role === 'guest' && typeof item?.playerId === 'string')
+            .map((item: any) => item.playerId as string)
+        );
+        update(r => ({
+          ...r,
+          players: r.players.map(player => player.host ? player : {
+            ...player,
+            connected: onlineGuests.has(player.id) || Date.now() - player.seenAt < 9000,
+          }),
+        }), false);
+      });
+
       channel.on('broadcast', { event: 'client-message' }, message => {
         const raw = message.payload;
         if (!raw || typeof raw !== 'object') return;
@@ -337,6 +353,9 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     let resync = 0;
     let visibilityHandler: (() => void) | null = null;
     let receivedSnapshot = false;
+    let lastRealtimeSnapshotAt = 0;
+    let networkOnlineHandler: (() => void) | null = null;
+    let networkOfflineHandler: (() => void) | null = null;
     let client: Awaited<ReturnType<typeof getAuthClient>> | null = null;
     const topic = `qaddha-room:${join.code.toLowerCase()}`;
 
@@ -366,6 +385,17 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
         void channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'sync-request', playerId: me } satisfies ClientMessage });
       };
       document.addEventListener('visibilitychange', visibilityHandler);
+      networkOfflineHandler = () => {
+        setConnected(false);
+        setNotice('النت انقطع. بنرجع نزامن الغرفة تلقائيًا.');
+      };
+      networkOnlineHandler = () => {
+        setNotice('رجع الاتصال… نزامن الغرفة.');
+        void pullPersistedRoom();
+        void channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'sync-request', playerId: me } satisfies ClientMessage });
+      };
+      window.addEventListener('offline', networkOfflineHandler);
+      window.addEventListener('online', networkOnlineHandler);
 
       channel.on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
@@ -398,6 +428,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
         }
         if ((raw as Room).type === 'room-snapshot') {
           receivedSnapshot = true;
+          lastRealtimeSnapshotAt = Date.now();
           window.clearTimeout(roomTimeout);
           setConnected(true);
           setJoinError('');
@@ -410,7 +441,9 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
         if (status === 'SUBSCRIBED') {
           await pullPersistedRoom();
           window.clearInterval(resync);
-          resync = window.setInterval(() => { if (document.visibilityState === 'visible') void pullPersistedRoom(); }, 4000);
+          resync = window.setInterval(() => {
+            if (document.visibilityState === 'visible' && Date.now() - lastRealtimeSnapshotAt > 10000) void pullPersistedRoom();
+          }, 8000);
           await channel.track({ role: 'guest', playerId: me, name: join.name, onlineAt: Date.now() });
           await channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'join', playerId: me, name: join.name } satisfies ClientMessage });
           await channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'sync-request', playerId: me } satisfies ClientMessage });
@@ -452,6 +485,8 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
       window.clearInterval(resync);
       window.clearTimeout(roomTimeout);
       if (visibilityHandler) document.removeEventListener('visibilitychange', visibilityHandler);
+      if (networkOfflineHandler) window.removeEventListener('offline', networkOfflineHandler);
+      if (networkOnlineHandler) window.removeEventListener('online', networkOnlineHandler);
       const channel = channelRef.current;
       channelRef.current = null;
       if (channel) {
