@@ -56,7 +56,14 @@ function syncProgression() {
 export default function PlatformShell() {
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
   const [hubOpen, setHubOpen] = useState(params.get('hub') === '1');
+  const [updateReady, setUpdateReady] = useState(false);
   const [level, setLevel] = useState(() => Math.max(1, Math.floor(Math.sqrt(readProgression().xp / 75)) + 1));
+
+  useEffect(() => {
+    const onUpdate = () => setUpdateReady(true);
+    window.addEventListener('qaddha:update-ready', onUpdate);
+    return () => window.removeEventListener('qaddha:update-ready', onUpdate);
+  }, []);
 
   useEffect(() => {
     syncProgression();
@@ -89,6 +96,8 @@ export default function PlatformShell() {
     window.setTimeout(()=>window.dispatchEvent(new CustomEvent('qaddha:hub-launch', { detail: { gameId } })),0);
   };
 
-  if (hubOpen) return <><PartyHub games={HUB_GAMES} onBack={closeHub} onPlay={playFromHub}/><MultiplayerHostLayer/></>;
-  return <><App/><MultiplayerHostLayer/><button className="global-hub-launch" onClick={openHub} aria-label="فتح مركز قدّها"><span><Crown/></span><b>مركز قدّها</b><small>LV {level}</small><Sparkles/></button></>;
+  const updateBanner = updateReady ? <div className="qaddha-update-banner" role="status"><span><b>تحديث جديد جاهز</b><small>حدّث لما تخلص جولتك عشان تاخذ آخر التحسينات.</small></span><button onClick={()=>window.location.reload()}>تحديث الآن</button><button className="dismiss" aria-label="إخفاء التنبيه" onClick={()=>setUpdateReady(false)}>×</button></div> : null;
+
+  if (hubOpen) return <><PartyHub games={HUB_GAMES} onBack={closeHub} onPlay={playFromHub}/><MultiplayerHostLayer/>{updateBanner}</>;
+  return <><App/><MultiplayerHostLayer/>{updateBanner}<button className="global-hub-launch" onClick={openHub} aria-label="فتح مركز قدّها"><span><Crown/></span><b>مركز قدّها</b><small>LV {level}</small><Sparkles/></button></>;
 }
