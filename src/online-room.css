@@ -138,3 +138,25 @@ html[data-theme="light"] .online-how-steps span{background:#fffaf1;border-color:
   padding:10px 16px;
   border-radius:14px;
 }
+
+
+/* The embedded game owns gameplay, scoring, and rounds. Keep the room wrapper focused on sync/recovery. */
+.online-live > .online-team-board,
+.online-live > .online-host-score{
+  display:none!important;
+}
+.online-host-live-tools{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:14px 0 4px;
+}
+.online-host-live-tools button{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:44px;
+  padding:10px 16px;
+  border-radius:14px;
+}
