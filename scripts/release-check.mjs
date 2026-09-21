@@ -106,6 +106,7 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes('room?.gameActions?.length') && durableOnline.includes('replayStoredActions(room)'), 'Persisted online actions replay after missed realtime events'],
     [durableOnline.includes('normalizeGameAction') && read('src/utils/onlineEmbedBridge.ts').includes('selector.length > 500'), 'Online action payloads are bounded and host-normalized'],
     [durableOnline.includes('gameRevision') && durableOnline.includes('const resyncGame') && durableOnline.includes('مزامنة اللعبة'), 'Host can force a live game reload and replay state across devices'],
+    [durableOnline.includes('onlineTeam0=') && read('src/components/party/LettersGame.tsx').includes("onlineEmbed ? [] : loadUsedHuroofQuestions()") && read('src/components/party/LettersGame.tsx').includes("phase !== 'setup'"), 'Letters online mode shares room settings and ignores device-local question history'],
     [durableOnline.includes("type: 'resync-game'") && durableOnline.includes('online-guest-live-tools'), 'Guests can request full live-game resync recovery'],
     [durableOnline.includes('allowGameAction') && durableOnline.includes('current.count >= 80'), 'Guest gameplay events are rate-limited by the host'],
     [durableOnline.includes('winner: null, gameActions: []') && durableOnline.includes('gameLoadedId: undefined'), 'Returning to lobby clears stale match state'],
