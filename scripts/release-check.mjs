@@ -169,6 +169,9 @@ if (exists(contentIntelligenceFile) && exists(newGameSettingsFile) && exists(new
   newGames.includes('if (ONLINE_EMBED && valid) onStart();') && newGames.includes('!ONLINE_EMBED && <HostPairingPanel')
     ? pass('Modern party games auto-start online and suppress duplicate legacy host pairing UI')
     : fail('Modern party games still require duplicate setup or host pairing in online mode');
+  newGames.includes('useFamilyHostRoom(hostState,handleHostCommand,!ONLINE_EMBED)') && read('src/components/party/HostRoom.tsx').includes('enabled = true')
+    ? pass('Family Feud disables its legacy pairing transport inside shared online rooms')
+    : fail('Family Feud still creates a duplicate realtime host room online');
   const teamGame = read('src/components/party/TeamGame.tsx');
   const partyBank = read('src/data/partyBank.ts');
   teamGame.includes("stage:'board'") && teamGame.includes("ONLINE_PARAMS.get('onlineTeam0')") && partyBank.includes('if (ONLINE_EMBED) return {}')
