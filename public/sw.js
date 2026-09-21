@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qaddha-v5';
+const CACHE_NAME = 'qaddha-v6';
 const BASE = new URL('./', self.location.href).pathname;
 const APP_SHELL = [
   BASE,
