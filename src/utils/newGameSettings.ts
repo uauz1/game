@@ -19,7 +19,14 @@ function globalFallback(field: string, fallback: number) {
 }
 
 export function useNewGameNumber(game: string, field: string, fallback: number) {
+  const onlineParams = new URLSearchParams(window.location.search);
+  const onlineEmbed = onlineParams.get('onlineEmbed') === '1';
   const [value, setValue] = useState(() => {
+    if (onlineEmbed) {
+      const onlineValue = Number(field === 'seconds' ? onlineParams.get('onlineTimer') : onlineParams.get('onlineRounds'));
+      const allowed = field === 'seconds' ? [20, 30, 45, 60] : [4, 6, 8];
+      if (allowed.includes(onlineValue)) return onlineValue;
+    }
     const resolvedFallback = globalFallback(field, fallback);
     try {
       const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}') as SettingsMap;
@@ -32,13 +39,14 @@ export function useNewGameNumber(game: string, field: string, fallback: number) 
   });
 
   useEffect(() => {
+    if (onlineEmbed) return;
     try {
       const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}') as SettingsMap;
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...settings, [game]: { ...settings[game], [field]: value } }));
     } catch {
       // Settings remain active for the current visit.
     }
-  }, [field, game, value]);
+  }, [field, game, onlineEmbed, value]);
 
   return [value, setValue] as const;
 }
