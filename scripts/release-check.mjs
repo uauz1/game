@@ -125,6 +125,7 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes('pullPersistedRoom') && durableOnline.includes('lastRealtimeSnapshotAt') && durableOnline.includes('8000'), 'Guest room uses conditional persisted-state resync fallback'],
     [durableOnline.includes('onlineGuests = new Set') && durableOnline.includes("channel.on('presence', { event: 'sync' }"), 'Host uses presence sync for faster guest connectivity detection'],
     [durableOnline.includes("window.addEventListener('offline'") && durableOnline.includes("window.addEventListener('online'"), 'Online rooms recover explicitly from browser network changes'],
+    [durableOnline.includes("disabled={!connected || !allReady") && durableOnline.includes("disabled={!connected} className={`ready"), 'Launch/readiness controls lock while realtime connection is unavailable'],
     [durableOnline.includes('qaddha_guest_get_room'), 'Guest room restore is wired'],
     [durableOnline.includes('qaddha_guest_save_room'), 'Guest room persistence is wired'],
     [durableOnline.includes('qaddha_guest_close_room'), 'Guest room close is wired'],
