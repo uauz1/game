@@ -5,6 +5,7 @@ import { saveSharedTeams } from './sharedTeams';
 
 const STORAGE_KEY = 'qaddha-who-am-i-preferences-v1';
 const USED_CARDS_KEY = 'qaddha.who-am-i.used-cards.v1';
+const ONLINE_EMBED = new URLSearchParams(window.location.search).get('onlineEmbed') === '1';
 
 export type WhoAmIPreferences = {
   teamNames: [string, string];
@@ -38,6 +39,7 @@ export function loadWhoAmIPreferences(): WhoAmIPreferences {
 }
 
 export function saveWhoAmIPreferences(preferences: WhoAmIPreferences) {
+  if (ONLINE_EMBED) return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
     saveSharedTeams(preferences.teamNames.map((name, index) => ({ name, color: preferences.teamColors[index] })));
@@ -57,7 +59,9 @@ function shuffle<T>(items: T[]) {
 
 export function drawWhoAmICards(cards: WhoAmICard[], count: number, difficulty: WhoAmIDifficulty) {
   let used: Record<string, string[]> = {};
-  try { used = JSON.parse(localStorage.getItem(USED_CARDS_KEY) ?? '{}'); } catch { /* Storage is optional. */ }
+  if (!ONLINE_EMBED) {
+    try { used = JSON.parse(localStorage.getItem(USED_CARDS_KEY) ?? '{}'); } catch { /* Storage is optional. */ }
+  }
   const usedIds = new Set(used[difficulty] ?? []);
   const fresh = shuffle(cards.filter(card => !usedIds.has(card.id)));
   const rollover = fresh.length < count
@@ -67,6 +71,8 @@ export function drawWhoAmICards(cards: WhoAmICard[], count: number, difficulty: 
   used[difficulty] = fresh.length < count
     ? picked.map(card => card.id)
     : [...(used[difficulty] ?? []), ...picked.map(card => card.id)].slice(-cards.length);
-  try { localStorage.setItem(USED_CARDS_KEY, JSON.stringify(used)); } catch { /* Storage is optional. */ }
+  if (!ONLINE_EMBED) {
+    try { localStorage.setItem(USED_CARDS_KEY, JSON.stringify(used)); } catch { /* Storage is optional. */ }
+  }
   return picked;
 }
