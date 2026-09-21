@@ -95,6 +95,8 @@ if (exists(durableOnlineFile)) {
   const durableOnline = read(durableOnlineFile);
   const currentOnlineChecks = [
     [durableOnline.includes('qaddha_guest_create_room'), 'Guest rooms create through Supabase'],
+    [durableOnline.includes('onlineEmbed=1'), 'Online room launches the selected game inside the shared session'],
+    [durableOnline.includes('pullPersistedRoom') && durableOnline.includes('4000'), 'Guest room has persisted-state resync fallback'],
     [durableOnline.includes('qaddha_guest_get_room'), 'Guest room restore is wired'],
     [durableOnline.includes('qaddha_guest_save_room'), 'Guest room persistence is wired'],
     [durableOnline.includes('qaddha_guest_close_room'), 'Guest room close is wired'],
@@ -220,6 +222,9 @@ if (exists(platformShellFile)) {
   platformShell.includes('beforeinstallprompt') && platformShell.includes('appinstalled') && platformShell.includes("lazy(() => import('./MultiplayerHostLayer'))")
     ? pass('PWA install prompt and lazy multiplayer shell are wired')
     : fail('PWA install prompt or lazy multiplayer shell wiring is missing');
+  platformShell.includes("onlineEmbed = params.get('onlineEmbed') === '1'") && platformShell.includes('if (onlineEmbed) return <App/>')
+    ? pass('Embedded online game runtime excludes global hub/multiplayer overlays')
+    : fail('Embedded online game runtime isolation is missing');
 }
 
 if (exists(pwaHookFile) && exists(serviceWorkerFile)) {
