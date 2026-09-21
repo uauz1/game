@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Brain, Cast, Check, Clock3, Gamepad2, Play, QrCode, RotateCcw, Shuffle, Smartphone, Sparkles, Trophy, Users, WandSparkles, Zap, Heart, Flame } from 'lucide-react';
-import { readQaddhaPreferences } from './SiteSettings';
+import { readQaddhaPreferences } from '../../utils/sitePreferences';
 import { beginSessionGame, clearPendingSessionGame, consumeSessionGameResult } from '../../utils/sessionBridge';
 import { saveSharedTeams } from '../../utils/sharedTeams';
 import { saveTournamentResult } from '../../utils/tournamentHistory';

@@ -123,6 +123,16 @@ if (exists(settingsFile)) {
     : fail('Display preference dataset wiring is incomplete');
 }
 
+const partyAudioFile = 'src/utils/partyAudio.ts';
+const smartSessionFile = 'src/components/party/SmartPartySession.tsx';
+if (exists(partyAudioFile) && exists(smartSessionFile)) {
+  const partyAudio = read(partyAudioFile);
+  const smartSession = read(smartSessionFile);
+  partyAudio.includes("from './sitePreferences'") && smartSession.includes("from '../../utils/sitePreferences'")
+    ? pass('Audio, haptics, and smart sessions share the central preferences runtime')
+    : fail('Preference consumers still bypass the central runtime');
+}
+
 const contentIntelligenceFile = 'src/utils/contentIntelligence.ts';
 if (exists(contentIntelligenceFile)) {
   const contentEngine = read(contentIntelligenceFile);

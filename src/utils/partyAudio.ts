@@ -1,23 +1,5 @@
 import { sounds, type SoundName } from './sound';
-
-const PREFS_KEY = 'qaddha_site_prefs_v1';
-
-type FeedbackPrefs = {
-  soundEnabled: boolean;
-  haptics: boolean;
-};
-
-function readFeedbackPrefs(): FeedbackPrefs {
-  try {
-    const preferences = JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as { soundEnabled?: boolean; haptics?: boolean };
-    return {
-      soundEnabled: preferences.soundEnabled !== false,
-      haptics: preferences.haptics !== false,
-    };
-  } catch {
-    return { soundEnabled: true, haptics: true };
-  }
-}
+import { readQaddhaPreferences } from './sitePreferences';
 
 function vibrateFor(name: SoundName) {
   if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
@@ -34,7 +16,7 @@ function vibrateFor(name: SoundName) {
 }
 
 export function playPartySound(name: SoundName) {
-  const preferences = readFeedbackPrefs();
+  const preferences = readQaddhaPreferences();
   if (preferences.haptics) vibrateFor(name);
   if (preferences.soundEnabled) sounds[name]();
 }
