@@ -400,3 +400,27 @@ html[data-theme="light"] .auth-modal input{
   color:#251f18 !important;
   border-color:rgba(87,65,34,.2) !important;
 }
+
+
+/* 2026-09-22 card consistency + RTL safety */
+.game-card-shell{display:flex;min-width:0;height:100%}
+.game-card-shell>.lobby-game{display:flex;flex-direction:column;min-height:100%}
+.game-card-shell .game-art{flex:0 0 auto}
+.game-card-shell .game-copy{position:relative;display:flex;flex:1;flex-direction:column;min-width:0;padding-bottom:64px!important}
+.game-card-shell .game-copy h3,
+.game-card-shell .game-copy p{overflow-wrap:anywhere;word-break:normal}
+.game-card-shell .game-copy p{padding-left:0!important;padding-inline-end:0!important;padding-inline-start:0!important;margin-bottom:0}
+.game-card-shell .game-favorite{
+  left:16px!important;
+  right:auto!important;
+  bottom:16px!important;
+  top:auto!important;
+}
+.game-card-shell .game-arrow{margin-top:auto}
+@media(max-width:620px){
+  .game-card-shell .game-copy{padding-bottom:60px!important}
+  .game-card-shell .game-favorite{left:13px!important;bottom:13px!important}
+}
+html[data-theme="light"] .game-card-shell .game-copy{
+  background:linear-gradient(180deg,#fffdf9,#f7f1e6)!important;
+}
