@@ -8,6 +8,8 @@ type AuthContextValue = {
   configured: boolean;
   loading: boolean;
   googleAvailable: boolean;
+  oauthMessage: string;
+  clearOauthMessage: () => void;
   recoveryMode: boolean;
   dismissRecovery: () => void;
   session: Session | null;
@@ -38,6 +40,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(isAuthConfigured);
   const [googleAvailable, setGoogleAvailable] = useState(false);
+  const [oauthMessage, setOauthMessage] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error_description') || params.get('error');
+    return error ? authError(error) : '';
+  });
+  const clearOauthMessage = useCallback(() => setOauthMessage(''), []);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const dismissRecovery = useCallback(() => setRecoveryMode(false), []);
 
@@ -55,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const url = new URL(window.location.href);
           ['code','error','error_code','error_description'].forEach((key) => url.searchParams.delete(key));
           window.history.replaceState({}, '', url);
+          setOauthMessage('');
         }
       }
       const listener = client.auth.onAuthStateChange((event, nextSession) => {
@@ -128,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch { return { ok: false, message: 'تعذّر تسجيل الخروج.' }; }
   }, []);
 
-  const value = useMemo(() => ({ configured: isAuthConfigured, loading, googleAvailable, recoveryMode, dismissRecovery, session, signIn, signUp, signInWithGoogle, requestReset, updatePassword, signOut }), [dismissRecovery, googleAvailable, loading, recoveryMode, session, signIn, signInWithGoogle, signOut, signUp, requestReset, updatePassword]);
+  const value = useMemo(() => ({ configured: isAuthConfigured, loading, googleAvailable, oauthMessage, clearOauthMessage, recoveryMode, dismissRecovery, session, signIn, signUp, signInWithGoogle, requestReset, updatePassword, signOut }), [clearOauthMessage, dismissRecovery, googleAvailable, loading, oauthMessage, recoveryMode, session, signIn, signInWithGoogle, signOut, signUp, requestReset, updatePassword]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
