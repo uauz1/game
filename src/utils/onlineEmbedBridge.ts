@@ -1,4 +1,4 @@
-type OnlineActionKind = 'click' | 'input' | 'change';
+type OnlineActionKind = 'click' | 'input' | 'change' | 'submit';
 
 export type OnlineGameAction = {
   id: string;
@@ -101,6 +101,11 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
     emit('change', element, value);
   }, true);
 
+  document.addEventListener('submit', event => {
+    const form = event.target;
+    if (form instanceof HTMLFormElement) emit('submit', form);
+  }, true);
+
   let inputTimer = 0;
   document.addEventListener('input', event => {
     const element = event.target;
@@ -122,6 +127,8 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
     try {
       if (action.kind === 'click') {
         (element as HTMLElement).click();
+      } else if (action.kind === 'submit' && element instanceof HTMLFormElement) {
+        element.requestSubmit();
       } else if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement) {
         setNativeValue(element, action.value ?? '');
         element.dispatchEvent(new Event(action.kind, { bubbles: true }));
