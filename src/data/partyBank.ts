@@ -161,10 +161,13 @@ export function getPartyQuestionCount(categoryName:string){
 }
 
 const USED_KEY='qaddha_party_used_questions_v2';
+const ONLINE_EMBED = new URLSearchParams(window.location.search).get('onlineEmbed') === '1';
 function readUsed():Record<string,number[]>{
+  if (ONLINE_EMBED) return {};
   try{return JSON.parse(localStorage.getItem(USED_KEY)||'{}')}catch{return {}}
 }
 function saveUsed(value:Record<string,number[]>){
+  if (ONLINE_EMBED) return;
   try{localStorage.setItem(USED_KEY,JSON.stringify(value))}catch{/* Storage is optional. */}
 }
 function shuffle<T>(items:T[]){
