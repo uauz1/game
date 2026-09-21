@@ -100,6 +100,7 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes("room.phase === 'countdown' || room.phase === 'playing'") && read('src/online-room.css').includes('.online-live-game.preloading'), 'Online game preloads during countdown to reduce start delay'],
     [durableOnline.includes("type: 'game-loaded'") && durableOnline.includes('launchDeadline') && durableOnline.includes('allLoaded'), 'Online room waits for device game readiness before shared launch'],
     [durableOnline.includes("type: 'game-action'") && durableOnline.includes('qaddha-online-replay') && exists('src/utils/onlineEmbedBridge.ts'), 'Online game interactions relay between room devices'],
+    [read('src/utils/onlineEmbedBridge.ts').includes('seenActions') && read('src/utils/onlineEmbedBridge.ts').includes('rememberAction'), 'Realtime online actions are deduplicated before replay'],
     [durableOnline.includes('pullPersistedRoom') && durableOnline.includes('4000'), 'Guest room has persisted-state resync fallback'],
     [durableOnline.includes('qaddha_guest_get_room'), 'Guest room restore is wired'],
     [durableOnline.includes('qaddha_guest_save_room'), 'Guest room persistence is wired'],
