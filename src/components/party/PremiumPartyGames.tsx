@@ -109,6 +109,8 @@ const ONLINE_TEAM_NAMES: [string, string] = [
   ONLINE_PARAMS.get('onlineTeam1')?.trim() || 'الفريق الثاني',
 ];
 const ONLINE_DIFFICULTY = (ONLINE_PARAMS.get('onlineDifficulty') || 'medium') as Difficulty;
+const ONLINE_ROUNDS = Number(ONLINE_PARAMS.get('onlineRounds') || '8');
+const ONLINE_TIMER = Number(ONLINE_PARAMS.get('onlineTimer') || '0');
 const PREMIUM_SESSION_TTL = 12 * 60 * 60 * 1000;
 const PRESSURE_SESSION_KEY = 'qaddha.pressure.session.v1';
 const INTRUDER_SESSION_KEY = 'qaddha.intruder.session.v1';
@@ -171,7 +173,7 @@ export function PressureGame({ onHome }: { onHome: () => void }) {
   const [difficulty,setDifficulty]=useState<Difficulty>(ONLINE_EMBED ? ONLINE_DIFFICULTY : restoredPressure?.difficulty || 'mixed');
   const [teams,setTeams]=useState<Team[]>(ONLINE_EMBED ? [{name:ONLINE_TEAM_NAMES[0],score:0},{name:ONLINE_TEAM_NAMES[1],score:0}] : restoredPressure?.teams || [{name:'الفريق الأول',score:0},{name:'الفريق الثاني',score:0}]);
   const [phase,setPhase]=useState<'setup'|'playing'|'result'>(restoredPressure?.phase || 'setup');
-  const [rounds,setRounds]=useState(restoredPressure?.rounds || 8);
+  const [rounds,setRounds]=useState(ONLINE_EMBED && [6,8,10].includes(ONLINE_ROUNDS) ? ONLINE_ROUNDS : restoredPressure?.rounds || 8);
   const [deck,setDeck]=useState<PressurePrompt[]>(restoredPressure?.deck || []);
   const [round,setRound]=useState(restoredPressure?.round || 0);
   const [started,setStarted]=useState(false);
@@ -191,13 +193,15 @@ export function PressureGame({ onHome }: { onHome: () => void }) {
     const pool=pickPool(PRESSURE_PROMPTS,difficulty);
     const next=pool.slice(0,Math.min(rounds,pool.length));
     if(!next.length)return;
-    setDeck(next);setRound(0);setTurn(0);setStarted(false);setTimeLeft(next[0].seconds);setTeams(value=>value.map(team=>({...team,name:team.name.trim(),score:0})));setPhase('playing');
+    const initialDuration=ONLINE_EMBED && [15,20,30].includes(ONLINE_TIMER) ? ONLINE_TIMER : next[0].seconds;
+    setDeck(next);setRound(0);setTurn(0);setStarted(false);setTimeLeft(initialDuration);setTeams(value=>value.map(team=>({...team,name:team.name.trim(),score:0})));setPhase('playing');
   };
 
   const beginTimer=()=>{
     if(!current||started)return;
-    setStarted(true);setTimeLeft(current.seconds);
-    let value=current.seconds;
+    const duration=ONLINE_EMBED && [15,20,30].includes(ONLINE_TIMER) ? ONLINE_TIMER : current.seconds;
+    setStarted(true);setTimeLeft(duration);
+    let value=duration;
     const timer=window.setInterval(()=>{
       value-=1;setTimeLeft(Math.max(0,value));
       if(value<=0){window.clearInterval(timer);setStarted(false);}
@@ -208,7 +212,7 @@ export function PressureGame({ onHome }: { onHome: () => void }) {
     if(!current)return;
     if(success)setTeams(value=>value.map((team,index)=>index===turn?{...team,score:team.score+(current.difficulty==='hard'?300:current.difficulty==='medium'?200:100)}:team));
     if(round+1>=deck.length){setPhase('result');return;}
-    const nextRound=round+1;setRound(nextRound);setTurn(value=>(value+1)%2);setStarted(false);setTimeLeft(deck[nextRound].seconds);
+    const nextRound=round+1;const nextDuration=ONLINE_EMBED && [15,20,30].includes(ONLINE_TIMER) ? ONLINE_TIMER : deck[nextRound].seconds;setRound(nextRound);setTurn(value=>(value+1)%2);setStarted(false);setTimeLeft(nextDuration);
   };
 
   const winner=teams[0].score===teams[1].score?null:teams[0].score>teams[1].score?0:1;
@@ -229,7 +233,7 @@ export function IntruderGame({ onHome }: { onHome: () => void }) {
   const [difficulty,setDifficulty]=useState<Difficulty>(ONLINE_EMBED ? ONLINE_DIFFICULTY : restoredIntruder?.difficulty || 'mixed');
   const [teams,setTeams]=useState<Team[]>(ONLINE_EMBED ? [{name:ONLINE_TEAM_NAMES[0],score:0},{name:ONLINE_TEAM_NAMES[1],score:0}] : restoredIntruder?.teams || [{name:'الفريق الأول',score:0},{name:'الفريق الثاني',score:0}]);
   const [phase,setPhase]=useState<'setup'|'playing'|'result'>(restoredIntruder?.phase || 'setup');
-  const [rounds,setRounds]=useState(restoredIntruder?.rounds || 8);
+  const [rounds,setRounds]=useState(ONLINE_EMBED && [6,8,10].includes(ONLINE_ROUNDS) ? ONLINE_ROUNDS : restoredIntruder?.rounds || 8);
   const [deck,setDeck]=useState<IntruderRound[]>(restoredIntruder?.deck || []);
   const [round,setRound]=useState(restoredIntruder?.round || 0);
   const [turn,setTurn]=useState(restoredIntruder?.turn || 0);
