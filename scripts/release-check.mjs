@@ -148,6 +148,9 @@ if (exists(contentIntelligenceFile) && exists(newGameSettingsFile) && exists(new
   newGames.includes('ONLINE_TEAM_NAMES') && newGames.includes('if (!ONLINE_EMBED) saveSharedTeams')
     ? pass('Online party games use shared room team names without mutating local team preferences')
     : fail('Online party game teams are not isolated from local preferences');
+  newGames.includes('if (ONLINE_EMBED && valid) onStart();') && newGames.includes('!ONLINE_EMBED && <HostPairingPanel')
+    ? pass('Modern party games auto-start online and suppress duplicate legacy host pairing UI')
+    : fail('Modern party games still require duplicate setup or host pairing in online mode');
   const teamGame = read('src/components/party/TeamGame.tsx');
   const partyBank = read('src/data/partyBank.ts');
   teamGame.includes("stage:'board'") && teamGame.includes("ONLINE_PARAMS.get('onlineTeam0')") && partyBank.includes('if (ONLINE_EMBED) return {}')
