@@ -61,6 +61,11 @@ const missingRounds = [
   { items: ['⚽','🏀','🎾','🏐','🏓'], missing: '🎾', choices: ['🎾','🏈','🏒','🥊'] },
 ];
 
+const ONLINE_PARAMS = new URLSearchParams(window.location.search);
+const ONLINE_TEAM_NAMES: [string,string] = [
+  ONLINE_PARAMS.get('onlineTeam0')?.trim() || 'الفريق الأول',
+  ONLINE_PARAMS.get('onlineTeam1')?.trim() || 'الفريق الثاني',
+];
 const shuffle = <T,>(values:T[]) => [...values].sort(()=>Math.random()-.5);
 function Finished({ score, total, onRestart }:{score:number|string;total:number;onRestart:()=>void}) {
   return <article className="extra-card extra-finished"><Trophy className="hero-icon"/><small>انتهت اللعبة</small><h2>النتيجة {score} / {total}</h2><button className="primary extra-submit" onClick={onRestart}><RotateCcw/> العب من جديد</button></article>;
@@ -82,8 +87,8 @@ export function AuctionGame({ onHome }:{onHome:()=>void}) {
   const next=()=>{if(round+1>=auctionRounds.length){setFinished(true);return;}setRound(r=>r+1);setBid(3);setTeam(t=>1-t);setPicked([]);setDone(false)};
   const restart=()=>{setRound(0);setBid(3);setTeam(0);setPicked([]);setScore([0,0]);setDone(false);setFinished(false)};
   return <Shell title="المزاد" subtitle="زايدوا على عدد الإجابات… واللي يرسو عليه المزاد لازم يثبت كلامه." icon={<Gavel/>} onHome={onHome}>
-    {finished?<Finished score={`${score[0]} - ${score[1]}`} total={auctionRounds.length} onRestart={restart}/>:<><div className="extra-score"><b>الفريق الأول <span>{score[0]}</span></b><b>الجولة {round+1}</b><b>الفريق الثاني <span>{score[1]}</span></b></div>
-    <article className="extra-card"><small>موضوع الجولة</small><h2>{current.title}</h2><div className="auction-controls"><button onClick={()=>setBid(v=>Math.max(1,v-1))}>−</button><strong>{bid} إجابات</strong><button onClick={()=>setBid(v=>Math.min(current.answers.length,v+1))}>+</button></div><div className="team-toggle"><button className={team===0?'active':''} onClick={()=>setTeam(0)}>الفريق الأول</button><button className={team===1?'active':''} onClick={()=>setTeam(1)}>الفريق الثاني</button></div><div className="answer-grid">{options.map(x=><button key={x} className={picked.includes(x)?'picked':''} onClick={()=>toggle(x)}>{x}</button>)}</div>{!done?<button className="primary extra-submit" disabled={picked.length!==bid} onClick={submit}>ثبت الإجابات</button>:<div className="extra-result"><Trophy/><b>{picked.filter(x=>current.answers.includes(x)).length>=bid?'كسب التحدّي!':`المزاد راح للفريق ${team===0?'الثاني':'الأول'}`}</b><button className="secondary" onClick={next}>{round+1===auctionRounds.length?'عرض النتيجة':'الجولة التالية'}</button></div>}</article></>}
+    {finished?<Finished score={`${score[0]} - ${score[1]}`} total={auctionRounds.length} onRestart={restart}/>:<><div className="extra-score"><b>{ONLINE_TEAM_NAMES[0]} <span>{score[0]}</span></b><b>الجولة {round+1}</b><b>{ONLINE_TEAM_NAMES[1]} <span>{score[1]}</span></b></div>
+    <article className="extra-card"><small>موضوع الجولة</small><h2>{current.title}</h2><div className="auction-controls"><button onClick={()=>setBid(v=>Math.max(1,v-1))}>−</button><strong>{bid} إجابات</strong><button onClick={()=>setBid(v=>Math.min(current.answers.length,v+1))}>+</button></div><div className="team-toggle"><button className={team===0?'active':''} onClick={()=>setTeam(0)}>{ONLINE_TEAM_NAMES[0]}</button><button className={team===1?'active':''} onClick={()=>setTeam(1)}>{ONLINE_TEAM_NAMES[1]}</button></div><div className="answer-grid">{options.map(x=><button key={x} className={picked.includes(x)?'picked':''} onClick={()=>toggle(x)}>{x}</button>)}</div>{!done?<button className="primary extra-submit" disabled={picked.length!==bid} onClick={submit}>ثبت الإجابات</button>:<div className="extra-result"><Trophy/><b>{picked.filter(x=>current.answers.includes(x)).length>=bid?'كسب التحدّي!':`المزاد راح لـ ${ONLINE_TEAM_NAMES[team===0?1:0]}`}</b><button className="secondary" onClick={next}>{round+1===auctionRounds.length?'عرض النتيجة':'الجولة التالية'}</button></div>}</article></>}
   </Shell>
 }
 
