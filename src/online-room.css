@@ -23,3 +23,10 @@ html[data-theme="light"] .online-steps{background:#fffaf1;border-color:#51422b1a
 html[data-theme="light"] .online-steps span{color:#4d4439}
 html[data-theme="light"] .online-steps i{background:linear-gradient(90deg,#b9893355,#493b2714)}
 html[data-theme="light"] .online-guest-note{background:#eaf3ff;border-color:#7da6d82b;color:#56708c!important}
+
+.online-how-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0 22px}
+.online-how-steps span{display:flex;align-items:center;gap:9px;min-height:48px;padding:10px 12px;border:1px solid #ffffff12;border-radius:13px;background:#ffffff05;color:#c8c2d1;font-size:12px;font-weight:800}
+.online-how-steps b{display:grid;place-items:center;flex:0 0 27px;width:27px;height:27px;border-radius:50%;background:#ffd45a;color:#1d1608;font:900 12px system-ui}
+@media(max-width:720px){.online-how-steps{grid-template-columns:1fr 1fr}}
+@media(max-width:430px){.online-how-steps{grid-template-columns:1fr}}
+html[data-theme="light"] .online-how-steps span{background:#fffaf1;border-color:#4b3b2720;color:#5f574d}
