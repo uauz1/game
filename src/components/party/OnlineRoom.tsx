@@ -254,6 +254,8 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     let active = true;
     let heartbeat = 0;
     let roomTimeout = 0;
+    let resync = 0;
+    let visibilityHandler: (() => void) | null = null;
     let receivedSnapshot = false;
     let client: Awaited<ReturnType<typeof getAuthClient>> | null = null;
     const topic = `qaddha-room:${join.code.toLowerCase()}`;
@@ -268,6 +270,22 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
         },
       });
       channelRef.current = channel;
+      const pullPersistedRoom = async () => {
+        if (!active) return;
+        try {
+          const { data } = await instance.rpc('qaddha_guest_get_room', { p_code: join.code });
+          if (!Array.isArray(data) || !data[0]?.state) return;
+          const persisted = normalize(data[0].state as Room);
+          receivedSnapshot = true;
+          setRoom(current => !current || persisted.version >= current.version ? persisted : current);
+        } catch { /* realtime broadcast remains the fast path */ }
+      };
+      visibilityHandler = () => {
+        if (document.visibilityState !== 'visible') return;
+        void pullPersistedRoom();
+        void channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'sync-request', playerId: me } satisfies ClientMessage });
+      };
+      document.addEventListener('visibilitychange', visibilityHandler);
 
       channel.on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
@@ -301,14 +319,9 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
       channel.subscribe(async status => {
         if (!active) return;
         if (status === 'SUBSCRIBED') {
-          try {
-            const { data } = await instance.rpc('qaddha_guest_get_room', { p_code: join.code });
-            if (Array.isArray(data) && data[0]?.state) {
-              const persisted = normalize(data[0].state as Room);
-              receivedSnapshot = true;
-              setRoom(current => !current || persisted.version >= current.version ? persisted : current);
-            }
-          } catch { /* live host sync can still succeed */ }
+          await pullPersistedRoom();
+          window.clearInterval(resync);
+          resync = window.setInterval(() => { if (document.visibilityState === 'visible') void pullPersistedRoom(); }, 4000);
           await channel.track({ role: 'guest', playerId: me, name: join.name, onlineAt: Date.now() });
           await channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'join', playerId: me, name: join.name } satisfies ClientMessage });
           await channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'sync-request', playerId: me } satisfies ClientMessage });
@@ -343,7 +356,9 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     return () => {
       active = false;
       window.clearInterval(heartbeat);
+      window.clearInterval(resync);
       window.clearTimeout(roomTimeout);
+      if (visibilityHandler) document.removeEventListener('visibilitychange', visibilityHandler);
       const channel = channelRef.current;
       channelRef.current = null;
       if (channel) {
