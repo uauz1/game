@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Crown, Download, Sparkles } from 'lucide-react';
 import App from '../../App';
-import PartyHub from './PartyHub';
+const PartyHub = lazy(() => import('./PartyHub'));
 const MultiplayerHostLayer = lazy(() => import('./MultiplayerHostLayer'));
 import { readProgression, recordGameStarted, recordTournamentFinished } from '../../utils/progression';
 
@@ -161,6 +161,6 @@ export default function PlatformShell() {
   const updateBanner = updateReady ? <div className="qaddha-update-banner" role="status"><span><b>تحديث جديد جاهز</b><small>حدّث لما تخلص جولتك عشان تاخذ آخر التحسينات.</small></span><button onClick={()=>{void applyUpdate();}}>تحديث الآن</button><button className="dismiss" aria-label="إخفاء التنبيه" onClick={()=>setUpdateReady(false)}>×</button></div> : null;
   const installButton = installPrompt ? <button className="qaddha-install-button" onClick={()=>{void installApp();}}><Download/><span><b>ثبّت قدّها</b><small>كتطبيق على جهازك</small></span></button> : null;
 
-  if (hubOpen) return <><PartyHub games={HUB_GAMES} onBack={closeHub} onPlay={playFromHub}/>{multiplayerLayer}{updateBanner}{installButton}</>;
+  if (hubOpen) return <><Suspense fallback={null}><PartyHub games={HUB_GAMES} onBack={closeHub} onPlay={playFromHub}/></Suspense>{multiplayerLayer}{updateBanner}{installButton}</>;
   return <><App/>{multiplayerLayer}{updateBanner}{installButton}<button className="global-hub-launch" onClick={openHub} aria-label="فتح مركز قدّها"><span><Crown/></span><b>مركز قدّها</b><small>LV {level}</small><Sparkles/></button></>;
 }
