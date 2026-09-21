@@ -328,6 +328,10 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
           await channel.track({ role: 'guest', playerId: me, name: join.name, onlineAt: Date.now() });
           await channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'join', playerId: me, name: join.name } satisfies ClientMessage });
           await channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'sync-request', playerId: me } satisfies ClientMessage });
+          const activeRoom = roomRef.current;
+          if (activeRoom && (activeRoom.phase === 'countdown' || activeRoom.phase === 'playing')) {
+            await channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'game-loaded', playerId: me, gameId: activeRoom.gameId } satisfies ClientMessage });
+          }
           window.clearInterval(heartbeat);
           heartbeat = window.setInterval(() => {
             const known = roomRef.current?.players.some(player => player.id === me);
