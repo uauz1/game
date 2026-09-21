@@ -65,12 +65,13 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
       </form>
       {(mode === 'signin' || mode === 'signup') && <>
         <div className="auth-divider"><span>أو</span></div>
-        <button className="google-auth" disabled={busy} onClick={async () => {
+        <button className="google-auth" disabled={busy || !auth.googleAvailable} onClick={async () => {
           setBusy(true);
           const result = await auth.signInWithGoogle();
           setNotice(result.message);
           if (!result.ok) setBusy(false);
-        }}><b>G</b> المتابعة باستخدام Google</button>
+        }}><b>G</b> {auth.googleAvailable ? 'المتابعة باستخدام Google' : 'Google غير مفعّل حاليًا'}</button>
+        {!auth.googleAvailable && <small className="auth-provider-note">اللعب كضيف متاح بالكامل. تفعيل Google يحتاج إعداد المزود داخل Supabase.</small>}
         <button className="auth-guest-play" type="button" onClick={onClose}><Gamepad2/> أكمل اللعب كضيف</button>
         <small className="auth-guest-hint">الحساب اختياري. الأونلاين والغرف يشتغلون بدون تسجيل دخول.</small>
       </>}
