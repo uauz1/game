@@ -161,6 +161,17 @@ for (const file of criticalFiles) {
 }
 
 
+const sharedRealtimeFile = 'src/utils/qaddhaRealtime.ts';
+if (exists(sharedRealtimeFile)) {
+  const sharedRealtime = read(sharedRealtimeFile);
+  sharedRealtime.includes("from './authClient'") && !sharedRealtime.includes('sb_publishable_')
+    ? pass('Realtime transport reuses shared Supabase configuration')
+    : fail('Realtime transport still contains duplicate Supabase configuration');
+  sharedRealtime.includes("replace(/[^A-HJ-NP-Z2-9]/g")
+    ? pass('Realtime room codes use the production-safe alphabet')
+    : fail('Realtime room code normalization is inconsistent');
+}
+
 const autoTvFile = 'src/utils/autoTvMode.ts';
 const pwaHookFile = 'src/hooks/usePWA.ts';
 const serviceWorkerFile = 'public/sw.js';
