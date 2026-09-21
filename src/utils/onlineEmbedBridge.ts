@@ -6,6 +6,7 @@ export type OnlineGameAction = {
   selector: string;
   value?: string | boolean;
   sourceId: string;
+  gameId: string;
   sentAt: number;
 };
 
@@ -58,6 +59,7 @@ function setNativeValue(element: HTMLInputElement | HTMLTextAreaElement | HTMLSe
 export function installOnlineEmbedBridge(params: URLSearchParams) {
   if (params.get('onlineEmbed') !== '1') return;
   const sourceId = params.get('onlinePlayer') || 'embedded-player';
+  const gameId = params.get('play') || '';
   let replaying = false;
   const seenActions = new Set<string>();
   const rememberAction = (id: string) => {
@@ -78,6 +80,7 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
       selector,
       value,
       sourceId,
+      gameId,
       sentAt: Date.now(),
     };
     rememberAction(action.id);
@@ -112,7 +115,7 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
     const message = event.data as { type?: string; action?: OnlineGameAction } | null;
     if (message?.type !== 'qaddha-online-replay' || !message.action) return;
     const action = message.action;
-    if (action.sourceId === sourceId || seenActions.has(action.id)) return;
+    if (action.gameId !== gameId || action.sourceId === sourceId || seenActions.has(action.id)) return;
     rememberAction(action.id);
     const element = document.querySelector(action.selector);
     if (!element) return;
