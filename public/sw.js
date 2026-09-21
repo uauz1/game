@@ -1,75 +1,48 @@
-const CACHE_NAME = 'qaddha-v6';
+const CACHE_NAME = 'qaddha-v4';
 const BASE = new URL('./', self.location.href).pathname;
-const SHELL = [BASE, `${BASE}index.html`, `${BASE}admin.html`, `${BASE}manifest.webmanifest`, `${BASE}qaddha-icon.svg`];
+const ASSETS = [BASE, `${BASE}index.html`, `${BASE}manifest.webmanifest`];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)).catch(() => {}));
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).catch(() => {})
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    )
   );
   self.clients.claim();
 });
 
-async function putSafe(request, response) {
-  if (!response || !response.ok || response.type === 'opaque') return;
-  try {
-    const cache = await caches.open(CACHE_NAME);
-    await cache.put(request, response.clone());
-  } catch {
-    // Cache pressure must never break the game.
-  }
-}
-
 self.addEventListener('fetch', (event) => {
-  const request = event.request;
-  if (request.method !== 'GET' || !request.url.startsWith(self.location.origin)) return;
+  if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) return;
 
-  if (request.mode === 'navigate') {
-    event.respondWith((async () => {
-      const url = new URL(request.url);
-      const isAdmin = url.pathname.endsWith('/admin') || url.pathname.endsWith('/admin.html');
-      const fallback = isAdmin ? `${BASE}admin.html` : `${BASE}index.html`;
-      try {
-        const response = await fetch(request, { cache: 'no-store' });
-        await putSafe(fallback, response);
-        return response;
-      } catch {
-        return (await caches.match(fallback)) || (isAdmin ? Response.error() : (await caches.match(BASE)) || Response.error());
-      }
-    })());
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(`${BASE}index.html`, copy));
+          return response;
+        })
+        .catch(async () => (await caches.match(`${BASE}index.html`)) || Response.error())
+    );
     return;
   }
 
-  const url = new URL(request.url);
-  const isVersionedAsset = /\.(?:js|css|woff2?|webp|png|jpe?g|svg)$/i.test(url.pathname)
-    && (url.pathname.includes('/assets/') || /-[A-Za-z0-9_-]{6,}\./.test(url.pathname));
-
-  if (isVersionedAsset) {
-    event.respondWith((async () => {
-      const cached = await caches.match(request);
-      if (cached) return cached;
-      try {
-        const response = await fetch(request);
-        await putSafe(request, response);
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
         return response;
-      } catch {
-        return Response.error();
-      }
-    })());
-    return;
-  }
-
-  event.respondWith((async () => {
-    try {
-      const response = await fetch(request);
-      await putSafe(request, response);
-      return response;
-    } catch {
-      return (await caches.match(request)) || Response.error();
-    }
-  })());
+      })
+      .catch(async () => (await caches.match(event.request)) || Response.error())
+  );
 });

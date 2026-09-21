@@ -10,14 +10,25 @@ function loadDataFile(relativePath) {
   const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const module = { exports: {} };
   moduleCache.set(filePath, module);
-  const localRequire = (specifier) => {
-    if (!specifier.startsWith('.')) throw new Error(`Unsupported validator import: ${specifier}`);
-    const target = path.resolve(path.dirname(filePath), specifier.endsWith('.ts') ? specifier : `${specifier}.ts`);
-    return loadDataFile(target);
+  const localRequire = (request) => {
+    if (!request.startsWith('.')) throw new Error(`Unsupported validation import: ${request}`);
+    const candidate = path.resolve(path.dirname(filePath), request.endsWith('.ts') ? request : `${request}.ts`);
+    return loadDataFile(candidate);
   };
   Function('module', 'exports', 'require', output)(module, module.exports, localRequire);
   return module.exports;
 }
+
+const normalize = (value) => String(value || '').normalize('NFKD').replace(/[\u064B-\u065F\u0670]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().toLowerCase();
+const semantic = (value) => {
+  const stop = new Set(['ما','ماذا','من','هو','هي','في','الى','اي','اذكر','يسمى','اسم','الذي','التي','هذا','هذه']);
+  return normalize(value).split(' ').filter(word => word.length > 1 && !stop.has(word)).sort().join(' ');
+};
+const checkNearDuplicates = (items, getText, label) => {
+  const groups = new Map();
+  items.forEach((item, index) => { const key = semantic(getText(item)); if (key) groups.set(key, [...(groups.get(key) || []), index + 1]); });
+  for (const [key, indexes] of groups) if (indexes.length > 1) errors.push(`${label}: تشابه دلالي محتمل في الصفوف ${indexes.join(', ')} (${key})`);
+};
 
 const errors = [];
 const seen = new Map();
@@ -39,6 +50,9 @@ const huroof = loadDataFile('src/data/huroofQuestions.ts');
 huroof.huroofQuestions.forEach((question, index) => {
   register(`letters:${question.id}`, `حروف #${index + 1}`);
   if (!question.letter?.trim() || !question.prompt?.trim() || !question.answer?.trim()) errors.push(`حروف #${index + 1}: بيانات ناقصة`);
+  const answer = normalize(question.answer).replace(/^ال\s*/, '').replace(/^ال/, '');
+  const letter = normalize(question.letter).replace(/هـ/g, 'ه');
+  if (!answer.startsWith(letter)) errors.push(`حروف #${index + 1}: الإجابة «${question.answer}» لا تبدأ بالحرف «${question.letter}»`);
 });
 
 const who = loadDataFile('src/data/whoAmIQuestions.ts');
@@ -55,6 +69,8 @@ newGames.characterCards.forEach((card, index) => {
   if (!Array.isArray(card.hints) || card.hints.length < 3 || card.hints.some(hint => !hint.trim())) errors.push(`خمن الشخصية #${index + 1}: التلميحات ناقصة`);
   if (!Array.isArray(card.options) || card.options.length < 3 || !card.options.includes(card.answer)) errors.push(`خمن الشخصية #${index + 1}: الخيارات لا تحتوي الإجابة الصحيحة`);
 });
+const characterDifficulty = newGames.characterCards.reduce((out, card) => ({ ...out, [card.difficulty]: (out[card.difficulty] || 0) + 1 }), {});
+if ((characterDifficulty.easy || 0) > newGames.characterCards.length * .25) errors.push('خمن الشخصية: نسبة المحتوى السهل تتجاوز 25%');
 newGames.photoCards.forEach((card, index) => {
   register(`photo:${card.id}`, `تحدي الصورة #${index + 1}`);
   if (!card.answer?.trim() || !card.category?.trim() || !card.position?.trim()) errors.push(`تحدي الصورة #${index + 1}: بيانات ناقصة`);
@@ -86,6 +102,10 @@ if (duplicates.length) errors.push(`قدّها فرق: ${new Set(duplicates).siz
 const newQuestionTexts = [...newGames.riddles, ...newGames.speedQuestions].map(item => item[0].trim().toLowerCase());
 const newDuplicates = newQuestionTexts.filter((question, index) => newQuestionTexts.indexOf(question) !== index);
 if (newDuplicates.length) errors.push(`الألعاب الجديدة: ${new Set(newDuplicates).size} سؤال مكرر نصيًا`);
+checkNearDuplicates(party.questions, item => item.q, 'قدّها فرق');
+checkNearDuplicates(newGames.riddles, item => item[0], 'فوازير');
+checkNearDuplicates(newGames.speedQuestions, item => item[0], 'مين أسرع');
+checkNearDuplicates(newGames.feudRounds, item => item.question, 'تحدي العائلة');
 
 if (errors.length) {
   console.error(`فشل فحص المحتوى (${errors.length} مشكلة):\n- ${errors.join('\n- ')}`);

@@ -1,4 +1,5 @@
 export type Difficulty = 'easy' | 'medium' | 'hard';
+import { premiumCharacters, premiumConnections, premiumFeud, premiumRiddles, premiumSpeed, premiumWords } from './content/premiumPartyContent';
 
 export type ConnectionCard = {
   id: string;
@@ -47,6 +48,7 @@ export const connectionCards: ConnectionCard[] = [
   {id:'connection-35',category:'رياضة',answer:'كرة الطائرة',aliases:['كرة طائرة','كوره الطائره','الطائرة'],clues:['دوران','إرسال','صد','شبكة'],explanation:'الدوران والإرسال والصد أمام الشبكة من قوانين كرة الطائرة.'},
   {id:'connection-36',category:'أماكن',answer:'المخبز',aliases:['مخبز','الفرن','فرن'],clues:['صباح','دقيق','عجين','خبز'],explanation:'يبدأ المخبز صباحًا بتحويل الدقيق والعجين إلى خبز.'},
 ];
+connectionCards.push(...premiumConnections);
 
 export type CharacterCard = { id:string; answer:string; category:string; difficulty:Difficulty; hints:[string,string,string]; options:[string,string,string] };
 export const characterCards: CharacterCard[] = [
@@ -67,6 +69,7 @@ export const characterCards: CharacterCard[] = [
   {id:'character-15',answer:'ستيف جوبز',category:'تقنية',difficulty:'medium',hints:['أسست شركة من مرآب','غادرت شركتي ثم عدت','ارتبط اسمي بشركة آبل'],options:['بيل غيتس','ستيف جوبز','تيم كوك']},
   {id:'character-16',answer:'عمر المختار',category:'تاريخ',difficulty:'hard',hints:['عملت معلمًا للقرآن','قاومت الاحتلال الإيطالي','أُلقب بأسد الصحراء'],options:['عمر المختار','عبد الكريم الخطابي','أحمد عرابي']},
 ];
+characterCards.push(...premiumCharacters);
 
 export const riddles: [string,string][] = [
   ['شيء كلما أخذت منه كبر، ما هو؟','الحفرة'],['له أسنان ولا يعض، ما هو؟','المشط'],['يمشي بلا أرجل ويبكي بلا عيون، ما هو؟','السحاب'],['ما الشيء الذي يكتب ولا يقرأ؟','القلم'],
@@ -76,6 +79,7 @@ export const riddles: [string,string][] = [
   ['ما الشيء الذي لا يدخل إلا إذا ضُرب على رأسه؟','المسمار'],['له أربعة أرجل ولا يمشي، ما هو؟','الطاولة'],['ما الذي تستطيع كسره من دون أن تلمسه؟','الوعد'],['يتبعك في النهار ويختفي في الظلام، ما هو؟','الظل'],
   ['كلما مشى فقد جزءًا من ذيله، ما هو؟','إبرة الخياطة'],['ما الباب الذي لا يمكن فتحه؟','الباب المفتوح'],['ما الشيء الذي يذهب ولا يعود؟','الوقت'],['له قلب لا ينبض، ما هو؟','الخس'],
 ];
+riddles.push(...premiumRiddles);
 
 export type PhotoCard = { id:string; answer:string; category:string; tone:string; position:string };
 export const photoCards: PhotoCard[] = [
@@ -93,6 +97,7 @@ export const speedQuestions: [string,string][] = [
   ['ما الحيوان الملقب بسفينة الصحراء؟','الجمل'],['ما الغاز الذي نتنفسه؟','الأكسجين'],['كم لاعبًا في فريق كرة القدم داخل الملعب؟','11'],['ما أكبر قارة؟','آسيا'],['ما العملة الرسمية لليابان؟','الين'],
   ['ما العضو الذي يضخ الدم؟','القلب'],['ما أصغر عدد أولي؟','2'],['في أي اتجاه تشرق الشمس؟','الشرق'],['كم شهرًا في السنة؟','12'],['ما الكوكب الأحمر؟','المريخ'],
 ];
+speedQuestions.push(...premiumSpeed);
 
 export type WordCard = { id:string; word:string; category:string; taboo:[string,string,string] };
 export const wordCards: WordCard[] = [
@@ -107,6 +112,7 @@ export const wordCards: WordCard[] = [
   {id:'word-25',word:'صيدلي',category:'مهن',taboo:['دواء','وصفة','صيدلية']},{id:'word-26',word:'كرة السلة',category:'رياضة',taboo:['سلة','ملعب','برتقالي']},{id:'word-27',word:'لوحة مفاتيح',category:'تقنية',taboo:['حروف','حاسوب','كتابة']},
   {id:'word-28',word:'دلفين',category:'حيوانات',taboo:['بحر','ذكي','يقفز']},{id:'word-29',word:'مصعد',category:'أشياء',taboo:['طابق','يصعد','مبنى']},{id:'word-30',word:'مكرونة',category:'أكل',taboo:['إيطاليا','صلصة','معكرونة']},
 ];
+wordCards.push(...premiumWords);
 
 export type FeudRound = { id:string; question:string; answers:[string,number][] };
 export const feudRounds: FeudRound[] = [
@@ -119,3 +125,4 @@ export const feudRounds: FeudRound[] = [
   {id:'feud-07',question:'مكان يذهب إليه الناس في يوم حار',answers:[['المسبح',31],['البحر',27],['المجمع التجاري',19],['الحديقة',13],['المقهى',10]]},
   {id:'feud-08',question:'شيء تسمعه في الصباح',answers:[['المنبه',33],['زقزقة الطيور',24],['السيارات',18],['الأذان',15],['آلة القهوة',10]]},
 ];
+feudRounds.push(...premiumFeud);

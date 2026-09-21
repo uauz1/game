@@ -1,6 +1,5 @@
-import { HUROOF_EXPANSION } from './huroofExpansion';
-
 export type HuroofDifficulty = 'easy' | 'medium' | 'hard';
+import { expandedHuroof } from './content/expandedHuroof';
 
 export type HuroofQuestion = {
   id: string;
@@ -45,17 +44,16 @@ const seeds: Record<string, QuestionSeed> = {
 
 export const HUROOF_LETTERS = Object.keys(seeds);
 
-const seedQuestions: HuroofQuestion[] = Object.entries(seeds).flatMap(([letter, values]) => [
+export const huroofQuestions: HuroofQuestion[] = Object.entries(seeds).flatMap(([letter, values]) => [
   { id: `${letter}-easy`, letter, difficulty: 'easy' as const, prompt: values[0], answer: values[1] },
   { id: `${letter}-medium`, letter, difficulty: 'medium' as const, prompt: values[2], answer: values[3] },
   { id: `${letter}-hard`, letter, difficulty: 'hard' as const, prompt: values[4], answer: values[5] },
 ]);
-
-export const huroofQuestions: HuroofQuestion[] = [...seedQuestions, ...HUROOF_EXPANSION];
+huroofQuestions.push(...expandedHuroof);
 
 const difficultyPools: Record<HuroofDifficulty, HuroofDifficulty[]> = {
   easy: ['easy', 'medium'],
-  medium: ['medium', 'hard'],
+  medium: ['easy', 'medium', 'hard'],
   hard: ['medium', 'hard'],
 };
 
