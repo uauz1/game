@@ -98,6 +98,7 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes('onlineEmbed=1'), 'Online room launches the selected game inside the shared session'],
     [durableOnline.includes('onlineSeed=') && exists('src/utils/onlineDeterminism.ts'), 'Online devices share a deterministic game seed'],
     [durableOnline.includes("room.phase === 'countdown' || room.phase === 'playing'") && read('src/online-room.css').includes('.online-live-game.preloading'), 'Online game preloads during countdown to reduce start delay'],
+    [read('src/online-room.css').includes('left: -200vw') || read('src/online-room.css').includes('-200vw'), 'Online game preload keeps a real viewport size to avoid responsive-layout glitches'],
     [durableOnline.includes("type: 'game-loaded'") && durableOnline.includes('launchDeadline') && durableOnline.includes('allLoaded'), 'Online room waits for device game readiness before shared launch'],
     [durableOnline.includes("type: 'game-action'") && durableOnline.includes('qaddha-online-replay') && exists('src/utils/onlineEmbedBridge.ts'), 'Online game interactions relay between room devices'],
     [read('src/utils/onlineEmbedBridge.ts').includes('seenActions') && read('src/utils/onlineEmbedBridge.ts').includes('rememberAction'), 'Realtime online actions are deduplicated before replay'],
