@@ -27,6 +27,9 @@ function authError(message: string) {
   if (normalized.includes('password')) return 'كلمة المرور غير مقبولة. استخدم 8 أحرف على الأقل.';
   if (normalized.includes('email')) return 'تأكد من كتابة البريد الإلكتروني بشكل صحيح.';
   if (normalized.includes('rate limit')) return 'محاولات كثيرة؛ انتظر قليلًا ثم جرّب من جديد.';
+  if (normalized.includes('provider is not enabled') || normalized.includes('unsupported provider')) return 'تسجيل Google غير مفعّل في خدمة الحسابات حاليًا.';
+  if (normalized.includes('redirect') || normalized.includes('callback')) return 'عنوان الرجوع من Google غير مضبوط. راجع إعدادات تسجيل الدخول.';
+  if (normalized.includes('oauth')) return 'تعذّر إكمال تسجيل Google. جرّب مرة ثانية.';
   return 'تعذّر إكمال الطلب الآن. حاول مرة أخرى.';
 }
 
@@ -45,6 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (active) {
         setSession(data.session);
         setLoading(false);
+        if (data.session && (window.location.search.includes('code=') || window.location.search.includes('error='))) {
+          const url = new URL(window.location.href);
+          ['code','error','error_code','error_description'].forEach((key) => url.searchParams.delete(key));
+          window.history.replaceState({}, '', url);
+        }
       }
       const listener = client.auth.onAuthStateChange((event, nextSession) => {
         if (!active) return;
@@ -80,7 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = useCallback(async (): Promise<AuthResult> => {
     try {
       const client = await getAuthClient();
-      const { error } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: authRedirectUrl } });
+      const { error } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: authRedirectUrl,
+          queryParams: { prompt: 'select_account' },
+        },
+      });
       return error ? { ok: false, message: authError(error.message) } : { ok: true, message: 'جاري فتح Google…' };
     } catch { return { ok: false, message: 'خدمة الحسابات غير متاحة الآن.' }; }
   }, [authRedirectUrl]);
