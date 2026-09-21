@@ -123,3 +123,18 @@ html[data-theme="light"] .online-how-steps span{background:#fffaf1;border-color:
   height:1px!important;
   min-height:0!important;
 }
+
+
+.online-guest-live-tools{
+  display:flex;
+  justify-content:center;
+  margin:14px 0 4px;
+}
+.online-guest-live-tools button{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:44px;
+  padding:10px 16px;
+  border-radius:14px;
+}
