@@ -97,12 +97,12 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     } catch { /* realtime remains primary; local cache is fallback */ }
   }, [hostToken]);
 
-  const update = useCallback((fn: (current: Room) => Room) => setRoom(current => {
+  const update = useCallback((fn: (current: Room) => Room, shouldPersist = true) => setRoom(current => {
     if (!current) return current;
     const next = { ...fn(current), version: current.version + 1 };
     roomRef.current = next;
     try { localStorage.setItem(`${ROOM_KEY_PREFIX}${next.code}`, JSON.stringify(next)); } catch {/* optional */}
-    void persistRoom(next);
+    if (shouldPersist) void persistRoom(next);
     return next;
   }), [persistRoom]);
   useEffect(() => {
@@ -180,7 +180,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
         } else if (incoming.type === 'team' && current.phase === 'lobby') {
           update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, team: incoming.team, connected: true, seenAt: Date.now() } : p) }));
         } else if (incoming.type === 'heartbeat') {
-          update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, connected: true, seenAt: Date.now() } : p) }));
+          update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, connected: true, seenAt: Date.now() } : p) }), false);
         } else if (incoming.type === 'sync-request') {
           const snapshot = roomRef.current;
           if (snapshot) void channel.send({ type: 'broadcast', event: 'server-message', payload: snapshot });
@@ -203,7 +203,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
       stale = window.setInterval(() => update(r => ({
         ...r,
         players: r.players.map(p => p.host || Date.now() - p.seenAt < 20000 ? p : { ...p, connected: false }),
-      })), 7000);
+      }), false), 7000);
     }).catch(() => {
       if (!active) return;
       setConnected(false);
