@@ -65,7 +65,7 @@ const newRoom = (code: string, name: string, gameId: string): Room => ({
 const normalize = (room: Room): Room => ({ ...room, teamNames: room.teamNames || ['الفريق الأول', 'الفريق الثاني'], timerSeconds: room.timerSeconds || 60, difficulty: room.difficulty || 'mixed', category: room.category || 'الكل', maxPlayers: room.maxPlayers || MAX_PLAYERS, pausedAt: room.pausedAt || null, answerRevealed: room.answerRevealed || false, gameActions: Array.isArray(room.gameActions) ? room.gameActions.slice(-80) : [], gameRevision: Number.isFinite(room.gameRevision) ? room.gameRevision : 0 });
 const normalizeGameAction = (action: OnlineGameAction, playerId: string, gameId: string): OnlineGameAction | null => {
   if (!action || action.gameId !== gameId || typeof action.id !== 'string' || typeof action.selector !== 'string') return null;
-  if (!['click','input','change'].includes(action.kind) || action.id.length > 160 || action.selector.length > 320) return null;
+  if (!['click','input','change','submit'].includes(action.kind) || action.id.length > 160 || action.selector.length > 320) return null;
   const value = typeof action.value === 'string' ? action.value.slice(0, 160) : action.value;
   if (typeof value !== 'undefined' && typeof value !== 'string' && typeof value !== 'boolean') return null;
   return { ...action, sourceId: playerId, gameId, selector: action.selector.slice(0, 320), value, sentAt: Number.isFinite(action.sentAt) ? action.sentAt : Date.now() };
