@@ -220,3 +220,52 @@ html[data-theme="light"] .online-how-steps span{background:#fffaf1;border-color:
 .online-individual-board li.disconnected{
   opacity:.52;
 }
+
+
+.online-ready-summary{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin-top:14px;
+  padding:14px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;
+  background:rgba(255,255,255,.035);
+}
+.online-ready-summary > div{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+.online-ready-summary > div svg{
+  width:17px;
+  height:17px;
+  opacity:.78;
+}
+.online-ready-summary > div span{
+  font-size:.78rem;
+  opacity:.66;
+}
+.online-ready-summary > div strong{
+  font-size:.88rem;
+}
+.online-ready-summary > p{
+  grid-column:1/-1;
+  margin:2px 0 0;
+  font-size:.82rem;
+  opacity:.72;
+}
+.online-ready-summary.ready{
+  border-color:rgba(215,169,59,.34);
+  background:rgba(215,169,59,.07);
+}
+@media (max-width:640px){
+  .online-ready-summary{
+    grid-template-columns:1fr;
+  }
+  .online-ready-summary > p{
+    grid-column:auto;
+  }
+}
