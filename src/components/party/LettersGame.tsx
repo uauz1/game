@@ -44,6 +44,7 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
     onlineParams.get('onlineTeam1')?.trim() || '',
   ];
   const onlineSeconds = Number(onlineParams.get('onlineTimer') || '0');
+  const onlineRounds = Number(onlineParams.get('onlineRounds') || '0');
   const onlineDifficulty = onlineParams.get('onlineDifficulty') as HuroofDifficulty | null;
   const [initialPreferences] = useState(loadHuroofPreferences);
   const [teams, setTeams] = useState<Team[]>([
@@ -52,7 +53,7 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
   ]);
   const [seconds, setSeconds] = useState(onlineEmbed && [20,30,45,60].includes(onlineSeconds) ? onlineSeconds : initialPreferences.seconds);
   const [difficulty, setDifficulty] = useState<HuroofDifficulty>(onlineEmbed && ['easy','medium','hard'].includes(onlineDifficulty || '') ? onlineDifficulty as HuroofDifficulty : initialPreferences.difficulty);
-  const [bestOf, setBestOf] = useState(initialPreferences.bestOf);
+  const [bestOf, setBestOf] = useState(onlineEmbed && [1,3,5].includes(onlineRounds) ? onlineRounds : initialPreferences.bestOf);
   const [phase, setPhase] = useState<Phase>('setup');
   const [round, setRound] = useState(1);
   const [turn, setTurn] = useState<0 | 1>(0);
