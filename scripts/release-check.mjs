@@ -176,6 +176,14 @@ if (exists(autoTvFile)) {
     ? pass('Automatic display detection updates TV/mobile datasets')
     : fail('Automatic TV/mobile dataset wiring is missing');
 }
+const preferenceRuntimeFile = 'src/utils/sitePreferences.ts';
+if (exists(preferenceRuntimeFile)) {
+  const appSource = read('src/App.tsx');
+  appSource.includes("lazy(() => import('./components/party/SiteSettings'))") && appSource.includes("from './utils/sitePreferences'")
+    ? pass('Settings UI is lazy while preference runtime stays lightweight')
+    : fail('Settings UI is still part of the initial bundle');
+}
+
 const platformShellFile = 'src/components/party/PlatformShell.tsx';
 
 if (exists(platformShellFile)) {
