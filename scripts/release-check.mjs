@@ -85,8 +85,9 @@ const authContextFile = 'src/contexts/AuthContext.tsx';
 const durableOnlineFile = 'src/components/party/OnlineRoom.tsx';
 const durableGuestMigration = 'supabase/migrations/20260922011500_guest_rooms_durable.sql';
 const hardenedGuestMigration = 'supabase/migrations/20260922013000_harden_guest_room_rpc.sql';
+const boundedGuestStateMigration = 'supabase/migrations/20260922015500_guard_guest_room_state.sql';
 const settingsFile = 'src/components/party/SiteSettings.tsx';
-for (const file of [durableOnlineFile,durableGuestMigration,hardenedGuestMigration,settingsFile,authContextFile]) {
+for (const file of [durableOnlineFile,durableGuestMigration,hardenedGuestMigration,boundedGuestStateMigration,settingsFile,authContextFile]) {
   if (!exists(file)) fail(`Current production feature missing: ${file}`);
 }
 
