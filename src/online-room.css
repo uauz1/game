@@ -110,18 +110,20 @@ html[data-theme="light"] .online-how-steps span{background:#fffaf1;border-color:
 
 
 .online-live-game.preloading{
-  position:absolute!important;
-  width:1px!important;
-  height:1px!important;
-  min-height:0!important;
+  position:fixed!important;
+  inset:auto auto 0 -200vw!important;
+  width:min(100vw,1200px)!important;
+  min-height:min(72vh,760px)!important;
+  height:min(72vh,760px)!important;
+  visibility:hidden!important;
   opacity:0!important;
   overflow:hidden!important;
   pointer-events:none!important;
 }
 .online-live-game.preloading iframe{
-  width:1px!important;
-  height:1px!important;
-  min-height:0!important;
+  width:100%!important;
+  min-height:min(72vh,760px)!important;
+  height:min(72vh,760px)!important;
 }
 
 
