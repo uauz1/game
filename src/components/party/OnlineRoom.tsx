@@ -262,6 +262,8 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
         const incoming = raw as ClientMessage;
         const current = roomRef.current;
         if (!current) return;
+        const knownPlayer = incoming.type === 'join' ? null : current.players.find(player => player.id === incoming.playerId);
+        if (incoming.type !== 'join' && !knownPlayer) return;
 
         if (incoming.type === 'join') {
           const name = cleanName(incoming.name);
@@ -284,11 +286,11 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
                 }],
           }));
           setNotice(`${name} انضم للغرفة`);
-        } else if (incoming.type === 'ready') {
+        } else if (incoming.type === 'ready' && current.phase === 'lobby') {
           update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, ready: incoming.ready, connected: true, seenAt: Date.now() } : p) }));
         } else if (incoming.type === 'team' && current.phase === 'lobby') {
           update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, team: incoming.team, connected: true, seenAt: Date.now() } : p) }));
-        } else if (incoming.type === 'game-loaded') {
+        } else if (incoming.type === 'game-loaded' && (current.phase === 'countdown' || current.phase === 'playing') && incoming.gameId === current.gameId) {
           update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, gameLoadedId: incoming.gameId, connected: true, seenAt: Date.now() } : p) }), false);
         } else if (incoming.type === 'game-action') {
           if (!allowGameAction(incoming.playerId)) return;
@@ -298,7 +300,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
           frame?.contentWindow?.postMessage({ type: 'qaddha-online-replay', action }, window.location.origin);
           rememberGameAction(action);
           void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'game-action', action } });
-        } else if (incoming.type === 'resync-game') {
+        } else if (incoming.type === 'resync-game' && knownPlayer?.connected) {
           if (current.phase === 'countdown' || current.phase === 'playing') {
             update(r => ({ ...r, gameRevision: r.gameRevision + 1, players: r.players.map(p => ({ ...p, gameLoadedId: undefined })) }));
             setNotice('أعدنا مزامنة اللعبة لكل الأجهزة.');
