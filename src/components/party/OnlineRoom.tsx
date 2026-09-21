@@ -21,6 +21,7 @@ type ClientMessage =
   | { type: 'team'; playerId: string; team: 0 | 1 }
   | { type: 'game-loaded'; playerId: string; gameId: string }
   | { type: 'game-action'; playerId: string; action: OnlineGameAction }
+  | { type: 'resync-game'; playerId: string }
   | { type: 'sync-request' | 'heartbeat'; playerId: string };
 type ServerError = { type: 'room-error'; reason: 'duplicate-name' | 'room-full' | 'game-started' | 'removed' | 'host-left'; text: string; targetId?: string };
 
@@ -237,6 +238,12 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
           frame?.contentWindow?.postMessage({ type: 'qaddha-online-replay', action }, window.location.origin);
           rememberGameAction(action);
           void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'game-action', action } });
+        } else if (incoming.type === 'resync-game') {
+          if (current.phase === 'countdown' || current.phase === 'playing') {
+            update(r => ({ ...r, gameRevision: r.gameRevision + 1, players: r.players.map(p => ({ ...p, gameLoadedId: undefined })) }));
+            setNotice('أعدنا مزامنة اللعبة لكل الأجهزة.');
+            window.setTimeout(() => setNotice(''), 1800);
+          }
         } else if (incoming.type === 'heartbeat') {
           update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, connected: true, seenAt: Date.now() } : p) }), false);
         } else if (incoming.type === 'sync-request') {
@@ -570,6 +577,6 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   window.setTimeout(() => replayStoredActions(roomRef.current), 80);
   if (mode === 'host') update(r => ({ ...r, players: r.players.map(p => p.id === me ? { ...p, gameLoadedId: r.gameId } : p) }), false);
   else send({ type: 'game-loaded', playerId: me, gameId: room.gameId });
-}} /></section>}<TeamBoard room={room} canRemove={mode === 'host'} onRemove={remove}/>{mode === 'host' && room.phase === 'playing' && <div className="online-host-score">{([0, 1] as const).map(team => <section key={team}><span>{room.teamNames[team]}</span><button onClick={() => update(r => ({ ...r, scores: team === 0 ? [Math.max(0, r.scores[0] - 1), r.scores[1]] : [r.scores[0], Math.max(0, r.scores[1] - 1)] }))}><Minus/></button><strong>{room.scores[team]}</strong><button onClick={() => update(r => ({ ...r, scores: team === 0 ? [r.scores[0] + 1, r.scores[1]] : [r.scores[0], r.scores[1] + 1] }))}><Plus/></button></section>)}<div className="online-round-actions"><button onClick={pause}>{room.pausedAt ? <Play/> : <Pause/>}{room.pausedAt ? 'استئناف' : 'إيقاف مؤقت'}</button><button className={room.answerRevealed ? 'active' : ''} onClick={() => update(r => ({ ...r, answerRevealed: !r.answerRevealed }))}><Eye/>{room.answerRevealed ? 'إخفاء الإجابة' : 'كشف الإجابة'}</button><button onClick={resyncGame}><RefreshCw/> مزامنة اللعبة</button><button className="secondary" onClick={next}>{room.round >= room.totalRounds ? 'إنهاء المباراة' : 'الجولة التالية'}</button><button onClick={lobby}>العودة للوبي</button></div></div>}{room.phase === 'results' && <div className="online-results"><Trophy/><h2>{room.winner === null ? 'تعادل قوي!' : `${room.teamNames[room.winner]} فاز`}</h2>{mode === 'host' ? <div><button className="primary" onClick={start}><RotateCcw/> إعادة المباراة</button><button className="secondary" onClick={lobby}>لعبة أو إعدادات جديدة</button></div> : <p>المضيف يختار إعادة المباراة أو تغيير اللعبة.</p>}</div>}</main>}
+}} /></section>}<TeamBoard room={room} canRemove={mode === 'host'} onRemove={remove}/>{mode === 'guest' && room.phase === 'playing' && <div className="online-guest-live-tools"><button onClick={() => send({ type: 'resync-game', playerId: me })}><RefreshCw/> إعادة مزامنة اللعبة</button></div>}{mode === 'host' && room.phase === 'playing' && <div className="online-host-score">{([0, 1] as const).map(team => <section key={team}><span>{room.teamNames[team]}</span><button onClick={() => update(r => ({ ...r, scores: team === 0 ? [Math.max(0, r.scores[0] - 1), r.scores[1]] : [r.scores[0], Math.max(0, r.scores[1] - 1)] }))}><Minus/></button><strong>{room.scores[team]}</strong><button onClick={() => update(r => ({ ...r, scores: team === 0 ? [r.scores[0] + 1, r.scores[1]] : [r.scores[0], r.scores[1] + 1] }))}><Plus/></button></section>)}<div className="online-round-actions"><button onClick={pause}>{room.pausedAt ? <Play/> : <Pause/>}{room.pausedAt ? 'استئناف' : 'إيقاف مؤقت'}</button><button className={room.answerRevealed ? 'active' : ''} onClick={() => update(r => ({ ...r, answerRevealed: !r.answerRevealed }))}><Eye/>{room.answerRevealed ? 'إخفاء الإجابة' : 'كشف الإجابة'}</button><button onClick={resyncGame}><RefreshCw/> مزامنة اللعبة</button><button className="secondary" onClick={next}>{room.round >= room.totalRounds ? 'إنهاء المباراة' : 'الجولة التالية'}</button><button onClick={lobby}>العودة للوبي</button></div></div>}{room.phase === 'results' && <div className="online-results"><Trophy/><h2>{room.winner === null ? 'تعادل قوي!' : `${room.teamNames[room.winner]} فاز`}</h2>{mode === 'host' ? <div><button className="primary" onClick={start}><RotateCcw/> إعادة المباراة</button><button className="secondary" onClick={lobby}>لعبة أو إعدادات جديدة</button></div> : <p>المضيف يختار إعادة المباراة أو تغيير اللعبة.</p>}</div>}</main>}
   </section>;
 }
