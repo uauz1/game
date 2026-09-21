@@ -196,6 +196,9 @@ if (exists(whoGameFile) && exists(whoStorageFile)) {
   whoGame.includes('ONLINE_TEAM_NAMES') && whoGame.includes('!ONLINE_EMBED') && whoStorage.includes('ONLINE_EMBED')
     ? pass('Who Am I uses the shared online room without creating a second pairing flow')
     : fail('Who Am I online mode still depends on legacy pairing/local history');
+  whoGame.includes('onlineAnswerVisible') && whoGame.includes('كشف الإجابة') && whoGame.includes('judge(index as 0|1)')
+    ? pass('Who Am I has native reveal/judging controls inside online rooms')
+    : fail('Who Am I online room is missing native judging controls');
 }
 
 const finalGameFile = 'src/components/party/FinalPartyGames.tsx';
