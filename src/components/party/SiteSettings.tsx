@@ -84,6 +84,8 @@ function applyPrefs(prefs: QaddhaSitePrefs) {
   root.dataset.themePreference = prefs.theme;
   root.dataset.theme = resolvedTheme;
   root.dataset.qaddhaDisplay = prefs.display;
+  root.dataset.tvMode = prefs.display === 'tv' ? 'true' : 'false';
+  root.dataset.mobileMode = prefs.display === 'mobile' ? 'true' : 'false';
   root.dataset.qaddhaText = prefs.largeText ? 'large' : 'normal';
   root.dataset.qaddhaMotion = prefs.reducedMotion ? 'reduced' : 'full';
   root.dataset.qaddhaContrast = prefs.highContrast ? 'high' : 'normal';
