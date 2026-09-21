@@ -160,6 +160,35 @@ for (const file of criticalFiles) {
   if (forbidden.test(read(file))) fail(`Release blocker copy/marker remains in ${file}`);
 }
 
+
+const autoTvFile = 'src/utils/autoTvMode.ts';
+const pwaHookFile = 'src/hooks/usePWA.ts';
+const serviceWorkerFile = 'public/sw.js';
+const manifestFile = exists('public/manifest.webmanifest') ? 'public/manifest.webmanifest' : 'public/manifest.json';
+
+for (const file of [autoTvFile,pwaHookFile,serviceWorkerFile]) {
+  if (!exists(file)) fail(`Platform release file missing: ${file}`);
+}
+if (exists(autoTvFile)) {
+  const autoTv = read(autoTvFile);
+  autoTv.includes('root.dataset.tvMode') && autoTv.includes('root.dataset.mobileMode')
+    ? pass('Automatic display detection updates TV/mobile datasets')
+    : fail('Automatic TV/mobile dataset wiring is missing');
+}
+if (exists(pwaHookFile) && exists(serviceWorkerFile)) {
+  const pwa = read(pwaHookFile);
+  const sw = read(serviceWorkerFile);
+  pwa.includes('qaddha:update-ready') && sw.includes("qaddha-v5")
+    ? pass('PWA update signalling and current cache version are present')
+    : fail('PWA update/cache hardening is incomplete');
+}
+if (exists(manifestFile)) {
+  const manifest = read(manifestFile);
+  manifest.includes('"shortcuts"') && manifest.includes('قدّها أونلاين')
+    ? pass('PWA shortcuts include online entry')
+    : fail('PWA shortcuts are incomplete');
+}
+
 if (!exists('public/manifest.webmanifest') && !exists('public/manifest.json')) console.warn('⚠️ PWA manifest not found under the common manifest filenames; build may use another manifest path.');
 else pass('PWA manifest exists');
 
