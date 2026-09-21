@@ -35,8 +35,8 @@ export type FamilyHostState = {
 type RoomStatus = 'starting' | 'ready' | 'connecting' | 'connected' | 'disconnected' | 'error';
 
 // eslint-disable-next-line react-refresh/only-export-components -- The transport hook and its paired UI share one lazy-loaded boundary.
-export function useFamilyHostRoom(state: FamilyHostState, onCommand: (command: FamilyHostCommand) => void) {
-  const [status, setStatus] = useState<RoomStatus>('starting');
+export function useFamilyHostRoom(state: FamilyHostState, onCommand: (command: FamilyHostCommand) => void, enabled = true) {
+  const [status, setStatus] = useState<RoomStatus>(enabled ? 'starting' : 'connected');
   const [hostUrl, setHostUrl] = useState('');
   const [qrCode, setQrCode] = useState('');
   const channelRef = useRef<ReturnType<typeof createRealtimeRoomChannel> | null>(null);
@@ -46,6 +46,7 @@ export function useFamilyHostRoom(state: FamilyHostState, onCommand: (command: F
   commandRef.current = onCommand;
 
   useEffect(() => {
+    if (!enabled) { setStatus('connected'); return; }
     const roomId = createRealtimeRoomId('family');
     const token = createRealtimeRoomToken();
     const nextUrl = buildRealtimeJoinUrl('family', roomId, token);
@@ -71,7 +72,7 @@ export function useFamilyHostRoom(state: FamilyHostState, onCommand: (command: F
         else if (nextStatus === 'CLOSED') setStatus('disconnected');
       });
     return () => { channelRef.current = null; void removeRealtimeChannel(channel); };
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     const channel = channelRef.current;
