@@ -132,6 +132,24 @@ if (exists(authClientFile) && exists(authContextFile)) {
     : fail('Google OAuth configuration is incomplete');
 }
 
+const contentIntelligenceFile = 'src/utils/contentIntelligence.ts';
+const newGameSettingsFile = 'src/utils/newGameSettings.ts';
+const newPartyGamesFile = 'src/components/party/NewPartyGames.tsx';
+if (exists(contentIntelligenceFile) && exists(newGameSettingsFile) && exists(newPartyGamesFile)) {
+  const contentEngine = read(contentIntelligenceFile);
+  const newSettings = read(newGameSettingsFile);
+  const newGames = read(newPartyGamesFile);
+  contentEngine.includes('ONLINE_EMBED') && contentEngine.includes('ONLINE_EMBED ? []')
+    ? pass('Online content selection ignores device-local history')
+    : fail('Online content selection still depends on device-local history');
+  newSettings.includes("onlineParams.get('onlineTimer')") && newSettings.includes("onlineParams.get('onlineRounds')")
+    ? pass('Online party games consume shared room timing and rounds')
+    : fail('Online party game timing/round settings are not shared');
+  newGames.includes('ONLINE_TEAM_NAMES') && newGames.includes('if (!ONLINE_EMBED) saveSharedTeams')
+    ? pass('Online party games use shared room team names without mutating local team preferences')
+    : fail('Online party game teams are not isolated from local preferences');
+}
+
 if (exists(settingsFile)) {
   const settings = read(settingsFile);
   settings.includes('root.dataset.tvMode') && settings.includes('root.dataset.mobileMode')
