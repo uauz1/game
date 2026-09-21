@@ -8,17 +8,52 @@
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "any",
   "background_color": "#0B1020",
   "theme_color": "#0B1020",
-  "categories": ["games", "entertainment"],
+  "categories": [
+    "games",
+    "entertainment"
+  ],
   "icons": [
     {
       "src": "qaddha-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "مركز قدّها",
+      "short_name": "المركز",
+      "description": "افتح مركز الألعاب والجلسات",
+      "url": "?hub=1",
+      "icons": [
+        {
+          "src": "qaddha-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "قدّها أونلاين",
+      "short_name": "أونلاين",
+      "description": "أنشئ غرفة أو ادخل بكود",
+      "url": "?online=",
+      "icons": [
+        {
+          "src": "qaddha-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }
