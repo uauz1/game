@@ -99,6 +99,53 @@ if (exists(adminDashboardFile) && exists(adminConfigFile)) {
   for (const [ok, label] of adminChecks) ok ? pass(label) : fail(label);
 }
 
+const durableOnlineFile = 'src/components/party/OnlineRoom.tsx';
+const durableGuestMigration = 'supabase/migrations/20260922011500_guest_rooms_durable.sql';
+const hardenedGuestMigration = 'supabase/migrations/20260922013000_harden_guest_room_rpc.sql';
+const settingsFile = 'src/components/party/SiteSettings.tsx';
+const authContextFile = 'src/contexts/AuthContext.tsx';
+
+for (const file of [durableOnlineFile,durableGuestMigration,hardenedGuestMigration,settingsFile,authContextFile]) {
+  if (!exists(file)) fail(`Current production feature missing: ${file}`);
+}
+
+if (exists(durableOnlineFile)) {
+  const durableOnline = read(durableOnlineFile);
+  const currentOnlineChecks = [
+    [durableOnline.includes('qaddha_guest_create_room'), 'Guest rooms create through Supabase'],
+    [durableOnline.includes('qaddha_guest_get_room'), 'Guest room restore is wired'],
+    [durableOnline.includes('qaddha_guest_save_room'), 'Guest room persistence is wired'],
+    [durableOnline.includes('qaddha_guest_close_room'), 'Guest room close is wired'],
+    [durableOnline.includes('HOST_TOKEN_PREFIX'), 'Host ownership token protection is present'],
+    [durableOnline.includes('channel.presenceState()'), 'Realtime host presence/reconnect is present'],
+    [!durableOnline.includes('peerjs') && !durableOnline.includes('new Peer('), 'Current online room has no PeerJS fallback'],
+  ];
+  for (const [ok,label] of currentOnlineChecks) ok ? pass(label) : fail(label);
+}
+
+if (exists(authClientFile) && exists(authContextFile)) {
+  const authClient = read(authClientFile);
+  const authContext = read(authContextFile);
+  authClient.includes('/auth/v1/settings') && authClient.includes('external?.google')
+    ? pass('Google provider availability is verified against Supabase Auth settings')
+    : fail('Google provider readiness check is missing');
+  authContext.includes("provider: 'google'") && authContext.includes('userinfo.email')
+    ? pass('Google OAuth uses explicit Google email scope')
+    : fail('Google OAuth configuration is incomplete');
+}
+
+if (exists(settingsFile)) {
+  const settings = read(settingsFile);
+  settings.includes('root.dataset.tvMode') && settings.includes('root.dataset.mobileMode')
+    ? pass('TV and mobile display modes are wired to document datasets')
+    : fail('Display preference dataset wiring is incomplete');
+}
+
+if (!app.includes("cover:asset('pressure-cover.webp')")) fail('Pressure must use its production WebP cover');
+else pass('Pressure uses production WebP cover');
+if (!app.includes("cover:asset('intruder-cover.webp')")) fail('Intruder must use its production WebP cover');
+else pass('Intruder uses production WebP cover');
+
 const forbidden = /coming soon|قريبًا فقط|لعبة غير متاحة|TODO\b|FIXME\b/i;
 const criticalFiles = [
   'src/App.tsx',
