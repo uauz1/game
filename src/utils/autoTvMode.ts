@@ -48,6 +48,13 @@ function isTvLayout() {
   return wideScreen || shortLandscape || desktopLandscape || mobileLandscape || mirroredPhoneShape;
 }
 
+function applyResolvedDisplay(mode: DisplayPreference) {
+  const root = document.documentElement;
+  root.dataset.qaddhaDisplay = mode;
+  root.dataset.tvMode = mode === 'tv' ? 'true' : 'false';
+  root.dataset.mobileMode = mode === 'mobile' ? 'true' : 'false';
+}
+
 function resolveDisplayMode() {
   const forced = readForcedDisplayFromUrl();
   const preference = forced ?? readDisplayPreference();
@@ -56,7 +63,7 @@ function resolveDisplayMode() {
   root.dataset.qaddhaTvDirect = forced === 'tv' ? 'on' : 'off';
 
   if (preference !== 'auto') {
-    root.dataset.qaddhaDisplay = preference;
+    applyResolvedDisplay(preference);
     root.dataset.qaddhaAutoTv = forced === 'tv' ? 'direct' : 'off';
     root.dataset.qaddhaCast = forced === 'tv' && isLikelyMobileDevice() ? 'on' : 'off';
     return;
@@ -64,7 +71,7 @@ function resolveDisplayMode() {
 
   const tv = isTvLayout();
   const cast = tv && isLikelyMobileDevice();
-  root.dataset.qaddhaDisplay = tv ? 'tv' : 'auto';
+  applyResolvedDisplay(tv ? 'tv' : 'auto');
   root.dataset.qaddhaAutoTv = tv ? 'on' : 'off';
   root.dataset.qaddhaCast = cast ? 'on' : 'off';
 }
