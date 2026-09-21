@@ -22,7 +22,7 @@ type ClientMessage =
 type ServerError = { type: 'room-error'; reason: 'duplicate-name' | 'room-full' | 'game-started' | 'removed' | 'host-left'; text: string; targetId?: string };
 
 const PLAYER_KEY = 'qaddha.online.player-id';
-const ROOM_KEY = 'qaddha.online.host-room.v2';
+const ROOM_KEY_PREFIX = 'qaddha.online.host-room.v3:';
 const MAX_PLAYERS = 12;
 const categories = ['الكل', 'عام', 'رياضة', 'ترفيه', 'إسلامي', 'علوم'];
 const cleanCode = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
@@ -52,7 +52,7 @@ function JoinCard({ code: firstCode, error, onJoin, onBack }: { code: string; er
   const [code, setCode] = useState(firstCode);
   const [name, setName] = useState(() => { try { return localStorage.getItem('qaddha.online.name') || ''; } catch { return ''; } });
   const valid = cleanCode(code).length === 6 && cleanName(name).length >= 2;
-  return <section className="online-entry-card"><button className="quiet online-back" onClick={onBack}><ArrowRight/> الرئيسية</button><div className="online-entry-icon"><Link2/></div><small>دخول سريع</small><h1>انضم للغرفة</h1><p>اكتب كود الغرفة واسمك، وبنشبك مع أصحابك مباشرة.</p>{error && <p className="online-form-error" role="alert">{error}</p>}<label><span>كود الغرفة</span><input dir="ltr" autoCapitalize="characters" maxLength={6} value={code} onChange={e => setCode(cleanCode(e.target.value))} placeholder="QDH123"/></label><label><span>اسم اللاعب</span><input maxLength={18} value={name} onChange={e => setName(e.target.value)} placeholder="مثال: نواف"/></label><button className="primary" disabled={!valid} onClick={() => { const value = cleanName(name); try { localStorage.setItem('qaddha.online.name', value); } catch {/* optional */} onJoin(cleanCode(code), value); }}>دخول الغرفة</button></section>;
+  return <section className="online-entry-card"><button className="quiet online-back" onClick={onBack}><ArrowRight/> الرئيسية</button><div className="online-entry-icon"><Link2/></div><small>دخول سريع · بدون حساب</small><h1>انضم للغرفة</h1><p>اكتب كود الغرفة واسمك فقط. ما تحتاج تسجيل دخول عشان تلعب مع أصحابك.</p>{error && <p className="online-form-error" role="alert">{error}</p>}<label><span>كود الغرفة</span><input dir="ltr" autoCapitalize="characters" maxLength={6} value={code} onChange={e => setCode(cleanCode(e.target.value))} placeholder="QDH123"/></label><label><span>اسم اللاعب</span><input maxLength={18} value={name} onChange={e => setName(e.target.value)} placeholder="مثال: نواف"/></label><button className="primary" disabled={!valid} onClick={() => { const value = cleanName(name); try { localStorage.setItem('qaddha.online.name', value); } catch {/* optional */} onJoin(cleanCode(code), value); }}>دخول الغرفة</button></section>;
 }
 
 function Header({ room, connected, host, onBack }: { room: Room; connected: boolean; host: boolean; onBack: () => void }) {
@@ -68,7 +68,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const [join, setJoin] = useState({ code: queryCode, name: queryCode ? savedName : '' });
   const [room, setRoom] = useState<Room | null>(() => {
     if (!queryHost) return null;
-    try { const cached = JSON.parse(sessionStorage.getItem(ROOM_KEY) || 'null') as Room | null; if (cached?.type === 'room-snapshot' && cached.code === queryHost) return normalize({ ...cached, players: cached.players.map(p => ({ ...p, connected: p.host })) }); } catch {/* fresh room */}
+    try { const cached = JSON.parse(localStorage.getItem(`${ROOM_KEY_PREFIX}${queryHost}`) || 'null') as Room | null; if (cached?.type === 'room-snapshot' && cached.code === queryHost) return normalize({ ...cached, players: cached.players.map(p => ({ ...p, connected: p.host })) }); } catch {/* fresh room */}
     return newRoom(queryHost, 'المضيف', games[0]?.id || 'teams');
   });
   const [connected, setConnected] = useState(false);
@@ -87,7 +87,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     if (!current) return current;
     const next = { ...fn(current), version: current.version + 1 };
     roomRef.current = next;
-    try { sessionStorage.setItem(ROOM_KEY, JSON.stringify(next)); } catch {/* optional */}
+    try { localStorage.setItem(`${ROOM_KEY_PREFIX}${next.code}`, JSON.stringify(next)); } catch {/* optional */}
     return next;
   }), []);
   useEffect(() => {
@@ -279,12 +279,13 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     };
   }, [join, me, mode]);
 
-  const create = () => { const code = makeCode(); const next = newRoom(code, hostName, games[0]?.id || 'teams'); try { localStorage.setItem('qaddha.online.name', cleanName(hostName)); sessionStorage.setItem(ROOM_KEY, JSON.stringify(next)); } catch {/* optional */} window.history.replaceState({}, '', `${window.location.pathname}?onlineHost=${code}`); setRoom(next); setMode('host'); };
+  const create = () => { const code = makeCode(); const next = newRoom(code, hostName, games[0]?.id || 'teams'); try { localStorage.setItem('qaddha.online.name', cleanName(hostName)); localStorage.setItem(`${ROOM_KEY_PREFIX}${code}`, JSON.stringify(next)); } catch {/* optional */} window.history.replaceState({}, '', `${window.location.pathname}?onlineHost=${code}`); setRoom(next); setMode('host'); };
   const joinRoom = (code: string, name: string) => { setJoin({ code, name }); setRoom(null); setNotice(''); setJoinError(''); setMode('guest'); };
   const send = (message: ClientMessage) => { const channel = channelRef.current; if (channel) void channel.send({ type: 'broadcast', event: 'client-message', payload: message }); };
   const localPlayer = room?.players.find(p => p.id === me);
   const allReady = !!room && room.players.filter(p => p.connected).length >= 2 && room.players.filter(p => p.connected).every(p => p.host || p.ready);
   const copy = async () => { try { await navigator.clipboard.writeText(roomUrl); setCopied(true); window.setTimeout(() => setCopied(false), 1600); } catch { setNotice('انسخ الرابط من شريط المتصفح'); } };
+  const copyCode = async () => { if (!room) return; try { await navigator.clipboard.writeText(room.code); setNotice('تم نسخ كود الغرفة'); window.setTimeout(() => setNotice(''), 1600); } catch { setNotice(`كود الغرفة: ${room.code}`); } };
   const copyCode = async () => { try { if (!room) return; await navigator.clipboard.writeText(room.code); setCopied(true); setNotice('تم نسخ كود الغرفة'); window.setTimeout(() => { setCopied(false); setNotice(''); }, 1600); } catch { setNotice('تعذر نسخ الكود الآن.'); } };
   const exitOnline = () => { const url = new URL(window.location.href); url.searchParams.delete('online'); url.searchParams.delete('onlineHost'); window.history.replaceState({}, '', url); try { sessionStorage.removeItem(ROOM_KEY); } catch {/* optional */} onBack(); };
   const share = async () => navigator.share ? navigator.share({ title: `غرفة قدّها ${room?.code}`, text: `ادخل غرفة قدّها بالكود ${room?.code}`, url: roomUrl }) : copy();
@@ -295,7 +296,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const remove = (id: string) => { const channel = channelRef.current; if (channel) void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'room-error', reason: 'removed', text: 'أزالك المضيف من الغرفة.', targetId: id } satisfies ServerError }); update(r => ({ ...r, players: r.players.filter(p => p.id !== id) })); };
   useEffect(() => { if (mode !== 'host' || room?.phase !== 'countdown' || !room.startedAt) return; const timer = window.setTimeout(() => update(r => ({ ...r, phase: 'playing' })), Math.max(0, room.startedAt - Date.now())); return () => window.clearTimeout(timer); }, [mode, room?.phase, room?.startedAt, update]);
 
-  if (mode === 'entry') return <section className="online-room online-entry" dir="rtl"><button className="quiet online-back" onClick={exitOnline}><ArrowRight/> الرئيسية</button><div className="online-entry-hero"><span><Wifi/></span><small>قدّها أونلاين · بدون حساب</small><h1>غرفة واحدة.<br/><em>والحماس عند الكل.</em></h1><p>أنشئ غرفة وخذ كود من 6 خانات، أو ادخل بكود صاحبك. التسجيل اختياري وما تحتاج حساب عشان تلعب.</p></div><div className="online-steps"><span><b>1</b>أنشئ غرفة</span><i/><span><b>2</b>شارك الكود</span><i/><span><b>3</b>يدخل أصحابك</span><i/><span><b>4</b>ابدأ اللعب</span></div><div className="online-entry-actions"><article><Crown/><small>للمضيف</small><h2>إنشاء غرفة</h2><p>اضبط اللعبة والجولات والوقت والفرق من نفس اللوبي.</p><label><span>اسمك</span><input maxLength={18} value={hostName} onChange={e => setHostName(e.target.value)}/></label><button className="primary" disabled={cleanName(hostName).length < 2} onClick={create}>إنشاء غرفة وأخذ الكود</button></article><article><Link2/><small>للاعب</small><h2>الانضمام بكود</h2><p>اكتب الكود واسمك فقط، اختر فريقك واضغط جاهز.</p><button className="secondary" onClick={() => setMode('join')}>عندي كود غرفة</button></article></div><p className="online-guest-note">يمكن لشخصين أو مجموعة اللعب معًا. الحساب فقط لحفظ بياناتك لاحقًا، وليس شرطًا للدخول.</p></section>;
+  if (mode === 'entry') return <section className="online-room online-entry" dir="rtl"><button className="quiet online-back" onClick={exitOnline}><ArrowRight/> الرئيسية</button><div className="online-entry-hero"><span><Wifi/></span><small>قدّها أونلاين · بدون حساب</small><h1>غرفة واحدة.<br/><em>والحماس عند الكل.</em></h1><p>أنشئ غرفة وخذ كود من 6 خانات، أو ادخل بكود صاحبك. التسجيل اختياري وما تحتاج حساب عشان تلعب.</p></div><div className="online-steps"><span><b>1</b>أنشئ غرفة</span><i/><span><b>2</b>شارك الكود</span><i/><span><b>3</b>يدخل أصحابك</span><i/><span><b>4</b>ابدأ اللعب</span></div><div className="online-how-steps"><span><b>1</b>أنشئ غرفة</span><span><b>2</b>شارك الكود</span><span><b>3</b>يدخل أصحابك</span><span><b>4</b>ابدأ اللعب</span></div><div className="online-entry-actions"><article><Crown/><small>للمضيف</small><h2>إنشاء غرفة</h2><p>اضبط اللعبة والجولات والوقت والفرق من نفس اللوبي.</p><label><span>اسمك</span><input maxLength={18} value={hostName} onChange={e => setHostName(e.target.value)}/></label><button className="primary" disabled={cleanName(hostName).length < 2} onClick={create}>إنشاء غرفة وأخذ الكود</button></article><article><Link2/><small>للاعب</small><h2>الانضمام بكود</h2><p>اكتب الكود واسمك فقط، اختر فريقك واضغط جاهز.</p><button className="secondary" onClick={() => setMode('join')}>عندي كود غرفة</button></article></div><p className="online-guest-note">يمكن لشخصين أو مجموعة اللعب معًا. الحساب فقط لحفظ بياناتك لاحقًا، وليس شرطًا للدخول.</p></section>;
   if (mode === 'join') return <section className="online-room online-entry" dir="rtl"><JoinCard code={join.code || queryCode} error={joinError} onJoin={joinRoom} onBack={() => queryCode ? exitOnline() : setMode('entry')}/></section>;
   if (!room) return <section className="online-room online-wait" dir="rtl"><RefreshCw className="spin"/><h1>نربطك بالغرفة…</h1><p>{notice || 'إذا انقطع النت لحظة، بنرجعك لنفس الفريق والجولة تلقائيًا.'}</p><button className="quiet" onClick={() => setMode('join')}>تغيير الكود</button></section>;
 
