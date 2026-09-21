@@ -63,11 +63,17 @@ const qrFiles = [secret, words, acting, host];
 if (qrFiles.every(text => text.includes('createRealtimeRoomChannel'))) pass('QR games use the shared realtime transport');
 else fail('At least one QR game is not using the shared realtime transport');
 
-if ([secret, words, acting, host, newGames].some(text => text.includes("from '../../utils/peerRoom'") || text.includes('from "../../utils/peerRoom"'))) fail('Legacy PeerJS transport is still imported by a live party game');
-else pass('Live party games no longer import the legacy PeerJS transport');
+const onlineRoom = read('src/components/party/OnlineRoom.tsx');
+if ([secret, words, acting, host, newGames, onlineRoom].some(text => text.includes("from '../../utils/peerRoom'") || text.includes('from "../../utils/peerRoom"') || text.includes("from 'peerjs'") || text.includes('from "peerjs"'))) fail('Legacy PeerJS transport is still imported by a live party game');
+else pass('Live party games and online rooms no longer import PeerJS');
 
 if (!photo.includes('wikipedia') && !photo.includes('Wikipedia') && !photo.includes('wikimedia') && !photo.includes('Wikimedia')) fail('Photo challenge no longer references its real-image source path');
 else pass('Photo challenge keeps the real-image source path');
+
+for (const rpc of ['qaddha_guest_create_room','qaddha_guest_get_room','qaddha_guest_save_room','qaddha_guest_close_room']) {
+  if (!onlineRoom.includes(rpc)) fail(`Online room missing durable guest RPC: ${rpc}`);
+}
+if (['qaddha_guest_create_room','qaddha_guest_get_room','qaddha_guest_save_room','qaddha_guest_close_room'].every(rpc => onlineRoom.includes(rpc))) pass('Durable guest room lifecycle is wired');
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log('🎮 Party game integrity checks passed.');
