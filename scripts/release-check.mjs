@@ -48,29 +48,10 @@ if (realtime.includes('createRealtimeRoomChannel')) pass('Shared realtime room t
 else fail('Shared realtime room transport entry point is missing');
 
 
-const onlineLobbyFile = 'src/components/party/OnlineLobby.tsx';
-const onlineClientFile = 'src/utils/onlinePlay.ts';
-const authClientFile = 'src/utils/authClient.ts';
-const productionMigrationFile = 'supabase/migrations/20260918012100_qaddha_production_accounts_online.sql';
-for (const file of [onlineLobbyFile, onlineClientFile, authClientFile, productionMigrationFile]) {
-  if (!exists(file)) fail(`Online release file missing: ${file}`);
-}
-if (exists(onlineLobbyFile) && exists(onlineClientFile) && exists(authClientFile)) {
-  const onlineLobby = read(onlineLobbyFile);
-  const onlineClient = read(onlineClientFile);
-  const authClient = read(authClientFile);
-  const onlineChecks = [
-    [app.includes("screen==='online'") && app.includes('<OnlineRoom'), 'Online mode is integrated inside the Qaddha shell'],
-    [app.includes("hostParams.has('online')") && app.includes("hostParams.has('onlineHost')"), 'Invite-code deep link is wired'],
-    [onlineLobby.includes('findQuickOnlineMatch'), 'Quick Match UI is wired'],
-    [onlineLobby.includes('createPrivateOnlineRoom'), 'Private-room UI is wired'],
-    [onlineLobby.includes('recordOnlineDuelResult'), 'Online results persist to account stats'],
-    [onlineClient.includes("private: true"), 'Online Realtime channel is private'],
-    [onlineClient.includes('qaddha_record_duel_result'), 'Online result RPC is wired'],
-    [authClient.includes('persistSession: true') && authClient.includes('autoRefreshToken: true'), 'Auth session persistence and refresh are enabled'],
-  ];
-  for (const [ok, label] of onlineChecks) ok ? pass(label) : fail(label);
-}
+
+/* Legacy authenticated duel files remain in the repository for compatibility,
+   but the production Online entry point is OnlineRoom.tsx. Current multiplayer
+   release checks live above and must not depend on the legacy lobby. */
 
 
 const adminDashboardFile = 'src/components/admin/QaddhaAdminDashboard.tsx';
