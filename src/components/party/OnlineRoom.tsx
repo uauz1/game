@@ -293,7 +293,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
         } else if (incoming.type === 'game-loaded' && (current.phase === 'countdown' || current.phase === 'playing') && incoming.gameId === current.gameId) {
           update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, gameLoadedId: incoming.gameId, connected: true, seenAt: Date.now() } : p) }), false);
         } else if (incoming.type === 'game-action') {
-          if (!allowGameAction(incoming.playerId)) return;
+          if (!knownPlayer?.connected || !allowGameAction(incoming.playerId)) return;
           const action = normalizeGameAction(incoming.action, incoming.playerId, current.gameId);
           if (!action) return;
           const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
