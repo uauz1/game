@@ -1,3 +1,5 @@
+import { readQaddhaPreferences, type QuestionIntensityPreference, type RepeatProtectionPreference } from './sitePreferences';
+
 export type ContentDifficulty = 'medium' | 'medium-hard' | 'hard';
 
 export type ContentMeta = {
@@ -35,11 +37,26 @@ export function semanticKey(value:string){
   return normalizeArabic(value).split(' ').filter(word=>word.length>1&&!stop.has(word)).sort().join(' ');
 }
 
-export function difficultyForPosition(index:number,total:number):ContentDifficulty{
+export function difficultyForPosition(index:number,total:number,intensity:QuestionIntensityPreference='competitive'):ContentDifficulty{
   const progress=total<=1?0:index/(total-1);
+  if(intensity==='balanced'){
+    if(progress<.38)return 'medium';
+    if(progress<.88)return 'medium-hard';
+    return 'hard';
+  }
+  if(intensity==='hardcore'){
+    if(progress<.18)return 'medium-hard';
+    return 'hard';
+  }
   if(progress<.2)return 'medium';
   if(progress<.72)return 'medium-hard';
   return 'hard';
+}
+
+function repeatConfig(level:RepeatProtectionPreference){
+  if(level==='maximum')return {window:60,penalty:1200,recentCategories:8,recentTopics:7,recentAnswers:14};
+  if(level==='strict')return {window:28,penalty:420,recentCategories:5,recentTopics:4,recentAnswers:8};
+  return {window:12,penalty:140,recentCategories:3,recentTopics:3,recentAnswers:5};
 }
 
 function difficultyScore(actual:ContentMeta['difficulty'],target:ContentDifficulty){
@@ -50,22 +67,27 @@ function difficultyScore(actual:ContentMeta['difficulty'],target:ContentDifficul
 
 export function selectSmart<T>(game:string,pool:T[],count:number,getId:(item:T)=>string,getMeta:(item:T)=>ContentMeta=()=>({})):T[]{
   const unique=[...new Map(pool.map(item=>[getId(item),item])).values()];
+  const prefs=readQaddhaPreferences();
+  const repeat=repeatConfig(prefs.repeatProtection);
   const history=readHistory();
   const prior=(history[game]||[]).filter(entry=>unique.some(item=>getId(item)===entry.id));
   const lastSeen=new Map(prior.map((entry,index)=>[entry.id,index]));
-  const recent=prior.slice(-18);
+  const recent=prior.slice(-repeat.window);
+  const recentlySeenIds=new Set(recent.map(entry=>entry.id));
   const selected:T[]=[];
 
   while(selected.length<Math.min(count,unique.length)){
-    const target=difficultyForPosition(selected.length,Math.min(count,unique.length));
-    const recentCategories=new Set([...recent,...selected.map(item=>({id:getId(item),seenAt:0,...getMeta(item)}))].slice(-5).map(x=>x.category).filter(Boolean));
-    const recentTopics=new Set([...recent,...selected.map(item=>({id:getId(item),seenAt:0,...getMeta(item)}))].slice(-4).map(x=>x.topic).filter(Boolean));
-    const recentAnswers=new Set([...recent,...selected.map(item=>({id:getId(item),seenAt:0,...getMeta(item)}))].slice(-8).map(x=>normalizeArabic(x.answer||'')).filter(Boolean));
+    const target=difficultyForPosition(selected.length,Math.min(count,unique.length),prefs.questionIntensity);
+    const combined=[...recent,...selected.map(item=>({id:getId(item),seenAt:0,...getMeta(item)}))];
+    const recentCategories=new Set(combined.slice(-repeat.recentCategories).map(x=>x.category).filter(Boolean));
+    const recentTopics=new Set(combined.slice(-repeat.recentTopics).map(x=>x.topic).filter(Boolean));
+    const recentAnswers=new Set(combined.slice(-repeat.recentAnswers).map(x=>normalizeArabic(x.answer||'')).filter(Boolean));
     const candidates=unique.filter(item=>!selected.some(chosen=>getId(chosen)===getId(item)));
     candidates.sort((a,b)=>{
       const score=(item:T)=>{
         const id=getId(item),meta=getMeta(item),seen=lastSeen.get(id);
         let value=seen===undefined?1000:Math.max(0,prior.length-seen)*3;
+        if(recentlySeenIds.has(id))value-=repeat.penalty;
         value+=difficultyScore(meta.difficulty,target);
         if(meta.category&&recentCategories.has(meta.category))value-=28;
         if(meta.topic&&recentTopics.has(meta.topic))value-=35;

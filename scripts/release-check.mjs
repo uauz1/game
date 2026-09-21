@@ -123,6 +123,14 @@ if (exists(settingsFile)) {
     : fail('Display preference dataset wiring is incomplete');
 }
 
+const contentIntelligenceFile = 'src/utils/contentIntelligence.ts';
+if (exists(contentIntelligenceFile)) {
+  const contentEngine = read(contentIntelligenceFile);
+  contentEngine.includes('prefs.questionIntensity') && contentEngine.includes('prefs.repeatProtection')
+    ? pass('Question intensity and repeat-protection preferences drive content selection')
+    : fail('Content intelligence preferences are not wired');
+}
+
 const premiumGameFile = 'src/components/party/PremiumPartyGames.tsx';
 if (exists(premiumGameFile)) {
   const premiumGames = read(premiumGameFile);
