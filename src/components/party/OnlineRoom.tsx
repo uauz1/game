@@ -242,6 +242,14 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
       });
       channelRef.current = channel;
 
+      channel.on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const hostOnline = Object.values(state).flat().some((presence: any) => presence?.role === 'host');
+        setConnected(hostOnline);
+        if (!hostOnline) setNotice('المضيف غير متصل الآن. بنرجع نربطك تلقائيًا أول ما يرجع.');
+        else setNotice('');
+      });
+
       channel.on('broadcast', { event: 'server-message' }, message => {
         const raw = message.payload;
         if (!raw || typeof raw !== 'object') return;
@@ -279,7 +287,11 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
           await channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'sync-request', playerId: me } satisfies ClientMessage });
           window.clearInterval(heartbeat);
           heartbeat = window.setInterval(() => {
-            void channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'heartbeat', playerId: me } satisfies ClientMessage });
+            const known = roomRef.current?.players.some(player => player.id === me);
+            const payload: ClientMessage = known
+              ? { type: 'heartbeat', playerId: me }
+              : { type: 'join', playerId: me, name: join.name };
+            void channel.send({ type: 'broadcast', event: 'client-message', payload });
           }, 5000);
           window.clearTimeout(roomTimeout);
           roomTimeout = window.setTimeout(() => {
