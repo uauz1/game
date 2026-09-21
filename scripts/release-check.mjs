@@ -242,6 +242,9 @@ if (exists(platformShellFile)) {
   platformShell.includes("onlineEmbed = params.get('onlineEmbed') === '1'") && platformShell.includes('if (onlineEmbed) return <App/>')
     ? pass('Embedded online game runtime excludes global hub/multiplayer overlays')
     : fail('Embedded online game runtime isolation is missing');
+  app.includes("const gameHome=()=>{ if(!onlineEmbed)setHomeConfirm(true); };") && app.includes('onHome={gameHome}')
+    ? pass('Embedded online games cannot leave the shared room through local game navigation')
+    : fail('Embedded online game navigation escape guard is missing');
 }
 
 if (exists(pwaHookFile) && exists(serviceWorkerFile)) {
