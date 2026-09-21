@@ -197,3 +197,206 @@
 @media(prefers-reduced-motion:reduce){
   .lobby-hero .cinematic-arena img,.game-cover-image,.lobby-game.available,.quick-play-grid>button{transition:none !important}
 }
+
+
+/* 2026-09-21: light-theme + card action hardening.
+   Keep premium polish from forcing dark surfaces after settings.css. */
+.game-card-shell .game-copy{padding-bottom:26px !important}
+.game-card-shell .game-copy p{max-width:none !important;padding-left:56px;min-height:44px}
+.game-card-shell .game-favorite{
+  right:auto !important;
+  left:18px !important;
+  bottom:18px !important;
+}
+@media(max-width:620px){
+  .game-card-shell .game-copy p{padding-left:50px}
+  .game-card-shell .game-favorite{left:14px !important;bottom:14px !important}
+}
+
+html[data-theme="light"] .party-app{
+  background:
+    radial-gradient(circle at 50% -12%,rgba(119,82,155,.08),transparent 34%),
+    radial-gradient(circle at 8% 42%,rgba(183,131,36,.07),transparent 28%),
+    linear-gradient(180deg,#fbf8f1 0%,#f5f0e6 42%,#eee8dc 100%) !important;
+  color:#211d18;
+}
+html[data-theme="light"] .party-app main::before{
+  background:linear-gradient(90deg,transparent,rgba(148,104,31,.22),transparent);
+}
+html[data-theme="light"] .lobby-hero{
+  border-color:rgba(126,95,43,.24) !important;
+  background:linear-gradient(135deg,#fffdf8,#f6efe2) !important;
+  box-shadow:0 26px 70px rgba(71,52,23,.13),0 0 0 1px rgba(65,47,22,.025) inset !important;
+}
+html[data-theme="light"] .lobby-hero::before{
+  background:
+    linear-gradient(90deg,rgba(255,253,248,.985) 0%,rgba(255,253,248,.94) 31%,rgba(255,253,248,.76) 52%,rgba(255,253,248,.34) 78%,rgba(255,253,248,.14) 100%) !important,
+    linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.03) 48%,rgba(239,232,219,.5)) !important;
+}
+html[data-theme="light"] .lobby-hero::after{
+  background:
+    radial-gradient(circle at 78% 35%,rgba(193,143,50,.13),transparent 24%),
+    radial-gradient(circle at 68% 72%,rgba(126,78,155,.07),transparent 26%) !important;
+}
+html[data-theme="light"] .lobby-hero .cinematic-arena img{
+  filter:saturate(.83) contrast(.92) brightness(1.06) sepia(.07) !important;
+  opacity:.78;
+}
+html[data-theme="light"] .lobby-copy .eyebrow{
+  border-color:rgba(157,115,38,.35) !important;
+  color:#785715 !important;
+  background:rgba(255,250,237,.88) !important;
+  box-shadow:0 8px 24px rgba(70,51,23,.08) !important;
+}
+html[data-theme="light"] .lobby-copy h1{color:#211d18 !important}
+html[data-theme="light"] .lobby-copy p{color:#625a50 !important}
+html[data-theme="light"] .lobby-copy .hero-actions .quiet{
+  color:#51493f !important;
+  background:rgba(255,252,245,.86) !important;
+  border-color:rgba(115,86,38,.16) !important;
+  box-shadow:0 8px 22px rgba(65,47,22,.06) !important;
+}
+html[data-theme="light"] .lobby-copy .hero-actions .quiet:hover{
+  color:#2e261d !important;
+  background:#fff7e6 !important;
+  border-color:rgba(157,115,38,.35) !important;
+}
+html[data-theme="light"] .hero-details span{
+  background:rgba(255,252,245,.72);
+  border-color:rgba(55,43,28,.08);
+  color:#6d6458;
+}
+html[data-theme="light"] .game-library-tools{
+  border-color:rgba(91,70,38,.15) !important;
+  background:rgba(250,247,240,.92) !important;
+  box-shadow:0 14px 32px rgba(66,49,25,.09) !important;
+}
+html[data-theme="light"] .game-library-tools>label{
+  border-color:rgba(91,70,38,.16) !important;
+  background:#fffdf8 !important;
+}
+html[data-theme="light"] .game-library-tools>div button,
+html[data-theme="light"] .game-library-tools .random-game{
+  background:#fffaf0 !important;
+  border-color:rgba(91,70,38,.14) !important;
+  color:#5f574d !important;
+}
+html[data-theme="light"] .game-library-tools>div button.active{
+  background:linear-gradient(135deg,#ecd070,#cca047) !important;
+  color:#21190c !important;
+}
+html[data-theme="light"] .lobby-game.available{
+  border-color:rgba(91,70,38,.16) !important;
+  background:linear-gradient(160deg,#fffdfa,#f7f1e6 72%) !important;
+  box-shadow:0 14px 34px rgba(68,50,24,.11),inset 0 1px 0 rgba(255,255,255,.8) !important;
+}
+html[data-theme="light"] .lobby-game.available:hover{
+  border-color:rgba(165,122,47,.5) !important;
+  box-shadow:0 19px 40px rgba(68,50,24,.15) !important;
+}
+html[data-theme="light"] .game-art::after{
+  background:linear-gradient(180deg,transparent 55%,rgba(245,238,225,.7) 100%);
+}
+html[data-theme="light"] .game-number{
+  background:rgba(255,250,240,.8) !important;
+  color:#8d641d !important;
+  border-color:rgba(145,101,29,.25) !important;
+}
+html[data-theme="light"] .game-copy{
+  background:linear-gradient(180deg,#fffdf9,#f8f2e7) !important;
+}
+html[data-theme="light"] .game-copy small{color:#7c6437 !important}
+html[data-theme="light"] .game-copy h3{color:#251f18 !important}
+html[data-theme="light"] .game-copy p{color:#6a6258 !important}
+html[data-theme="light"] .game-arrow{
+  background:rgba(199,153,67,.12) !important;
+  color:#8c641f !important;
+  border-color:rgba(159,115,38,.22) !important;
+}
+html[data-theme="light"] .game-favorite{
+  background:rgba(255,250,241,.94) !important;
+  border-color:rgba(87,65,34,.18) !important;
+  color:#756b5f !important;
+  box-shadow:0 6px 16px rgba(63,46,22,.12) !important;
+}
+html[data-theme="light"] .game-favorite.active{
+  background:#fff0d7 !important;
+  border-color:rgba(166,119,35,.38) !important;
+  color:#a06d18 !important;
+}
+html[data-theme="light"] .lobby-how{
+  border-color:rgba(91,70,38,.15) !important;
+  background:linear-gradient(120deg,#fffaf0,#f5eee2 65%) !important;
+  box-shadow:0 15px 38px rgba(64,47,23,.09) !important;
+}
+html[data-theme="light"] .lobby-how h2{color:#28221b !important}
+html[data-theme="light"] .lobby-how p{color:#6d6459 !important}
+html[data-theme="light"] .party-app footer{
+  border-top-color:rgba(91,70,38,.12) !important;
+  background:linear-gradient(180deg,rgba(248,243,234,.4),#eee7dc) !important;
+}
+html[data-theme="light"] .party-app footer>span{color:#8e671f !important}
+
+/* Panels and online room must follow the selected light theme too. */
+html[data-theme="light"] .settings-panel,
+html[data-theme="light"] .player-panel,
+html[data-theme="light"] .auth-modal,
+html[data-theme="light"] .online-entry-card,
+html[data-theme="light"] .online-lobby-main,
+html[data-theme="light"] .online-qr,
+html[data-theme="light"] .online-code-card,
+html[data-theme="light"] .online-team,
+html[data-theme="light"] .host-lobby-controls,
+html[data-theme="light"] .online-game-banner,
+html[data-theme="light"] .online-host-score,
+html[data-theme="light"] .online-results{
+  background:linear-gradient(160deg,#fffdf8,#f5eee2 74%) !important;
+  color:#251f18 !important;
+  border-color:rgba(87,65,34,.16) !important;
+  box-shadow:0 18px 50px rgba(63,46,22,.11) !important;
+}
+html[data-theme="light"] .settings-overlay,
+html[data-theme="light"] .player-overlay,
+html[data-theme="light"] .auth-overlay{
+  background:rgba(61,50,36,.28) !important;
+}
+html[data-theme="light"] .settings-toggle,
+html[data-theme="light"] .settings-tools button,
+html[data-theme="light"] .theme-setting,
+html[data-theme="light"] .display-setting,
+html[data-theme="light"] .online-entry-actions article,
+html[data-theme="light"] .guest-controls,
+html[data-theme="light"] .online-round-actions button{
+  background:#fffaf1 !important;
+  color:#2c251d !important;
+  border-color:rgba(87,65,34,.15) !important;
+}
+html[data-theme="light"] .settings-toggle small,
+html[data-theme="light"] .settings-tools small,
+html[data-theme="light"] .theme-setting small,
+html[data-theme="light"] .display-setting small,
+html[data-theme="light"] .online-room p,
+html[data-theme="light"] .online-room small{
+  color:#71675b !important;
+}
+html[data-theme="light"] .settings-close,
+html[data-theme="light"] .auth-close{
+  background:#fffaf1 !important;
+  color:#3a3026 !important;
+  border-color:rgba(87,65,34,.15) !important;
+}
+html[data-theme="light"] .theme-options{
+  background:#eee6da !important;
+}
+html[data-theme="light"] .theme-options button{color:#675d50 !important}
+html[data-theme="light"] .theme-options button[aria-pressed="true"]{
+  background:#fff5d9 !important;
+  color:#745315 !important;
+}
+html[data-theme="light"] .online-room input,
+html[data-theme="light"] .online-room select,
+html[data-theme="light"] .auth-modal input{
+  background:#fffdf8 !important;
+  color:#251f18 !important;
+  border-color:rgba(87,65,34,.2) !important;
+}
