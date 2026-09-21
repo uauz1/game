@@ -108,6 +108,7 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes('normalizeGameAction') && read('src/utils/onlineEmbedBridge.ts').includes('selector.length > 500'), 'Online action payloads are bounded and host-normalized'],
     [durableOnline.includes('gameRevision') && durableOnline.includes('const resyncGame') && durableOnline.includes('مزامنة اللعبة'), 'Host can force a live game reload and replay state across devices'],
     [durableOnline.includes('onlineTeam0=') && read('src/components/party/LettersGame.tsx').includes("onlineEmbed ? [] : loadUsedHuroofQuestions()") && read('src/components/party/LettersGame.tsx').includes("phase !== 'setup'"), 'Letters online mode shares room settings and ignores device-local question history'],
+    [durableOnline.includes("room?.gameId === 'secret' ? 3 : 2") && durableOnline.includes('onlineRoster='), 'Secret Word online rooms require three players and pass the live roster'],
     [durableOnline.includes("type: 'resync-game'") && durableOnline.includes('online-guest-live-tools'), 'Guests can request full live-game resync recovery'],
     [durableOnline.includes('allowGameAction') && durableOnline.includes('current.count >= 80'), 'Guest gameplay events are rate-limited by the host'],
     [durableOnline.includes('actionPersistTimerRef') && durableOnline.includes('450') && durableOnline.includes('persistRoom(snapshot)'), 'Online action persistence is batched to reduce realtime lag'],
@@ -191,6 +192,9 @@ if (exists(finalGameFile)) {
   finalGames.includes('ONLINE_TEAM_NAMES') && finalGames.includes("if(ONLINE_EMBED && phase==='setup') start();")
     ? pass('Acting auto-starts with shared online room settings')
     : fail('Acting online mode is not using shared room settings');
+  finalGames.includes('ONLINE_ROSTER') && finalGames.includes('ONLINE_PLAYER_NAME') && finalGames.includes('data-online-local')
+    ? pass('Secret Word gives each online player a private role view')
+    : fail('Secret Word online private-role support is missing');
 }
 
 if (exists(premiumGameFile)) {
