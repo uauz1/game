@@ -110,6 +110,7 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes('onlineTeam0=') && read('src/components/party/LettersGame.tsx').includes("onlineEmbed ? [] : loadUsedHuroofQuestions()") && read('src/components/party/LettersGame.tsx').includes("phase !== 'setup'"), 'Letters online mode shares room settings and ignores device-local question history'],
     [durableOnline.includes('roundOptionsForGame') && durableOnline.includes('timerOptionsForGame') && durableOnline.includes('closestAllowed'), 'Online lobby settings adapt to each selected game'],
     [durableOnline.includes('resetLobbyReadiness') && durableOnline.includes('ready: player.host'), 'Host setting changes reset guest readiness before launch'],
+    [durableOnline.includes("gameId === 'secret' && r.maxPlayers < 4 ? 4 : r.maxPlayers"), 'Selecting Secret Word expands room capacity for its three-player minimum'],
     [durableOnline.includes("room?.gameId === 'secret' ? 3 : 2") && durableOnline.includes('onlineRoster='), 'Secret Word online rooms require three players and pass the live roster'],
     [durableOnline.includes("const teamsRequired = room?.gameId !== 'secret'") && durableOnline.includes('teamsRequired && <>'), 'Secret Word online lobby uses individual readiness instead of team balancing'],
     [durableOnline.includes('function IndividualBoard') && read('src/online-room.css').includes('.online-individual-board'), 'Secret Word has a dedicated individual-player lobby UI'],
