@@ -62,6 +62,7 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
   const gameId = params.get('play') || '';
   let replaying = false;
   const seenActions = new Set<string>();
+  const pendingActions = new Map<string, OnlineGameAction>();
   const rememberAction = (id: string) => {
     seenActions.add(id);
     if (seenActions.size > 300) {
@@ -71,7 +72,7 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
   };
 
   const emit = (kind: OnlineActionKind, element: Element, value?: string | boolean) => {
-    if (replaying) return;
+    if (replaying || element.closest('[data-online-local="true"]')) return;
     const selector = selectorFor(element);
     if (!selector || selector.length > 500) return;
     const safeValue = typeof value === 'string' ? value.slice(0, 300) : value;
@@ -111,15 +112,12 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
     }, 120);
   }, true);
 
-  window.addEventListener('message', event => {
-    if (event.origin !== window.location.origin) return;
-    const message = event.data as { type?: string; action?: OnlineGameAction } | null;
-    if (message?.type !== 'qaddha-online-replay' || !message.action) return;
-    const action = message.action;
-    if (action.gameId !== gameId || action.sourceId === sourceId || seenActions.has(action.id)) return;
-    rememberAction(action.id);
+  const applyReplay = (action: OnlineGameAction) => {
+    if (action.gameId !== gameId || action.sourceId === sourceId || seenActions.has(action.id)) return true;
     const element = document.querySelector(action.selector);
-    if (!element) return;
+    if (!element) return false;
+    rememberAction(action.id);
+    pendingActions.delete(action.id);
     replaying = true;
     try {
       if (action.kind === 'click') {
@@ -132,5 +130,35 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
     } finally {
       queueMicrotask(() => { replaying = false; });
     }
+    return true;
+  };
+
+  const queueReplay = (action: OnlineGameAction) => {
+    if (applyReplay(action)) return;
+    pendingActions.set(action.id, action);
+    while (pendingActions.size > 120) {
+      const oldest = pendingActions.keys().next().value as string | undefined;
+      if (!oldest) break;
+      pendingActions.delete(oldest);
+    }
+  };
+
+  window.addEventListener('message', event => {
+    if (event.origin !== window.location.origin) return;
+    const message = event.data as { type?: string; action?: OnlineGameAction } | null;
+    if (message?.type !== 'qaddha-online-replay' || !message.action) return;
+    queueReplay(message.action);
   });
+
+  const observer = new MutationObserver(() => {
+    const now = Date.now();
+    for (const [id, action] of pendingActions) {
+      if (now - action.sentAt > 60000) {
+        pendingActions.delete(id);
+        continue;
+      }
+      applyReplay(action);
+    }
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
 }
