@@ -125,18 +125,18 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     void getAuthClient().then(client => client.rpc('qaddha_guest_get_room', { p_code: queryHost })).then(({ data }) => {
       if (cancelled) return;
       if (!Array.isArray(data) || !data[0]?.state) {
-        if (!roomRef.current) {
-          try {
-            localStorage.removeItem(`${ROOM_KEY_PREFIX}${queryHost}`);
-            localStorage.removeItem(`${HOST_TOKEN_PREFIX}${queryHost}`);
-          } catch {/* optional */}
-          const url = new URL(window.location.href);
-          url.searchParams.delete('onlineHost');
-          window.history.replaceState({}, '', url);
-          setHostToken('');
-          setNotice('الغرفة انتهت أو أُغلقت. أنشئ غرفة جديدة.');
-          setMode('entry');
-        }
+        try {
+          localStorage.removeItem(`${ROOM_KEY_PREFIX}${queryHost}`);
+          localStorage.removeItem(`${HOST_TOKEN_PREFIX}${queryHost}`);
+        } catch {/* optional */}
+        roomRef.current = null;
+        setRoom(null);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('onlineHost');
+        window.history.replaceState({}, '', url);
+        setHostToken('');
+        setNotice('الغرفة انتهت أو أُغلقت. أنشئ غرفة جديدة.');
+        setMode('entry');
         return;
       }
       const restored = normalize(data[0].state as Room);
