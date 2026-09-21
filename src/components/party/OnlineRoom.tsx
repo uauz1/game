@@ -60,13 +60,13 @@ const newRoom = (code: string, name: string, gameId: string): Room => ({
   difficulty: 'mixed', category: 'الكل', maxPlayers: MAX_PLAYERS, startedAt: null, roundEndsAt: null,
   pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameRevision: 0,
 });
-const normalize = (room: Room): Room => ({ ...room, teamNames: room.teamNames || ['الفريق الأول', 'الفريق الثاني'], timerSeconds: room.timerSeconds || 60, difficulty: room.difficulty || 'mixed', category: room.category || 'الكل', maxPlayers: room.maxPlayers || MAX_PLAYERS, pausedAt: room.pausedAt || null, answerRevealed: room.answerRevealed || false, gameActions: Array.isArray(room.gameActions) ? room.gameActions.slice(-120) : [], gameRevision: Number.isFinite(room.gameRevision) ? room.gameRevision : 0 });
+const normalize = (room: Room): Room => ({ ...room, teamNames: room.teamNames || ['الفريق الأول', 'الفريق الثاني'], timerSeconds: room.timerSeconds || 60, difficulty: room.difficulty || 'mixed', category: room.category || 'الكل', maxPlayers: room.maxPlayers || MAX_PLAYERS, pausedAt: room.pausedAt || null, answerRevealed: room.answerRevealed || false, gameActions: Array.isArray(room.gameActions) ? room.gameActions.slice(-80) : [], gameRevision: Number.isFinite(room.gameRevision) ? room.gameRevision : 0 });
 const normalizeGameAction = (action: OnlineGameAction, playerId: string, gameId: string): OnlineGameAction | null => {
   if (!action || action.gameId !== gameId || typeof action.id !== 'string' || typeof action.selector !== 'string') return null;
-  if (!['click','input','change'].includes(action.kind) || action.id.length > 160 || action.selector.length > 500) return null;
-  const value = typeof action.value === 'string' ? action.value.slice(0, 300) : action.value;
+  if (!['click','input','change'].includes(action.kind) || action.id.length > 160 || action.selector.length > 320) return null;
+  const value = typeof action.value === 'string' ? action.value.slice(0, 160) : action.value;
   if (typeof value !== 'undefined' && typeof value !== 'string' && typeof value !== 'boolean') return null;
-  return { ...action, sourceId: playerId, gameId, selector: action.selector.slice(0, 500), value, sentAt: Number.isFinite(action.sentAt) ? action.sentAt : Date.now() };
+  return { ...action, sourceId: playerId, gameId, selector: action.selector.slice(0, 320), value, sentAt: Number.isFinite(action.sentAt) ? action.sentAt : Date.now() };
 };
 
 function TeamBoard({ room, canRemove, onRemove }: { room: Room; canRemove?: boolean; onRemove?: (id: string) => void }) {
@@ -143,7 +143,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     return next;
   }), [persistRoom]);
   const rememberGameAction = useCallback((action: OnlineGameAction) => {
-    update(r => r.gameId !== action.gameId ? r : ({ ...r, gameActions: [...(r.gameActions || []), action].slice(-120) }), false);
+    update(r => r.gameId !== action.gameId ? r : ({ ...r, gameActions: [...(r.gameActions || []), action].slice(-80) }), false);
     window.clearTimeout(actionPersistTimerRef.current);
     actionPersistTimerRef.current = window.setTimeout(() => {
       const snapshot = roomRef.current;
