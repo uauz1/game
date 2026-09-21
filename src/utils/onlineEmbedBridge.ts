@@ -74,8 +74,8 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
   const emit = (kind: OnlineActionKind, element: Element, value?: string | boolean) => {
     if (replaying || element.closest('[data-online-local="true"]')) return;
     const selector = selectorFor(element);
-    if (!selector || selector.length > 500) return;
-    const safeValue = typeof value === 'string' ? value.slice(0, 300) : value;
+    if (!selector || selector.length > 320) return;
+    const safeValue = typeof value === 'string' ? value.slice(0, 160) : value;
     const action: OnlineGameAction = {
       id: `${sourceId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
       kind,
@@ -136,7 +136,7 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
   const queueReplay = (action: OnlineGameAction) => {
     if (applyReplay(action)) return;
     pendingActions.set(action.id, action);
-    while (pendingActions.size > 120) {
+    while (pendingActions.size > 80) {
       const oldest = pendingActions.keys().next().value as string | undefined;
       if (!oldest) break;
       pendingActions.delete(oldest);
