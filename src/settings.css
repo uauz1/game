@@ -49,3 +49,13 @@ html[data-theme="light"] .auth-provider-note{border-color:#a46f2b2b;background:#
 html[data-theme="light"] .qaddha-update-banner{border-color:#8e692a38;background:#fffaf2f2;color:#28221b;box-shadow:0 18px 50px #3d2d1526}
 html[data-theme="light"] .qaddha-update-banner small{color:#6e665c}
 @media(max-width:560px){.qaddha-update-banner{grid-template-columns:1fr auto}.qaddha-update-banner>button:not(.dismiss){grid-column:1/-1}.qaddha-update-banner>.dismiss{grid-column:2;grid-row:1}}
+
+.qaddha-install-button{position:fixed;z-index:1250;right:18px;bottom:86px;display:flex;align-items:center;gap:10px;min-width:170px;padding:11px 14px;border:1px solid #d7a93b44;border-radius:15px;background:#0d1017ef;color:#fff;box-shadow:0 16px 42px #0008;backdrop-filter:blur(16px);font:inherit;cursor:pointer}
+.qaddha-install-button>svg{width:20px;color:#efc85f}
+.qaddha-install-button>span{display:grid;text-align:right;gap:2px}
+.qaddha-install-button b{font-size:11px}
+.qaddha-install-button small{font-size:8px;color:#8e8794}
+.qaddha-install-button:hover{transform:translateY(-2px);border-color:#d7a93b77;background:#111723}
+html[data-theme="light"] .qaddha-install-button{background:#fffaf2f2;color:#2d261e;border-color:#8e692a35;box-shadow:0 16px 38px #3d2d1524}
+html[data-theme="light"] .qaddha-install-button small{color:#6f665b}
+@media(max-width:620px){.qaddha-install-button{right:12px;bottom:78px;min-width:150px;padding:10px 12px}.qaddha-install-button small{display:none}}

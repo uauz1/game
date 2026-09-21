@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Crown, Sparkles } from 'lucide-react';
+import { Crown, Download, Sparkles } from 'lucide-react';
 import App from '../../App';
 import PartyHub from './PartyHub';
 import MultiplayerHostLayer from './MultiplayerHostLayer';
@@ -29,6 +29,11 @@ const HUB_GAMES = [
 const SEEN_GAME_KEY = 'qaddha.progress-seen-game.v1';
 const SEEN_TOURNAMENT_KEY = 'qaddha.progress-seen-tournament.v1';
 
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
+
 function syncProgression() {
   try {
     const player = JSON.parse(localStorage.getItem('qaddha.player.v1') || '{}');
@@ -57,7 +62,23 @@ export default function PlatformShell() {
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
   const [hubOpen, setHubOpen] = useState(params.get('hub') === '1');
   const [updateReady, setUpdateReady] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [level, setLevel] = useState(() => Math.max(1, Math.floor(Math.sqrt(readProgression().xp / 75)) + 1));
+
+  useEffect(() => {
+    const onInstallPrompt = (event: Event) => {
+      if (window.matchMedia('(display-mode: standalone)').matches) return;
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+    };
+    const onInstalled = () => setInstallPrompt(null);
+    window.addEventListener('beforeinstallprompt', onInstallPrompt);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onInstallPrompt);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
+  }, []);
 
   useEffect(() => {
     const onUpdate = () => setUpdateReady(true);
@@ -125,8 +146,19 @@ export default function PlatformShell() {
       window.location.reload();
     }
   };
-  const updateBanner = updateReady ? <div className="qaddha-update-banner" role="status"><span><b>تحديث جديد جاهز</b><small>حدّث لما تخلص جولتك عشان تاخذ آخر التحسينات.</small></span><button onClick={()=>{void applyUpdate();}}>تحديث الآن</button><button className="dismiss" aria-label="إخفاء التنبيه" onClick={()=>setUpdateReady(false)}>×</button></div> : null;
+  const installApp = async () => {
+    if (!installPrompt) return;
+    try {
+      await installPrompt.prompt();
+      await installPrompt.userChoice;
+    } finally {
+      setInstallPrompt(null);
+    }
+  };
 
-  if (hubOpen) return <><PartyHub games={HUB_GAMES} onBack={closeHub} onPlay={playFromHub}/><MultiplayerHostLayer/>{updateBanner}</>;
-  return <><App/><MultiplayerHostLayer/>{updateBanner}<button className="global-hub-launch" onClick={openHub} aria-label="فتح مركز قدّها"><span><Crown/></span><b>مركز قدّها</b><small>LV {level}</small><Sparkles/></button></>;
+  const updateBanner = updateReady ? <div className="qaddha-update-banner" role="status"><span><b>تحديث جديد جاهز</b><small>حدّث لما تخلص جولتك عشان تاخذ آخر التحسينات.</small></span><button onClick={()=>{void applyUpdate();}}>تحديث الآن</button><button className="dismiss" aria-label="إخفاء التنبيه" onClick={()=>setUpdateReady(false)}>×</button></div> : null;
+  const installButton = installPrompt ? <button className="qaddha-install-button" onClick={()=>{void installApp();}}><Download/><span><b>ثبّت قدّها</b><small>كتطبيق على جهازك</small></span></button> : null;
+
+  if (hubOpen) return <><PartyHub games={HUB_GAMES} onBack={closeHub} onPlay={playFromHub}/><MultiplayerHostLayer/>{updateBanner}{installButton}</>;
+  return <><App/><MultiplayerHostLayer/>{updateBanner}{installButton}<button className="global-hub-launch" onClick={openHub} aria-label="فتح مركز قدّها"><span><Crown/></span><b>مركز قدّها</b><small>LV {level}</small><Sparkles/></button></>;
 }

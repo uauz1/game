@@ -176,6 +176,14 @@ if (exists(autoTvFile)) {
     ? pass('Automatic display detection updates TV/mobile datasets')
     : fail('Automatic TV/mobile dataset wiring is missing');
 }
+const platformShellFile = 'src/components/party/PlatformShell.tsx';
+if (exists(platformShellFile)) {
+  const platformShell = read(platformShellFile);
+  platformShell.includes('beforeinstallprompt') && platformShell.includes('appinstalled')
+    ? pass('PWA install prompt is wired to the platform shell')
+    : fail('PWA install prompt wiring is missing');
+}
+
 if (exists(pwaHookFile) && exists(serviceWorkerFile)) {
   const pwa = read(pwaHookFile);
   const sw = read(serviceWorkerFile);
