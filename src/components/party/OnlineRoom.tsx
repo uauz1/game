@@ -26,7 +26,7 @@ const ROOM_KEY_PREFIX = 'qaddha.online.host-room.v3:';
 const HOST_TOKEN_PREFIX = 'qaddha.online.host-token.v1:';
 const MAX_PLAYERS = 12;
 const categories = ['الكل', 'عام', 'رياضة', 'ترفيه', 'إسلامي', 'علوم'];
-const cleanCode = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+const cleanCode = (value: string) => value.toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g, '').slice(0, 6);
 const cleanName = (value: string) => value.trim().replace(/\s+/g, ' ').slice(0, 18);
 const makeCode = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), n => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[n % 32]).join('');
 const getPlayerId = () => {
@@ -113,17 +113,20 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   useEffect(() => { if (roomUrl) QRCode.toDataURL(roomUrl, { width: 300, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#090909', light: '#fff8df' } }).then(setQr).catch(() => setQr('')); }, [roomUrl]);
 
   useEffect(() => {
-    if (mode !== 'host' || !queryHost || room) return;
+    if (mode !== 'host' || !queryHost) return;
     let cancelled = false;
     void getAuthClient().then(client => client.rpc('qaddha_guest_get_room', { p_code: queryHost })).then(({ data }) => {
       if (cancelled || !Array.isArray(data) || !data[0]?.state) return;
       const restored = normalize(data[0].state as Room);
-      setRoom(restored);
-      roomRef.current = restored;
-      try { localStorage.setItem(`${ROOM_KEY_PREFIX}${queryHost}`, JSON.stringify(restored)); } catch {/* optional */}
+      setRoom(current => !current || restored.version >= current.version ? restored : current);
+      roomRef.current = !roomRef.current || restored.version >= roomRef.current.version ? restored : roomRef.current;
+      try {
+        const current = roomRef.current;
+        if (current) localStorage.setItem(`${ROOM_KEY_PREFIX}${queryHost}`, JSON.stringify(current));
+      } catch {/* optional */}
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [mode, queryHost, room]);
+  }, [mode, queryHost]);
 
   useEffect(() => {
     if (mode !== 'host' || !room?.code) return;
