@@ -105,6 +105,7 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes('gameActions: OnlineGameAction[]') && durableOnline.includes('replayStoredActions') && durableOnline.includes('slice(-120)'), 'Online game actions persist for reconnect recovery'],
     [durableOnline.includes('normalizeGameAction') && read('src/utils/onlineEmbedBridge.ts').includes('selector.length > 500'), 'Online action payloads are bounded and host-normalized'],
     [durableOnline.includes('gameRevision') && durableOnline.includes('const resyncGame') && durableOnline.includes('مزامنة اللعبة'), 'Host can force a live game reload and replay state across devices'],
+    [durableOnline.includes("type: 'resync-game'") && durableOnline.includes('online-guest-live-tools'), 'Guests can request full live-game resync recovery'],
     [durableOnline.includes('winner: null, gameActions: []') && durableOnline.includes('gameLoadedId: undefined'), 'Returning to lobby clears stale match state'],
     [durableOnline.includes('pullPersistedRoom') && durableOnline.includes('4000'), 'Guest room has persisted-state resync fallback'],
     [durableOnline.includes('qaddha_guest_get_room'), 'Guest room restore is wired'],
