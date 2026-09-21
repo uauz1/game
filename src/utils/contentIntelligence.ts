@@ -14,6 +14,7 @@ type HistoryStore = Record<string, HistoryEntry[]>;
 
 const HISTORY_KEY='qaddha.content-history.v3';
 const MAX_PER_GAME=1200;
+const ONLINE_EMBED = new URLSearchParams(window.location.search).get('onlineEmbed') === '1';
 
 function readHistory():HistoryStore{
   try{
@@ -69,8 +70,8 @@ export function selectSmart<T>(game:string,pool:T[],count:number,getId:(item:T)=
   const unique=[...new Map(pool.map(item=>[getId(item),item])).values()];
   const prefs=readQaddhaPreferences();
   const repeat=repeatConfig(prefs.repeatProtection);
-  const history=readHistory();
-  const prior=(history[game]||[]).filter(entry=>unique.some(item=>getId(item)===entry.id));
+  const history=ONLINE_EMBED ? {} : readHistory();
+  const prior=(ONLINE_EMBED ? [] : (history[game]||[])).filter(entry=>unique.some(item=>getId(item)===entry.id));
   const lastSeen=new Map(prior.map((entry,index)=>[entry.id,index]));
   const recent=prior.slice(-repeat.window);
   const recentlySeenIds=new Set(recent.map(entry=>entry.id));
@@ -100,8 +101,10 @@ export function selectSmart<T>(game:string,pool:T[],count:number,getId:(item:T)=
   }
 
   const now=Date.now();
-  history[game]=[...prior,...selected.map((item,index)=>({id:getId(item),seenAt:now+index,...getMeta(item)}))].slice(-MAX_PER_GAME);
-  saveHistory(history);
+  if (!ONLINE_EMBED) {
+    history[game]=[...prior,...selected.map((item,index)=>({id:getId(item),seenAt:now+index,...getMeta(item)}))].slice(-MAX_PER_GAME);
+    saveHistory(history);
+  }
   return selected;
 }
 
