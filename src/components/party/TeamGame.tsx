@@ -15,12 +15,27 @@ type State = { stage: 'teams' | 'categories' | 'board' | 'question' | 'results';
 type Action = { type: 'team'; index: number; patch: Partial<Team> } | { type: 'category'; name: string } | { type: 'categories'; names: string[] } | { type: 'settings'; limit?: number; seconds?: number } | { type: 'stage'; stage: State['stage'] } | { type: 'start'; boardQuestions: Question[] } | { type: 'pick'; question: Question } | { type: 'reveal' } | { type: 'award'; team: number | null } | { type: 'undo' };
 function createInitial(): State {
   const preferences=loadTeamGamePreferences(categories.map(category=>category.name));
+  if (ONLINE_EMBED) {
+    const teamNames:[string,string]=[
+      ONLINE_PARAMS.get('onlineTeam0')?.trim() || 'الفريق الأول',
+      ONLINE_PARAMS.get('onlineTeam1')?.trim() || 'الفريق الثاني',
+    ];
+    const timer=Number(ONLINE_PARAMS.get('onlineTimer') || '30');
+    const roundCount=Number(ONLINE_PARAMS.get('onlineRounds') || '6');
+    const category=ONLINE_PARAMS.get('onlineCategory') || 'الكل';
+    const allNames=categories.map(item=>item.name);
+    const selected=[...(allNames.includes(category)?[category]:[]),...allNames.filter(name=>name!==category)].slice(0,6);
+    const boardQuestions=buildPartyBoard(selected);
+    return { stage:'board', teams:[{name:teamNames[0],color:colors[0].value,score:0},{name:teamNames[1],color:colors[1].value,score:0}],cats:selected,limit:Math.max(4,Math.min(8,roundCount)),seconds:[20,30,45,60].includes(timer)?timer:30,turn:0,current:null,revealed:false,awards:[],boardQuestions };
+  }
   const shared=loadSharedTeams();
   const teamNames=shared?[shared[0].name,shared[1].name]:preferences.teamNames;
   const teamColors=shared?[shared[0].color,shared[1].color]:preferences.teamColors;
   return { stage:'teams', teams:[{name:teamNames[0],color:teamColors[0],score:0},{name:teamNames[1],color:teamColors[1],score:0}],cats:preferences.categories,limit:preferences.limit,seconds:preferences.seconds,turn:0,current:null,revealed:false,awards:[],boardQuestions:[] };
 }
 const colors = [{name:'أزرق',value:'#45b6ff'},{name:'وردي',value:'#ff70b5'},{name:'ذهبي',value:'#ffd45a'},{name:'بنفسجي',value:'#b997ff'}];
+const ONLINE_PARAMS = new URLSearchParams(window.location.search);
+const ONLINE_EMBED = ONLINE_PARAMS.get('onlineEmbed') === '1';
 
 export function teamReducer(s: State, a: Action): State {
   switch(a.type) {
@@ -64,6 +79,7 @@ export default function TeamGame({ onHome }: { onHome: () => void }) {
   useEffect(()=>{publishMultiplayerTeamNames([s.teams[0].name,s.teams[1].name]);},[s.teams]);
 
   useEffect(()=>{
+    if (ONLINE_EMBED) return;
     saveTeamGamePreferences({teamNames:[s.teams[0].name,s.teams[1].name],teamColors:[s.teams[0].color,s.teams[1].color],categories:s.cats,limit:s.limit,seconds:s.seconds});
   },[s.cats,s.limit,s.seconds,s.teams]);
 
