@@ -62,7 +62,8 @@ const multiplayerLayer = <Suspense fallback={null}><MultiplayerHostLayer/></Susp
 
 export default function PlatformShell() {
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
-  const [hubOpen, setHubOpen] = useState(params.get('hub') === '1');
+  const onlineEmbed = params.get('onlineEmbed') === '1';
+  const [hubOpen, setHubOpen] = useState(!onlineEmbed && params.get('hub') === '1');
   const [updateReady, setUpdateReady] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [level, setLevel] = useState(() => Math.max(1, Math.floor(Math.sqrt(readProgression().xp / 75)) + 1));
@@ -161,6 +162,7 @@ export default function PlatformShell() {
   const updateBanner = updateReady ? <div className="qaddha-update-banner" role="status"><span><b>تحديث جديد جاهز</b><small>حدّث لما تخلص جولتك عشان تاخذ آخر التحسينات.</small></span><button onClick={()=>{void applyUpdate();}}>تحديث الآن</button><button className="dismiss" aria-label="إخفاء التنبيه" onClick={()=>setUpdateReady(false)}>×</button></div> : null;
   const installButton = installPrompt ? <button className="qaddha-install-button" onClick={()=>{void installApp();}}><Download/><span><b>ثبّت قدّها</b><small>كتطبيق على جهازك</small></span></button> : null;
 
+  if (onlineEmbed) return <App/>;
   if (hubOpen) return <><Suspense fallback={null}><PartyHub games={HUB_GAMES} onBack={closeHub} onPlay={playFromHub}/></Suspense>{multiplayerLayer}{updateBanner}{installButton}</>;
   return <><App/>{multiplayerLayer}{updateBanner}{installButton}<button className="global-hub-launch" onClick={openHub} aria-label="فتح مركز قدّها"><span><Crown/></span><b>مركز قدّها</b><small>LV {level}</small><Sparkles/></button></>;
 }
