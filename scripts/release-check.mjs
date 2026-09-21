@@ -201,6 +201,14 @@ if (exists(whoGameFile) && exists(whoStorageFile)) {
     : fail('Who Am I online room is missing native judging controls');
 }
 
+const extraGameFile = 'src/components/party/ExtraPartyGames.tsx';
+if (exists(extraGameFile)) {
+  const extraGames = read(extraGameFile);
+  extraGames.includes('ONLINE_TEAM_NAMES') && extraGames.includes('{ONLINE_TEAM_NAMES[0]}')
+    ? pass('Auction uses shared online room team names')
+    : fail('Auction online team labels are not using shared room names');
+}
+
 const finalGameFile = 'src/components/party/FinalPartyGames.tsx';
 if (exists(finalGameFile)) {
   const finalGames = read(finalGameFile);
