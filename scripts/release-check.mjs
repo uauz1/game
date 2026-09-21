@@ -148,6 +148,11 @@ if (exists(contentIntelligenceFile) && exists(newGameSettingsFile) && exists(new
   newGames.includes('ONLINE_TEAM_NAMES') && newGames.includes('if (!ONLINE_EMBED) saveSharedTeams')
     ? pass('Online party games use shared room team names without mutating local team preferences')
     : fail('Online party game teams are not isolated from local preferences');
+  const teamGame = read('src/components/party/TeamGame.tsx');
+  const partyBank = read('src/data/partyBank.ts');
+  teamGame.includes("stage:'board'") && teamGame.includes("ONLINE_PARAMS.get('onlineTeam0')") && partyBank.includes('if (ONLINE_EMBED) return {}')
+    ? pass('Team Game launches from shared online state without local question history')
+    : fail('Team Game still depends on local setup/history in online mode');
 }
 
 if (exists(settingsFile)) {
