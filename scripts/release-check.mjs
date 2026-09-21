@@ -108,6 +108,7 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes('normalizeGameAction') && read('src/utils/onlineEmbedBridge.ts').includes('selector.length > 500'), 'Online action payloads are bounded and host-normalized'],
     [durableOnline.includes('gameRevision') && durableOnline.includes('const resyncGame') && durableOnline.includes('مزامنة اللعبة'), 'Host can force a live game reload and replay state across devices'],
     [durableOnline.includes('onlineTeam0=') && read('src/components/party/LettersGame.tsx').includes("onlineEmbed ? [] : loadUsedHuroofQuestions()") && read('src/components/party/LettersGame.tsx').includes("phase !== 'setup'"), 'Letters online mode shares room settings and ignores device-local question history'],
+    [durableOnline.includes('roundOptionsForGame') && durableOnline.includes('timerOptionsForGame') && durableOnline.includes('closestAllowed'), 'Online lobby settings adapt to each selected game'],
     [durableOnline.includes("room?.gameId === 'secret' ? 3 : 2") && durableOnline.includes('onlineRoster='), 'Secret Word online rooms require three players and pass the live roster'],
     [durableOnline.includes("const teamsRequired = room?.gameId !== 'secret'") && durableOnline.includes('teamsRequired && <>'), 'Secret Word online lobby uses individual readiness instead of team balancing'],
     [durableOnline.includes('function IndividualBoard') && read('src/online-room.css').includes('.online-individual-board'), 'Secret Word has a dedicated individual-player lobby UI'],
@@ -162,6 +163,9 @@ if (exists(contentIntelligenceFile) && exists(newGameSettingsFile) && exists(new
   teamGame.includes("stage:'board'") && teamGame.includes("ONLINE_PARAMS.get('onlineTeam0')") && partyBank.includes('if (ONLINE_EMBED) return {}')
     ? pass('Team Game launches from shared online state without local question history')
     : fail('Team Game still depends on local setup/history in online mode');
+  teamGame.includes("[6,12,18,24,30].includes(roundCount)?roundCount:12")
+    ? pass('Team Game honors online room question count')
+    : fail('Team Game does not honor online room question count');
 }
 
 if (exists(settingsFile)) {
@@ -208,6 +212,14 @@ if (exists(extraGameFile)) {
   extraGames.includes('ONLINE_TEAM_NAMES') && extraGames.includes('{ONLINE_TEAM_NAMES[0]}')
     ? pass('Auction uses shared online room team names')
     : fail('Auction online team labels are not using shared room names');
+}
+
+const lettersGameFile = 'src/components/party/LettersGame.tsx';
+if (exists(lettersGameFile)) {
+  const lettersGame = read(lettersGameFile);
+  lettersGame.includes("onlineRounds") && lettersGame.includes("[1,3,5].includes(onlineRounds)")
+    ? pass('Letters honors the shared online best-of setting')
+    : fail('Letters online best-of setting is not shared');
 }
 
 const finalGameFile = 'src/components/party/FinalPartyGames.tsx';
