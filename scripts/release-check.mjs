@@ -166,6 +166,9 @@ if (exists(premiumGameFile)) {
   premiumGames.includes('readQaddhaPreferences().rememberProgress')
     ? pass('Premium game resume respects remember-progress preference')
     : fail('Remember-progress preference is not wired to premium game sessions');
+  premiumGames.includes('ONLINE_EMBED') && premiumGames.includes('ONLINE_TEAM_NAMES') && premiumGames.includes('ONLINE_DIFFICULTY')
+    ? pass('Premium games use shared online room settings and bypass local resume state')
+    : fail('Premium games are not isolated from device-local state in online mode');
 }
 
 const premiumCssFile = 'src/premium-games.css';
