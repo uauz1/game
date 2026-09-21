@@ -39,9 +39,9 @@ const extraMinimums = [
 for (const [name, actual, minimum] of extraMinimums) actual >= minimum ? pass(`${name}: ${actual} curated rounds`) : fail(`${name} only has ${actual} rounds; expected at least ${minimum}`);
 
 const pressureCount = count(premium, /id:'p-[emh]-/g);
-pressureCount >= 24 ? pass(`Pressure bank: ${pressureCount} prompts`) : fail(`Pressure bank is too small: ${pressureCount}`);
+pressureCount >= 36 ? pass(`Pressure bank: ${pressureCount} prompts`) : fail(`Pressure bank is too small: ${pressureCount}`);
 const intruderCount = count(premium, /id:'i-[emh]-/g);
-intruderCount >= 24 ? pass(`Intruder bank: ${intruderCount} rounds`) : fail(`Intruder bank is too small: ${intruderCount}`);
+intruderCount >= 36 ? pass(`Intruder bank: ${intruderCount} rounds`) : fail(`Intruder bank is too small: ${intruderCount}`);
 for (const difficulty of ['easy','medium','hard','mixed']) {
   if (!premium.includes(`id:'${difficulty}'`) && !premium.includes(`id: '${difficulty}'`)) fail(`Premium games difficulty selector is missing ${difficulty}`);
 }

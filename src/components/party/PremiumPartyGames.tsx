@@ -48,6 +48,18 @@ const PRESSURE_PROMPTS: PressurePrompt[] = [
   {id:'p-h-06',difficulty:'hard',category:'تقنية',text:'اذكر لغات برمجة أو استعلام مستخدمة على نطاق واسع',target:8,seconds:20},
   {id:'p-h-07',difficulty:'hard',category:'جغرافيا',text:'اذكر أنهارًا عالمية معروفة غير النيل',target:7,seconds:20},
   {id:'p-h-08',difficulty:'hard',category:'ثقافة',text:'اذكر علماء مسلمين أو عربًا اشتهروا في العلوم الطبيعية أو الرياضيات',target:7,seconds:20},
+  {id:'p-e-09',difficulty:'easy',category:'مدرسة',text:'اذكر أدوات تستخدمها عادة في المدرسة أو الجامعة',target:6,seconds:15},
+  {id:'p-e-10',difficulty:'easy',category:'مواصلات',text:'اذكر وسائل نقل تستخدم على البر',target:5,seconds:15},
+  {id:'p-e-11',difficulty:'easy',category:'فطور',text:'اذكر أطعمة أو مشروبات ممكن تكون على سفرة الفطور',target:6,seconds:15},
+  {id:'p-e-12',difficulty:'easy',category:'طقس',text:'اذكر كلمات مرتبطة بحالة الطقس',target:5,seconds:15},
+  {id:'p-m-09',difficulty:'medium',category:'الخليج',text:'اذكر دول مجلس التعاون الخليجي',target:6,seconds:18},
+  {id:'p-m-10',difficulty:'medium',category:'جغرافيا',text:'اذكر دولًا في قارة أمريكا الجنوبية',target:7,seconds:18},
+  {id:'p-m-11',difficulty:'medium',category:'سينما',text:'اذكر أنواعًا معروفة من الأفلام',target:7,seconds:18},
+  {id:'p-m-12',difficulty:'medium',category:'علوم',text:'اذكر أعضاء في جسم الإنسان توجد في منطقة البطن أو الصدر',target:6,seconds:18},
+  {id:'p-h-09',difficulty:'hard',category:'فيزياء',text:'اذكر وحدات أساسية أو مشتقة مشهورة في النظام الدولي SI',target:7,seconds:20},
+  {id:'p-h-10',difficulty:'hard',category:'جغرافيا',text:'اذكر دولًا يمر بها خط الاستواء',target:6,seconds:20},
+  {id:'p-h-11',difficulty:'hard',category:'تقنية',text:'اذكر أنظمة إدارة قواعد بيانات معروفة',target:7,seconds:20},
+  {id:'p-h-12',difficulty:'hard',category:'تاريخ',text:'اذكر مدنًا كانت عواصم لدول أو إمبراطوريات تاريخية كبرى',target:6,seconds:20},
 ];
 
 const INTRUDER_ROUNDS: IntruderRound[] = [
@@ -75,6 +87,18 @@ const INTRUDER_ROUNDS: IntruderRound[] = [
   {id:'i-h-06',difficulty:'hard',category:'رياضة',items:['موناكو','سيلفرستون','مونزا','ويمبلي'],answer:3,explanation:'ويمبلي ملعب كرة قدم، والبقية حلبات فورمولا 1.'},
   {id:'i-h-07',difficulty:'hard',category:'لغات',items:['الإسبانية','الفرنسية','الإيطالية','الألمانية'],answer:3,explanation:'الألمانية لغة جرمانية، والبقية لغات رومانسية.'},
   {id:'i-h-08',difficulty:'hard',category:'حاسوب',items:['TCP','UDP','HTTP','JPEG'],answer:3,explanation:'JPEG تنسيق صور، والبقية بروتوكولات شبكات.'},
+  {id:'i-e-09',difficulty:'easy',category:'مواصلات',items:['سيارة','حافلة','قطار','ثلاجة'],answer:3,explanation:'الثلاجة جهاز منزلي، والبقية وسائل نقل.'},
+  {id:'i-e-10',difficulty:'easy',category:'مدرسة',items:['قلم','مسطرة','ممحاة','وسادة'],answer:3,explanation:'الوسادة ليست من أدوات الدراسة المعتادة.'},
+  {id:'i-e-11',difficulty:'easy',category:'مواد',items:['ذهب','فضة','نحاس','خشب'],answer:3,explanation:'الخشب ليس معدنًا، والبقية معادن.'},
+  {id:'i-e-12',difficulty:'easy',category:'زمن',items:['صباح','ظهر','مساء','الاثنين'],answer:3,explanation:'الاثنين يوم من أيام الأسبوع، والبقية أوقات من اليوم.'},
+  {id:'i-m-09',difficulty:'medium',category:'عواصم',items:['باريس','مدريد','روما','برشلونة'],answer:3,explanation:'برشلونة ليست عاصمة دولة، بينما البقية عواصم دول.'},
+  {id:'i-m-10',difficulty:'medium',category:'حاسوب',items:['CPU','RAM','SSD','HDMI'],answer:3,explanation:'HDMI واجهة اتصال للصوت والصورة، والبقية مكونات تخزين أو معالجة وذاكرة داخل الحاسوب.'},
+  {id:'i-m-11',difficulty:'medium',category:'فن',items:['بيكاسو','مونيه','فان غوخ','موزارت'],answer:3,explanation:'موزارت موسيقي وملحن، والبقية رسامون.'},
+  {id:'i-m-12',difficulty:'medium',category:'فضاء',items:['عطارد','الزهرة','المريخ','بلوتو'],answer:3,explanation:'بلوتو مصنف كوكبًا قزمًا، والبقية كواكب.'},
+  {id:'i-h-09',difficulty:'hard',category:'وحدات',items:['كلفن','أمبير','مول','جول'],answer:3,explanation:'الجول وحدة مشتقة للطاقة، والبقية وحدات أساسية في النظام الدولي.'},
+  {id:'i-h-10',difficulty:'hard',category:'تقنية',items:['Python','Ruby','JavaScript','PostgreSQL'],answer:3,explanation:'PostgreSQL نظام إدارة قواعد بيانات، والبقية لغات برمجة.'},
+  {id:'i-h-11',difficulty:'hard',category:'أدب وفن',items:['شكسبير','ديكنز','جين أوستن','بيتهوفن'],answer:3,explanation:'بيتهوفن ملحن، والبقية كتّاب.'},
+  {id:'i-h-12',difficulty:'hard',category:'جغرافيا',items:['الهيمالايا','الألب','الأنديز','الأمازون'],answer:3,explanation:'الأمازون نهر، والبقية سلاسل جبلية.'},
 ];
 
 function shuffle<T>(input: T[]) {
