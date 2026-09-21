@@ -38,3 +38,6 @@ html[data-mobile-mode="true"] .party-app{max-width:760px;margin-inline:auto}
 html[data-mobile-mode="true"] .lobby-grid{grid-template-columns:1fr!important}
 html[data-mobile-mode="true"] .lobby-hero{min-height:auto!important}
 html[data-tv-mode="true"] .party-app{max-width:none}
+
+.auth-provider-note{display:block;margin-top:8px;padding:9px 10px;border:1px solid #ffb86b2f;border-radius:10px;background:#ffb86b0b;color:#caa16f;font-size:9px;line-height:1.7}
+html[data-theme="light"] .auth-provider-note{border-color:#a46f2b2b;background:#fff4df;color:#80591f}
