@@ -26,7 +26,7 @@ function createInitial(): State {
     const allNames=categories.map(item=>item.name);
     const selected=[...(allNames.includes(category)?[category]:[]),...allNames.filter(name=>name!==category)].slice(0,6);
     const boardQuestions=buildPartyBoard(selected);
-    return { stage:'board', teams:[{name:teamNames[0],color:colors[0].value,score:0},{name:teamNames[1],color:colors[1].value,score:0}],cats:selected,limit:Math.max(4,Math.min(8,roundCount)),seconds:[20,30,45,60].includes(timer)?timer:30,turn:0,current:null,revealed:false,awards:[],boardQuestions };
+    return { stage:'board', teams:[{name:teamNames[0],color:colors[0].value,score:0},{name:teamNames[1],color:colors[1].value,score:0}],cats:selected,limit:[6,12,18,24,30].includes(roundCount)?roundCount:12,seconds:[20,30,45,60].includes(timer)?timer:30,turn:0,current:null,revealed:false,awards:[],boardQuestions };
   }
   const shared=loadSharedTeams();
   const teamNames=shared?[shared[0].name,shared[1].name]:preferences.teamNames;
