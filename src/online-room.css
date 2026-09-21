@@ -58,3 +58,31 @@ html[data-theme="light"] .online-how-steps span{background:#fffaf1;border-color:
   html[data-tv-mode="true"] .online-results{padding:55px}
   html[data-tv-mode="true"] .online-results h2{font-size:64px}
 }
+
+
+/* Online room: launch the selected game inside the shared live session on every device. */
+.online-live-game{
+  width:100%;
+  min-height:min(72vh,760px);
+  border:1px solid rgba(215,169,59,.34);
+  border-radius:24px;
+  overflow:hidden;
+  background:#080808;
+  box-shadow:0 24px 70px rgba(0,0,0,.42);
+}
+.online-live-game iframe{
+  display:block;
+  width:100%;
+  min-height:min(72vh,760px);
+  height:min(72vh,760px);
+  border:0;
+  background:#080808;
+}
+@media (max-width: 760px){
+  .online-live-game,
+  .online-live-game iframe{
+    min-height:68vh;
+    height:68vh;
+    border-radius:18px;
+  }
+}
