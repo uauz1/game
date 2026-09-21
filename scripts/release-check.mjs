@@ -188,6 +188,16 @@ if (exists(contentIntelligenceFile)) {
 }
 
 const premiumGameFile = 'src/components/party/PremiumPartyGames.tsx';
+const whoGameFile = 'src/components/party/WhoAmIPrivate.tsx';
+const whoStorageFile = 'src/utils/whoAmIStorage.ts';
+if (exists(whoGameFile) && exists(whoStorageFile)) {
+  const whoGame = read(whoGameFile);
+  const whoStorage = read(whoStorageFile);
+  whoGame.includes('ONLINE_TEAM_NAMES') && whoGame.includes('!ONLINE_EMBED') && whoStorage.includes('ONLINE_EMBED')
+    ? pass('Who Am I uses the shared online room without creating a second pairing flow')
+    : fail('Who Am I online mode still depends on legacy pairing/local history');
+}
+
 const finalGameFile = 'src/components/party/FinalPartyGames.tsx';
 if (exists(finalGameFile)) {
   const finalGames = read(finalGameFile);
