@@ -58,7 +58,7 @@ function syncProgression() {
   }
 }
 
-const multiplayerLayer = <Suspense fallback={null}>{multiplayerLayer}</Suspense>;
+const multiplayerLayer = <Suspense fallback={null}><MultiplayerHostLayer/></Suspense>;
 
 export default function PlatformShell() {
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
