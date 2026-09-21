@@ -91,9 +91,20 @@ export default function App() {
   useQaddhaPreferences();
   usePWA();
   const savePlayerData=(next:typeof playerData)=>{setPlayerData(next);try{localStorage.setItem(PLAYER_KEY,JSON.stringify(next))}catch{/* Guest history stays available for this visit. */}};
-  const go=(next:string)=>{if(games.some(game=>game.id===next)){setLastGame(next);const recent=[{gameId:next,playedAt:Date.now()},...playerData.recent.filter(item=>item.gameId!==next)].slice(0,8);savePlayerData({...playerData,recent});try{localStorage.setItem('qaddha.last-game',next)}catch{/* Recent game is optional. */}}setHomeConfirm(false);setScreen(next); window.scrollTo({top:0,behavior:'instant'});};
+  const go=(next:string)=>{if(games.some(game=>game.id===next)){setLastGame(next);const recent=[{gameId:next,playedAt:Date.now()},...playerData.recent.filter(item=>item.gameId!==next)].slice(0,8);savePlayerData({...playerData,recent});try{localStorage.setItem('qaddha.last-game',next)}catch{/* Recent game is optional. */}}setHomeConfirm(false);setScreen(next);const url=new URL(window.location.href);if(games.some(game=>game.id===next))url.searchParams.set('play',next);else url.searchParams.delete('play');window.history.pushState({qaddhaScreen:next},'',url);window.scrollTo({top:0,behavior:'instant'});};
   const toggleFavorite=(gameId:string)=>{const favorites=playerData.favorites.includes(gameId)?playerData.favorites.filter(id=>id!==gameId):[...playerData.favorites,gameId];savePlayerData({...playerData,favorites});};
   const isGame=games.some(game=>game.id===screen);
+  useEffect(()=>{
+    const syncFromHistory=()=>{
+      const requested=new URLSearchParams(window.location.search).get('play')||'';
+      const next=games.some(game=>game.id===requested)?requested:'home';
+      setHomeConfirm(false);
+      setScreen(next);
+      window.scrollTo({top:0,behavior:'instant'});
+    };
+    window.addEventListener('popstate',syncFromHistory);
+    return()=>window.removeEventListener('popstate',syncFromHistory);
+  },[]);
   useEffect(()=>{
     if(!isGame)return;
     const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue='';};
