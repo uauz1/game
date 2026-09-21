@@ -96,6 +96,7 @@ if (exists(durableOnlineFile)) {
   const currentOnlineChecks = [
     [durableOnline.includes('qaddha_guest_create_room'), 'Guest rooms create through Supabase'],
     [durableOnline.includes('onlineEmbed=1'), 'Online room launches the selected game inside the shared session'],
+    [durableOnline.includes('onlineSeed=') && exists('src/utils/onlineDeterminism.ts'), 'Online devices share a deterministic game seed'],
     [durableOnline.includes('pullPersistedRoom') && durableOnline.includes('4000'), 'Guest room has persisted-state resync fallback'],
     [durableOnline.includes('qaddha_guest_get_room'), 'Guest room restore is wired'],
     [durableOnline.includes('qaddha_guest_save_room'), 'Guest room persistence is wired'],
