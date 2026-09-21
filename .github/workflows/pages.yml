@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      - run: npm ci --no-audit --no-fund --loglevel=error
       - run: npm run validate:content
       - run: npm run typecheck
       - run: npm run build

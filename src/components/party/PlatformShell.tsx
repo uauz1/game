@@ -66,13 +66,28 @@ export default function PlatformShell() {
   }, []);
 
   useEffect(() => {
-    syncProgression();
-    const timer = window.setInterval(syncProgression, 1200);
-    const refresh = () => setLevel(Math.max(1, Math.floor(Math.sqrt(readProgression().xp / 75)) + 1));
-    window.addEventListener('qaddha:progression-changed', refresh);
+    const syncNow = () => {
+      syncProgression();
+      setLevel(Math.max(1, Math.floor(Math.sqrt(readProgression().xp / 75)) + 1));
+    };
+    syncNow();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') syncNow();
+    }, 10000);
+    const onVisible = () => { if (document.visibilityState === 'visible') syncNow(); };
+    const onStorage = (event: StorageEvent) => {
+      if (!event.key || event.key.startsWith('qaddha.')) syncNow();
+    };
+    window.addEventListener('qaddha:progression-changed', syncNow);
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('pageshow', syncNow);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       window.clearInterval(timer);
-      window.removeEventListener('qaddha:progression-changed', refresh);
+      window.removeEventListener('qaddha:progression-changed', syncNow);
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('pageshow', syncNow);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 
@@ -96,7 +111,21 @@ export default function PlatformShell() {
     window.setTimeout(()=>window.dispatchEvent(new CustomEvent('qaddha:hub-launch', { detail: { gameId } })),0);
   };
 
-  const updateBanner = updateReady ? <div className="qaddha-update-banner" role="status"><span><b>تحديث جديد جاهز</b><small>حدّث لما تخلص جولتك عشان تاخذ آخر التحسينات.</small></span><button onClick={()=>window.location.reload()}>تحديث الآن</button><button className="dismiss" aria-label="إخفاء التنبيه" onClick={()=>setUpdateReady(false)}>×</button></div> : null;
+  const applyUpdate = async () => {
+    try {
+      const registration = await navigator.serviceWorker?.getRegistration();
+      const waiting = registration?.waiting;
+      if (!waiting) {
+        window.location.reload();
+        return;
+      }
+      navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload(), { once: true });
+      waiting.postMessage({ type: 'SKIP_WAITING' });
+    } catch {
+      window.location.reload();
+    }
+  };
+  const updateBanner = updateReady ? <div className="qaddha-update-banner" role="status"><span><b>تحديث جديد جاهز</b><small>حدّث لما تخلص جولتك عشان تاخذ آخر التحسينات.</small></span><button onClick={()=>{void applyUpdate();}}>تحديث الآن</button><button className="dismiss" aria-label="إخفاء التنبيه" onClick={()=>setUpdateReady(false)}>×</button></div> : null;
 
   if (hubOpen) return <><PartyHub games={HUB_GAMES} onBack={closeHub} onPlay={playFromHub}/><MultiplayerHostLayer/>{updateBanner}</>;
   return <><App/><MultiplayerHostLayer/>{updateBanner}<button className="global-hub-launch" onClick={openHub} aria-label="فتح مركز قدّها"><span><Crown/></span><b>مركز قدّها</b><small>LV {level}</small><Sparkles/></button></>;
