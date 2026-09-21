@@ -45,7 +45,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const error = params.get('error_description') || params.get('error');
     return error ? authError(error) : '';
   });
-  const clearOauthMessage = useCallback(() => setOauthMessage(''), []);
+  const clearOauthMessage = useCallback(() => {
+    setOauthMessage('');
+    const url = new URL(window.location.href);
+    ['code','error','error_code','error_description'].forEach((key) => url.searchParams.delete(key));
+    window.history.replaceState({}, '', url);
+  }, []);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const dismissRecovery = useCallback(() => setRecoveryMode(false), []);
 
