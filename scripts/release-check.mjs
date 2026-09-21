@@ -98,6 +98,7 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes('onlineEmbed=1'), 'Online room launches the selected game inside the shared session'],
     [durableOnline.includes('onlineSeed=') && exists('src/utils/onlineDeterminism.ts'), 'Online devices share a deterministic game seed'],
     [durableOnline.includes("room.phase === 'countdown' || room.phase === 'playing'") && read('src/online-room.css').includes('.online-live-game.preloading'), 'Online game preloads during countdown to reduce start delay'],
+    [durableOnline.includes("type: 'game-loaded'") && durableOnline.includes('launchDeadline') && durableOnline.includes('allLoaded'), 'Online room waits for device game readiness before shared launch'],
     [durableOnline.includes('pullPersistedRoom') && durableOnline.includes('4000'), 'Guest room has persisted-state resync fallback'],
     [durableOnline.includes('qaddha_guest_get_room'), 'Guest room restore is wired'],
     [durableOnline.includes('qaddha_guest_save_room'), 'Guest room persistence is wired'],
