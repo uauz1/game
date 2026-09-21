@@ -1,12 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { getAuthClient, isAuthConfigured } from '../utils/authClient';
+import { getAuthClient, getAuthProviderStatus, isAuthConfigured } from '../utils/authClient';
 
 type AuthResult = { ok: boolean; message: string };
 
 type AuthContextValue = {
   configured: boolean;
   loading: boolean;
+  googleAvailable: boolean;
   recoveryMode: boolean;
   dismissRecovery: () => void;
   session: Session | null;
@@ -36,6 +37,7 @@ function authError(message: string) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(isAuthConfigured);
+  const [googleAvailable, setGoogleAvailable] = useState(false);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const dismissRecovery = useCallback(() => setRecoveryMode(false), []);
 
@@ -43,7 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isAuthConfigured) return;
     let active = true;
     let unsubscribe: (() => void) | undefined;
-    void getAuthClient().then(async (client) => {
+    void Promise.all([getAuthClient(), getAuthProviderStatus()]).then(async ([client, providers]) => {
+      if (active) setGoogleAvailable(providers.google);
       const { data } = await client.auth.getSession();
       if (active) {
         setSession(data.session);
@@ -93,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         options: {
           redirectTo: authRedirectUrl,
           queryParams: { prompt: 'select_account' },
+          scopes: 'openid profile email https://www.googleapis.com/auth/userinfo.email',
         },
       });
       return error ? { ok: false, message: authError(error.message) } : { ok: true, message: 'جاري فتح Google…' };
@@ -124,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch { return { ok: false, message: 'تعذّر تسجيل الخروج.' }; }
   }, []);
 
-  const value = useMemo(() => ({ configured: isAuthConfigured, loading, recoveryMode, dismissRecovery, session, signIn, signUp, signInWithGoogle, requestReset, updatePassword, signOut }), [dismissRecovery, loading, recoveryMode, session, signIn, signInWithGoogle, signOut, signUp, requestReset, updatePassword]);
+  const value = useMemo(() => ({ configured: isAuthConfigured, loading, googleAvailable, recoveryMode, dismissRecovery, session, signIn, signUp, signInWithGoogle, requestReset, updatePassword, signOut }), [dismissRecovery, googleAvailable, loading, recoveryMode, session, signIn, signInWithGoogle, signOut, signUp, requestReset, updatePassword]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
