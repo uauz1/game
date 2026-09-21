@@ -67,9 +67,10 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const queryCode = cleanCode(params.get('online') || '');
   const queryHost = cleanCode(params.get('onlineHost') || '');
   const savedName = useMemo(() => { try { return localStorage.getItem('qaddha.online.name') || ''; } catch { return ''; } }, []);
-  const [mode, setMode] = useState<'entry' | 'join' | 'host' | 'guest'>(queryHost ? 'host' : queryCode && savedName ? 'guest' : queryCode ? 'join' : 'entry');
+  const hostAccessToken = useMemo(() => queryHost ? getHostToken(queryHost) : '', [queryHost]);
+  const [mode, setMode] = useState<'entry' | 'join' | 'host' | 'guest'>(queryHost ? (hostAccessToken ? 'host' : 'join') : queryCode && savedName ? 'guest' : queryCode ? 'join' : 'entry');
   const [hostName, setHostName] = useState(savedName || 'المضيف');
-  const [join, setJoin] = useState({ code: queryCode, name: queryCode ? savedName : '' });
+  const [join, setJoin] = useState({ code: queryCode || (queryHost && !hostAccessToken ? queryHost : ''), name: (queryCode || queryHost) ? savedName : '' });
   const [room, setRoom] = useState<Room | null>(() => {
     if (!queryHost) return null;
     try { const cached = JSON.parse(localStorage.getItem(`${ROOM_KEY_PREFIX}${queryHost}`) || 'null') as Room | null; if (cached?.type === 'room-snapshot' && cached.code === queryHost) return normalize({ ...cached, players: cached.players.map(p => ({ ...p, connected: p.host })) }); } catch {/* restore from Supabase below */}
@@ -81,7 +82,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const [qr, setQr] = useState('');
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const [hostToken, setHostToken] = useState(() => queryHost ? getHostToken(queryHost) : '');
+  const [hostToken, setHostToken] = useState(hostAccessToken);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const roomRef = useRef<Room | null>(room);
   roomRef.current = room;
@@ -215,7 +216,6 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
       const channel = channelRef.current;
       channelRef.current = null;
       if (channel) {
-        void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'room-error', reason: 'host-left', text: 'غادر المضيف وأُغلقت الغرفة.' } satisfies ServerError });
         void channel.untrack();
         if (client) void client.removeChannel(channel);
       }
@@ -251,7 +251,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
           setJoinError(error.text);
           setNotice(error.text);
           setConnected(false);
-          if (error.reason !== 'host-left') setMode('join');
+          setMode('join');
           return;
         }
         if ((raw as Room).type === 'room-snapshot') {
@@ -350,7 +350,27 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const allReady = !!room && room.players.filter(p => p.connected).length >= 2 && room.players.filter(p => p.connected).every(p => p.host || p.ready);
   const copy = async () => { try { await navigator.clipboard.writeText(roomUrl); setCopied(true); window.setTimeout(() => setCopied(false), 1600); } catch { setNotice('انسخ الرابط من شريط المتصفح'); } };
   const copyCode = async () => { try { if (!room) return; await navigator.clipboard.writeText(room.code); setCopied(true); setNotice('تم نسخ كود الغرفة'); window.setTimeout(() => { setCopied(false); setNotice(''); }, 1600); } catch { setNotice(`كود الغرفة: ${room?.code || ''}`); } };
-  const exitOnline = () => { const url = new URL(window.location.href); url.searchParams.delete('online'); url.searchParams.delete('onlineHost'); window.history.replaceState({}, '', url); onBack(); };
+  const exitOnline = async () => {
+    if (mode === 'host' && room && hostToken) {
+      const channel = channelRef.current;
+      if (channel) {
+        void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'room-error', reason: 'host-left', text: 'أغلق المضيف الغرفة.' } satisfies ServerError });
+      }
+      try {
+        const client = await getAuthClient();
+        await client.rpc('qaddha_guest_close_room', { p_code: room.code, p_host_token: hostToken });
+      } catch { /* closing locally still continues */ }
+      try {
+        localStorage.removeItem(`${ROOM_KEY_PREFIX}${room.code}`);
+        localStorage.removeItem(`${HOST_TOKEN_PREFIX}${room.code}`);
+      } catch {/* optional */}
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.delete('online');
+    url.searchParams.delete('onlineHost');
+    window.history.replaceState({}, '', url);
+    onBack();
+  };
   const share = async () => navigator.share ? navigator.share({ title: `غرفة قدّها ${room?.code}`, text: `ادخل غرفة قدّها بالكود ${room?.code}`, url: roomUrl }) : copy();
   const start = () => update(r => ({ ...r, phase: 'countdown', scores: [0, 0], round: 1, startedAt: Date.now() + 3500, roundEndsAt: Date.now() + 3500 + r.timerSeconds * 1000, pausedAt: null, answerRevealed: false, winner: null }));
   const lobby = () => update(r => ({ ...r, phase: 'lobby', scores: [0, 0], round: 1, startedAt: null, roundEndsAt: null, pausedAt: null, answerRevealed: false, players: r.players.map(p => ({ ...p, ready: p.host })) }));
