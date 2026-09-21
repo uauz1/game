@@ -72,8 +72,8 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const [join, setJoin] = useState({ code: queryCode, name: queryCode ? savedName : '' });
   const [room, setRoom] = useState<Room | null>(() => {
     if (!queryHost) return null;
-    try { const cached = JSON.parse(localStorage.getItem(`${ROOM_KEY_PREFIX}${queryHost}`) || 'null') as Room | null; if (cached?.type === 'room-snapshot' && cached.code === queryHost) return normalize({ ...cached, players: cached.players.map(p => ({ ...p, connected: p.host })) }); } catch {/* fresh room */}
-    return newRoom(queryHost, 'المضيف', games[0]?.id || 'teams');
+    try { const cached = JSON.parse(localStorage.getItem(`${ROOM_KEY_PREFIX}${queryHost}`) || 'null') as Room | null; if (cached?.type === 'room-snapshot' && cached.code === queryHost) return normalize({ ...cached, players: cached.players.map(p => ({ ...p, connected: p.host })) }); } catch {/* restore from Supabase below */}
+    return null;
   });
   const [connected, setConnected] = useState(false);
   const [notice, setNotice] = useState('');
@@ -112,7 +112,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   useEffect(() => { if (roomUrl) QRCode.toDataURL(roomUrl, { width: 300, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#090909', light: '#fff8df' } }).then(setQr).catch(() => setQr('')); }, [roomUrl]);
 
   useEffect(() => {
-    if (mode !== 'host' || !queryHost || hostToken || room?.players.some(p => p.host && p.id === me)) return;
+    if (mode !== 'host' || !queryHost || room) return;
     let cancelled = false;
     void getAuthClient().then(client => client.rpc('qaddha_guest_get_room', { p_code: queryHost })).then(({ data }) => {
       if (cancelled || !Array.isArray(data) || !data[0]?.state) return;
@@ -122,7 +122,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
       try { localStorage.setItem(`${ROOM_KEY_PREFIX}${queryHost}`, JSON.stringify(restored)); } catch {/* optional */}
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [mode, queryHost, hostToken, me, room?.players]);
+  }, [mode, queryHost, room]);
 
   useEffect(() => {
     if (mode !== 'host' || !room?.code) return;
@@ -266,6 +266,14 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
       channel.subscribe(async status => {
         if (!active) return;
         if (status === 'SUBSCRIBED') {
+          try {
+            const { data } = await instance.rpc('qaddha_guest_get_room', { p_code: join.code });
+            if (Array.isArray(data) && data[0]?.state) {
+              const persisted = normalize(data[0].state as Room);
+              receivedSnapshot = true;
+              setRoom(current => !current || persisted.version >= current.version ? persisted : current);
+            }
+          } catch { /* live host sync can still succeed */ }
           await channel.track({ role: 'guest', playerId: me, name: join.name, onlineAt: Date.now() });
           await channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'join', playerId: me, name: join.name } satisfies ClientMessage });
           await channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'sync-request', playerId: me } satisfies ClientMessage });
