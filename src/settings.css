@@ -41,3 +41,11 @@ html[data-tv-mode="true"] .party-app{max-width:none}
 
 .auth-provider-note{display:block;margin-top:8px;padding:9px 10px;border:1px solid #ffb86b2f;border-radius:10px;background:#ffb86b0b;color:#caa16f;font-size:9px;line-height:1.7}
 html[data-theme="light"] .auth-provider-note{border-color:#a46f2b2b;background:#fff4df;color:#80591f}
+
+.qaddha-update-banner{position:fixed;z-index:1400;left:50%;bottom:18px;transform:translateX(-50%);width:min(560px,calc(100% - 24px));display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:12px 12px 12px 16px;border:1px solid #d7a93b44;border-radius:16px;background:#0c0e16f2;color:#fff;box-shadow:0 18px 60px #0009;backdrop-filter:blur(16px)}
+.qaddha-update-banner>span{display:grid;gap:3px}.qaddha-update-banner b{font-size:12px}.qaddha-update-banner small{color:#918b99;font-size:9px}
+.qaddha-update-banner>button{min-height:38px;padding:0 13px;border:1px solid #d7a93b55;border-radius:10px;background:#d7a93b16;color:#f0d17d;font:inherit;font-size:10px;font-weight:900}
+.qaddha-update-banner>.dismiss{width:38px;padding:0;border-color:#ffffff12;background:#ffffff06;color:#a9a2af;font-size:18px}
+html[data-theme="light"] .qaddha-update-banner{border-color:#8e692a38;background:#fffaf2f2;color:#28221b;box-shadow:0 18px 50px #3d2d1526}
+html[data-theme="light"] .qaddha-update-banner small{color:#6e665c}
+@media(max-width:560px){.qaddha-update-banner{grid-template-columns:1fr auto}.qaddha-update-banner>button:not(.dismiss){grid-column:1/-1}.qaddha-update-banner>.dismiss{grid-column:2;grid-row:1}}
