@@ -30,14 +30,14 @@ function selectorFor(target: Element) {
       parts.unshift(part);
       break;
     }
-    const parent = current.parentElement;
-    if (parent) {
-      const sameTag = Array.from(parent.children).filter(child => child.tagName === current!.tagName);
+    const parentElement: HTMLElement | null = current.parentElement;
+    if (parentElement) {
+      const sameTag = Array.from(parentElement.children).filter((child: Element) => child.tagName === current!.tagName);
       if (sameTag.length > 1) part += `:nth-of-type(${sameTag.indexOf(current) + 1})`;
     }
     parts.unshift(part);
     if (current.classList.contains('app') || current.tagName.toLowerCase() === 'main') break;
-    current = parent;
+    current = parentElement;
   }
   return parts.join(' > ');
 }
