@@ -27,12 +27,16 @@
             : preference;
           document.documentElement.dataset.themePreference = preference;
           document.documentElement.dataset.qaddhaDisplay = display;
+          document.documentElement.dataset.tvMode = display === 'tv' ? 'true' : 'false';
+          document.documentElement.dataset.mobileMode = display === 'mobile' ? 'true' : 'false';
           document.documentElement.dataset.theme = theme;
           document.documentElement.style.colorScheme = theme;
           document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#F4F1E9' : '#0B1020');
         } catch {
           document.documentElement.dataset.theme = 'dark';
           document.documentElement.dataset.qaddhaDisplay = 'auto';
+          document.documentElement.dataset.tvMode = 'false';
+          document.documentElement.dataset.mobileMode = 'false';
           document.documentElement.style.colorScheme = 'dark';
         }
       })();
