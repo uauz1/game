@@ -332,7 +332,7 @@ if (exists(platformShellFile)) {
 if (exists(pwaHookFile) && exists(serviceWorkerFile)) {
   const pwa = read(pwaHookFile);
   const sw = read(serviceWorkerFile);
-  pwa.includes('qaddha:update-ready') && sw.includes("qaddha-v6")
+  pwa.includes('qaddha:update-ready') && sw.includes("qaddha-v7")
     ? pass('PWA update signalling and current cache version are present')
     : fail('PWA update/cache hardening is incomplete');
 }
