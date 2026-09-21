@@ -9,3 +9,17 @@
 @media(max-width:850px){.host-lobby-controls{grid-template-columns:repeat(2,minmax(0,1fr))}.online-qr dl{grid-column:1/-1}}
 @media(max-width:620px){.online-round-actions{grid-template-columns:1fr 1fr}}
 @media(min-width:1200px) and (min-height:650px){html[data-tv-mode="true"] .online-synced-timer{width:96px;height:96px;font-size:38px}html[data-tv-mode="true"] .online-room-head,html[data-tv-mode="true"] .online-host-score{font-size:18px}}
+
+/* 2026-09-21 online room flow polish */
+.online-steps{display:grid;grid-template-columns:auto 1fr auto 1fr auto 1fr auto;align-items:center;gap:10px;max-width:760px;margin:22px auto 8px;padding:14px 18px;border:1px solid #ffffff10;border-radius:16px;background:#0d1016}
+.online-steps span{display:flex;align-items:center;gap:8px;color:#d9d4c9;font-size:12px;font-weight:800;white-space:nowrap}
+.online-steps b{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:#d7a93b;color:#17120a;font:900 12px system-ui}
+.online-steps i{height:1px;background:linear-gradient(90deg,#d7a93b55,#ffffff10)}
+.online-entry-actions article>small{display:block;margin-bottom:6px;color:#d4ad4e;font-size:10px;font-weight:900}
+.online-guest-note{max-width:760px;margin:14px auto 0!important;padding:10px 14px;border:1px solid #6da7ff22;border-radius:12px;background:#6da7ff08;color:#9eb4d3!important;text-align:center;font-size:11px!important;line-height:1.7!important}
+.online-share-actions{flex-wrap:wrap}.online-share-actions button{min-width:120px;justify-content:center}
+@media(max-width:700px){.online-steps{grid-template-columns:1fr 1fr;gap:8px}.online-steps i{display:none}.online-steps span{white-space:normal}.online-share-actions button{flex:1 1 100px}}
+html[data-theme="light"] .online-steps{background:#fffaf1;border-color:#51422b1a}
+html[data-theme="light"] .online-steps span{color:#4d4439}
+html[data-theme="light"] .online-steps i{background:linear-gradient(90deg,#b9893355,#493b2714)}
+html[data-theme="light"] .online-guest-note{background:#eaf3ff;border-color:#7da6d82b;color:#56708c!important}
