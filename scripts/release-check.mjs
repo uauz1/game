@@ -112,6 +112,7 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes("!['auction','order','memory','missing','intruder'].includes(room.gameId)") && durableOnline.includes("['who','pressure','intruder'].includes(room.gameId)"), 'Online lobby hides settings that do not apply to the selected game'],
     [durableOnline.includes('resetLobbyReadiness') && durableOnline.includes('ready: player.host'), 'Host setting changes reset guest readiness before launch'],
     [durableOnline.includes("gameId === 'secret' && r.maxPlayers < 4 ? 4 : r.maxPlayers"), 'Selecting Secret Word expands room capacity for its three-player minimum'],
+    [durableOnline.includes('activePlayers.length >= minimumPlayers') && durableOnline.includes('n < minimumPlayers'), 'Shared launch and room capacity enforce each game minimum player count'],
     [durableOnline.includes("room?.gameId === 'secret' ? 3 : 2") && durableOnline.includes('onlineRoster='), 'Secret Word online rooms require three players and pass the live roster'],
     [durableOnline.includes("const teamsRequired = room?.gameId !== 'secret'") && durableOnline.includes('teamsRequired && <>'), 'Secret Word online lobby uses individual readiness instead of team balancing'],
     [durableOnline.includes('function IndividualBoard') && read('src/online-room.css').includes('.online-individual-board'), 'Secret Word has a dedicated individual-player lobby UI'],
