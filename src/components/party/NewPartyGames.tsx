@@ -12,12 +12,22 @@ import { HostPairingPanel, useFamilyHostRoom, type FamilyHostCommand, type Famil
 type Team = { name: string; color: string; score: number };
 type GameProps = { onHome: () => void };
 const colors = ['#45b6ff', '#ff70b5', '#a77bff', '#ffd45a'];
+const ONLINE_PARAMS = new URLSearchParams(window.location.search);
+const ONLINE_EMBED = ONLINE_PARAMS.get('onlineEmbed') === '1';
+const ONLINE_TEAM_NAMES: [string, string] = [
+  ONLINE_PARAMS.get('onlineTeam0')?.trim() || 'الفريق الأول',
+  ONLINE_PARAMS.get('onlineTeam1')?.trim() || 'الفريق الثاني',
+];
 
 function normalizeFamilyAnswer(value: string) {
   return value.trim().toLowerCase().normalize('NFD').replace(/[\u064b-\u065f\u0670]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي').replace(/ـ/g, '').replace(/[^\u0621-\u063a\u0641-\u064a0-9]/g, '').replace(/^ال/, '');
 }
 
 function initialTeams(): Team[] {
+  if (ONLINE_EMBED) return [
+    { name: ONLINE_TEAM_NAMES[0], color: colors[0], score: 0 },
+    { name: ONLINE_TEAM_NAMES[1], color: colors[1], score: 0 },
+  ];
   const shared = loadSharedTeams();
   if (shared) return shared.map(team => ({ ...team, score: 0 }));
   const saved = loadHuroofPreferences();
@@ -29,7 +39,7 @@ function initialTeams(): Team[] {
 
 function prepareTeams(teams: Team[]) {
   const prepared = teams.map(team => ({ ...team, name: team.name.trim(), score: 0 }));
-  saveSharedTeams(prepared);
+  if (!ONLINE_EMBED) saveSharedTeams(prepared);
   return prepared;
 }
 
