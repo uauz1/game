@@ -78,6 +78,30 @@ export default function TeamGame({ onHome }: { onHome: () => void }) {
     .filter(category=>categoryFilter==='selected'?s.cats.includes(category.name):categoryFilter==='large'?(categoryCounts.get(category.name)??0)>=20:true)
     .sort((a,b)=>Number(s.cats.includes(b.name))-Number(s.cats.includes(a.name)) || (categoryCounts.get(b.name)??0)-(categoryCounts.get(a.name)??0)),[categoryCounts,categoryFilter,categorySearch,s.cats]);
 
+  useEffect(()=>{
+    if(!ONLINE_EMBED || ONLINE_ROLE!=='host') return;
+    window.parent.postMessage({
+      type:'qaddha-online-state',
+      gameId:'teams',
+      updatedAt:Date.now(),
+      payload:s,
+    },window.location.origin);
+  },[s]);
+
+  useEffect(()=>{
+    if(!ONLINE_EMBED || ONLINE_ROLE!=='guest') return;
+    const receive=(event:MessageEvent)=>{
+      if(event.origin!==window.location.origin)return;
+      const message=event.data as {type?:string;gameId?:string;payload?:State}|null;
+      if(message?.type!=='qaddha-online-state-replay'||message.gameId!=='teams'||!message.payload)return;
+      const next=message.payload;
+      if(!['teams','categories','board','question','results'].includes(next.stage)||!Array.isArray(next.teams)||next.teams.length!==2||!Array.isArray(next.boardQuestions)||!Array.isArray(next.awards))return;
+      dispatch({type:'hydrate',state:next});
+    };
+    window.addEventListener('message',receive);
+    return()=>window.removeEventListener('message',receive);
+  },[]);
+
   useEffect(()=>{publishMultiplayerTeamNames([s.teams[0].name,s.teams[1].name]);},[s.teams]);
 
   useEffect(()=>{
