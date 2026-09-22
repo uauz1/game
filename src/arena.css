@@ -201,3 +201,41 @@
   }
   .site-status-banner span{flex:1;min-width:210px}
 }
+
+
+.game-card-shell{position:relative}
+.game-card-actions{
+  position:absolute;
+  top:10px;
+  left:10px;
+  z-index:4;
+  display:flex;
+  gap:6px;
+}
+.game-card-actions button{
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  border:1px solid #ffffff18;
+  border-radius:11px;
+  background:#090b10cc;
+  color:#d7d3ca;
+  backdrop-filter:blur(10px);
+  box-shadow:0 8px 20px #0005;
+}
+.game-card-actions button svg{width:16px;height:16px}
+.game-card-actions .game-favorite.active{
+  color:#ff8bb6;
+  border-color:#ff8bb644;
+  background:#25111dcc;
+}
+.game-card-actions .game-share.done{
+  color:#95e1bf;
+  border-color:#62d8a644;
+  background:#0c2018cc;
+}
+@media(max-width:620px){
+  .game-card-actions{top:7px;left:7px;gap:5px}
+  .game-card-actions button{width:31px;height:31px;border-radius:10px}
+}
