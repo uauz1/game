@@ -377,9 +377,9 @@ if (exists(platformShellFile)) {
 if (exists(pwaHookFile) && exists(serviceWorkerFile)) {
   const pwa = read(pwaHookFile);
   const sw = read(serviceWorkerFile);
-  pwa.includes('qaddha:update-ready') && sw.includes("qaddha-v7")
-    ? pass('PWA update signalling and current cache version are present')
-    : fail('PWA update/cache hardening is incomplete');
+  pwa.includes("postMessage({ type: 'SKIP_WAITING' })") && !pwa.includes('qaddha:update-ready') && sw.includes("qaddha-v7")
+    ? pass('PWA updates apply silently with the current cache version')
+    : fail('Silent PWA update/cache hardening is incomplete');
 }
 if (exists(manifestFile)) {
   const manifest = read(manifestFile);
