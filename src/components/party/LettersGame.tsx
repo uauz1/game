@@ -39,6 +39,7 @@ const emptyStats = (): MatchStats => ({ asked: 0, correct: [0, 0], misses: 0 });
 export default function LettersGame({ onHome }: { onHome: () => void }) {
   const onlineParams = useMemo(() => new URLSearchParams(window.location.search), []);
   const onlineEmbed = onlineParams.get('onlineEmbed') === '1';
+  const onlineRole = onlineParams.get('onlineRole') === 'guest' ? 'guest' : 'host';
   const onlineTeamNames: [string, string] = [
     onlineParams.get('onlineTeam0')?.trim() || '',
     onlineParams.get('onlineTeam1')?.trim() || '',
@@ -70,6 +71,52 @@ export default function LettersGame({ onHome }: { onHome: () => void }) {
   const [stats, setStats] = useState<MatchStats>(emptyStats);
   const [exit, setExit] = useState(false);
   const [rules, setRules] = useState(false);
+
+  useEffect(() => {
+    if (!onlineEmbed || onlineRole !== 'host') return;
+    const payload = {
+      phase, round, turn, letters, owners, current, revealed, noAnswer, attemptKey,
+      usedQuestionIds, winningPath, roundWinner, lastDecision, stats, teams,
+    };
+    window.parent.postMessage({
+      type: 'qaddha-online-state',
+      gameId: 'letters',
+      updatedAt: Date.now(),
+      payload,
+    }, window.location.origin);
+  }, [attemptKey, current, lastDecision, letters, noAnswer, onlineEmbed, onlineRole, owners, phase, revealed, round, roundWinner, stats, teams, turn, usedQuestionIds, winningPath]);
+
+  useEffect(() => {
+    if (!onlineEmbed || onlineRole !== 'guest') return;
+    const receiveState = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      const message = event.data as { type?: string; gameId?: string; payload?: Partial<{
+        phase: Phase; round: number; turn: 0|1; letters: string[]; owners: CellOwner[];
+        current: CurrentQuestion|null; revealed: boolean; noAnswer: boolean; attemptKey: number;
+        usedQuestionIds: string[]; winningPath: number[]; roundWinner: 0|1|null;
+        lastDecision: LastDecision|null; stats: MatchStats; teams: Team[];
+      }> } | null;
+      if (message?.type !== 'qaddha-online-state-replay' || message.gameId !== 'letters' || !message.payload) return;
+      const state = message.payload;
+      if (state.phase) setPhase(state.phase);
+      if (typeof state.round === 'number') setRound(state.round);
+      if (state.turn === 0 || state.turn === 1) setTurn(state.turn);
+      if (Array.isArray(state.letters) && state.letters.length === CELL_COUNT) setLetters(state.letters);
+      if (Array.isArray(state.owners) && state.owners.length === CELL_COUNT) setOwners(state.owners);
+      if ('current' in state) setCurrent(state.current ?? null);
+      if (typeof state.revealed === 'boolean') setRevealed(state.revealed);
+      if (typeof state.noAnswer === 'boolean') setNoAnswer(state.noAnswer);
+      if (typeof state.attemptKey === 'number') setAttemptKey(state.attemptKey);
+      if (Array.isArray(state.usedQuestionIds)) setUsedQuestionIds(state.usedQuestionIds);
+      if (Array.isArray(state.winningPath)) setWinningPath(state.winningPath);
+      if ('roundWinner' in state) setRoundWinner(state.roundWinner ?? null);
+      if ('lastDecision' in state) setLastDecision(state.lastDecision ?? null);
+      if (state.stats) setStats(state.stats);
+      if (Array.isArray(state.teams) && state.teams.length === 2) setTeams(state.teams);
+    };
+    window.addEventListener('message', receiveState);
+    return () => window.removeEventListener('message', receiveState);
+  }, [onlineEmbed, onlineRole]);
 
   const targetWins = requiredWins(bestOf);
   const matchWinner = teams.findIndex(team => team.rounds >= targetWins) as -1 | 0 | 1;
