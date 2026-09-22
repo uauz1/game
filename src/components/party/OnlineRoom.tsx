@@ -201,9 +201,11 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     if (!replayActions.length) return;
     const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
     if (!frame?.contentWindow) return;
+    const activeGameId = snapshot?.gameId || roomRef.current?.gameId;
+    if (!activeGameId) return;
     const actions = [...replayActions].sort((a,b) => (a.authoritySeq || 0) - (b.authoritySeq || 0) || a.sentAt - b.sentAt);
     for (const action of actions) {
-      if (action.gameId !== snapshot.gameId) continue;
+      if (action.gameId !== activeGameId) continue;
       frame.contentWindow.postMessage({ type: 'qaddha-online-replay', action, authoritative: true }, window.location.origin);
     }
   }, []);
