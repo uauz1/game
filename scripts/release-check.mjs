@@ -8,6 +8,15 @@ const fail = message => { console.error(`❌ ${message}`); process.exitCode = 1;
 const pass = message => console.log(`✅ ${message}`);
 
 const app = read('src/App.tsx');
+app.includes('lobby-launchpad') && app.includes('quickModes') && app.includes('favoriteGames') && app.includes('recentGames')
+  ? pass('Home includes quick-play modes plus personalized favorites/recent shelves')
+  : fail('Home quick-play/personalized shelves are missing');
+app.includes("gameFilter==='المفضلة'") && app.includes("gameFilter==='حديثًا'") && app.includes('gameSearchRef.current?.focus()')
+  ? pass('Game library supports favorites/recent filters and keyboard search')
+  : fail('Game library smart filters or keyboard search are missing');
+app.includes('site-status-banner offline') && app.includes('qaddha:update-ready') && read('src/arena.css').includes('.site-status-banner')
+  ? pass('Site exposes offline and update-ready status without blocking play')
+  : fail('Global offline/update status UX is missing');
 const session = read('src/components/party/SmartPartySession.tsx');
 const realtime = read('src/utils/qaddhaRealtime.ts');
 
