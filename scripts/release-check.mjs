@@ -17,6 +17,9 @@ app.includes("gameFilter==='المفضلة'") && app.includes("gameFilter==='ح�
 app.includes('site-status-banner offline') && app.includes('qaddha:update-ready') && read('src/arena.css').includes('.site-status-banner')
   ? pass('Site exposes offline and update-ready status without blocking play')
   : fail('Global offline/update status UX is missing');
+app.includes('const shareGame=async') && app.includes('game-card-actions') && read('src/arena.css').includes('.game-share.done')
+  ? pass('Every game card supports direct share/copy with visual confirmation')
+  : fail('Game card sharing support is missing');
 const session = read('src/components/party/SmartPartySession.tsx');
 const realtime = read('src/utils/qaddhaRealtime.ts');
 
