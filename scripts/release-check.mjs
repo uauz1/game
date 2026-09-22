@@ -20,6 +20,9 @@ app.includes('site-status-banner offline') && read('src/arena.css').includes('.s
 app.includes('const shareGame=async') && app.includes('game-card-actions') && read('src/arena.css').includes('.game-share.done')
   ? pass('Every game card supports direct share/copy with visual confirmation')
   : fail('Game card sharing support is missing');
+app.includes('const gamePrefetchers') && app.includes('onMouseEnter={()=>prefetchGame(g.id)}') && app.includes('onTouchStart={()=>prefetchGame(g.id)}')
+  ? pass('Game bundles prefetch before launch to reduce perceived load delay')
+  : fail('Game bundle prefetching is missing');
 const session = read('src/components/party/SmartPartySession.tsx');
 const realtime = read('src/utils/qaddhaRealtime.ts');
 
