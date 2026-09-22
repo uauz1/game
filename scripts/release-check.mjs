@@ -124,6 +124,8 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes('function IndividualBoard') && read('src/online-room.css').includes('.online-individual-board'), 'Secret Word has a dedicated individual-player lobby UI'],
     [durableOnline.includes('online-ready-summary') && read('src/online-room.css').includes('.online-ready-summary.ready'), 'Online lobby exposes live readiness and connection status'],
     [durableOnline.includes('online-room-playing') && read('src/online-room.css').includes('.online-room-playing .online-live-game iframe') && read('src/online-room.css').includes('height:100dvh'), 'Live online gameplay uses a true full-screen game surface without room chrome'],
+    [durableOnline.includes("document.documentElement.classList.toggle('qaddha-online-playing'") && read('src/online-room.css').includes('html.qaddha-online-playing'), 'Live online gameplay locks page scroll/overscroll while the match is active'],
+    [durableOnline.includes('online-live-connection') && read('src/online-room.css').includes('.online-live-connection'), 'Full-screen play shows reconnect status without restoring room chrome'],
     [durableOnline.includes('online-countdown-compact'), 'Online countdown uses a compact indicator instead of the old large circular timer'],
     [durableOnline.includes("type: 'resync-game'") && durableOnline.includes('online-guest-live-tools'), 'Guests can request full live-game resync recovery'],
     [durableOnline.includes('allowGameAction') && durableOnline.includes('current.count >= 80'), 'Guest gameplay events are rate-limited by the host'],
