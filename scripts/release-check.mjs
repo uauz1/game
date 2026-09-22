@@ -14,9 +14,9 @@ app.includes('lobby-launchpad') && app.includes('quickModes') && app.includes('f
 app.includes("gameFilter==='المفضلة'") && app.includes("gameFilter==='حديثًا'") && app.includes('gameSearchRef.current?.focus()')
   ? pass('Game library supports favorites/recent filters and keyboard search')
   : fail('Game library smart filters or keyboard search are missing');
-app.includes('site-status-banner offline') && app.includes('qaddha:update-ready') && read('src/arena.css').includes('.site-status-banner')
-  ? pass('Site exposes offline and update-ready status without blocking play')
-  : fail('Global offline/update status UX is missing');
+app.includes('site-status-banner offline') && read('src/arena.css').includes('.site-status-banner') && read('src/hooks/usePWA.ts').includes("postMessage({ type: 'SKIP_WAITING' })")
+  ? pass('Site keeps offline status while applying PWA updates silently')
+  : fail('Silent PWA update or offline status handling is missing');
 app.includes('const shareGame=async') && app.includes('game-card-actions') && read('src/arena.css').includes('.game-share.done')
   ? pass('Every game card supports direct share/copy with visual confirmation')
   : fail('Game card sharing support is missing');
