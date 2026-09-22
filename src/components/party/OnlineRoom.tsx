@@ -355,7 +355,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
           void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'game-action', action } });
         } else if (incoming.type === 'resync-game' && knownPlayer?.connected) {
           if (current.phase === 'countdown' || current.phase === 'playing') {
-            update(r => ({ ...r, gameRevision: r.gameRevision + 1, players: r.players.map(p => ({ ...p, gameLoadedId: undefined })) })); };
+            update(r => ({ ...r, gameRevision: r.gameRevision + 1, players: r.players.map(p => ({ ...p, gameLoadedId: undefined })) }));
             setNotice('أعدنا مزامنة اللعبة لكل الأجهزة.');
             window.setTimeout(() => setNotice(''), 1800);
           }
