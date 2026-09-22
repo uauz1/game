@@ -123,6 +123,8 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes("const teamsRequired = room?.gameId !== 'secret'") && durableOnline.includes('teamsRequired && <>'), 'Secret Word online lobby uses individual readiness instead of team balancing'],
     [durableOnline.includes('function IndividualBoard') && read('src/online-room.css').includes('.online-individual-board'), 'Secret Word has a dedicated individual-player lobby UI'],
     [durableOnline.includes('online-ready-summary') && read('src/online-room.css').includes('.online-ready-summary.ready'), 'Online lobby exposes live readiness and connection status'],
+    [durableOnline.includes('online-room-playing') && read('src/online-room.css').includes('.online-room-playing .online-live-game iframe') && read('src/online-room.css').includes('height:100dvh'), 'Live online gameplay uses a true full-screen game surface without room chrome'],
+    [durableOnline.includes('online-countdown-compact'), 'Online countdown uses a compact indicator instead of the old large circular timer'],
     [durableOnline.includes("type: 'resync-game'") && durableOnline.includes('online-guest-live-tools'), 'Guests can request full live-game resync recovery'],
     [durableOnline.includes('allowGameAction') && durableOnline.includes('current.count >= 80'), 'Guest gameplay events are rate-limited by the host'],
     [durableOnline.includes("incoming.type !== 'join' && !knownPlayer") && durableOnline.includes('!knownPlayer?.connected || !allowGameAction'), 'Online room ignores control/gameplay messages from unknown or inactive players'],
