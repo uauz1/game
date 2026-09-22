@@ -89,6 +89,8 @@ export default function App() {
   const [authOpen,setAuthOpen]=useState(false);
   const [helpOpen,setHelpOpen]=useState(false);
   const [homeConfirm,setHomeConfirm]=useState(false);
+  const [updateReady,setUpdateReady]=useState(false);
+  const [offline,setOffline]=useState(()=>typeof navigator!=='undefined' ? !navigator.onLine : false);
   const [gameSearch,setGameSearch]=useState('');
   const [gameFilter,setGameFilter]=useState('الكل');
   const gameSearchRef=useRef<HTMLInputElement|null>(null);
@@ -98,6 +100,19 @@ export default function App() {
   useEffect(()=>{if(auth.oauthMessage)setAuthOpen(true);},[auth.oauthMessage]);
   useQaddhaPreferences();
   usePWA();
+  useEffect(()=>{
+    const ready=()=>setUpdateReady(true);
+    const online=()=>setOffline(false);
+    const offlineHandler=()=>setOffline(true);
+    window.addEventListener('qaddha:update-ready',ready as EventListener);
+    window.addEventListener('online',online);
+    window.addEventListener('offline',offlineHandler);
+    return()=>{
+      window.removeEventListener('qaddha:update-ready',ready as EventListener);
+      window.removeEventListener('online',online);
+      window.removeEventListener('offline',offlineHandler);
+    };
+  },[]);
   const savePlayerData=(next:typeof playerData)=>{setPlayerData(next);try{localStorage.setItem(PLAYER_KEY,JSON.stringify(next))}catch{/* Guest history stays available for this visit. */}};
   const go=(next:string)=>{if(games.some(game=>game.id===next)){setLastGame(next);const recent=[{gameId:next,playedAt:Date.now()},...playerData.recent.filter(item=>item.gameId!==next)].slice(0,8);savePlayerData({...playerData,recent});try{localStorage.setItem('qaddha.last-game',next)}catch{/* Recent game is optional. */}}setHomeConfirm(false);setScreen(next);const url=new URL(window.location.href);if(games.some(game=>game.id===next))url.searchParams.set('play',next);else url.searchParams.delete('play');window.history.pushState({qaddhaScreen:next},'',url);window.scrollTo({top:0,behavior:'instant'});};
   const toggleFavorite=(gameId:string)=>{const favorites=playerData.favorites.includes(gameId)?playerData.favorites.filter(id=>id!==gameId):[...playerData.favorites,gameId];savePlayerData({...playerData,favorites});};
@@ -173,7 +188,7 @@ export default function App() {
   if(hostParams.get('host')==='family')return <div className="app party-app host-app" dir="rtl"><Suspense fallback={<GameLoading/>}><FamilyHostController roomId={hostParams.get('room')||''} token={hostParams.get('token')||''}/></Suspense></div>;
   if(hostParams.has('online')||hostParams.has('onlineHost'))return <div className="app party-app" dir="rtl"><Suspense fallback={<GameLoading/>}><OnlineRoom games={games.map(({id,title,tag})=>({id,title,tag}))} onBack={()=>{window.location.href=window.location.pathname;}}/></Suspense></div>;
 
-  return <div className={`app party-app ${onlineEmbed?'online-embed':''}`} dir="rtl"><div className="tv-orientation-hint" role="status"><Cast aria-hidden="true"/><span><b>عرض التلفزيون جاهز</b> لفّ الجوال بالعرض ثم فعّل ملء الشاشة لأفضل نتيجة.</span></div><header className="topbar"><button className="brand" aria-label="قدّها الرئيسية" onClick={()=>{if(screen==='home')window.scrollTo({top:0,behavior:'smooth'});else if(isGame&&readQaddhaPreferences().confirmExit)setHomeConfirm(true);else go('home');}} style={{padding:0,background:'transparent',border:0,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:'12px',minWidth:'190px'}}>
+  return <div className={`app party-app ${onlineEmbed?'online-embed':''}`} dir="rtl">{!onlineEmbed&&offline&&<div className="site-status-banner offline" role="status"><WifiOff size={16}/><span>أنت بدون اتصال الآن. الألعاب المحلية شغالة، والأونلاين يرجع تلقائيًا لما يرجع النت.</span></div>}{!onlineEmbed&&updateReady&&<div className="site-status-banner update" role="status"><Sparkles size={16}/><span>في نسخة أحدث من قدّها جاهزة.</span><button onClick={()=>window.location.reload()}>تحديث الآن</button><button className="dismiss" aria-label="إغلاق" onClick={()=>setUpdateReady(false)}>×</button></div>}<div className="tv-orientation-hint" role="status"><Cast aria-hidden="true"/><span><b>عرض التلفزيون جاهز</b> لفّ الجوال بالعرض ثم فعّل ملء الشاشة لأفضل نتيجة.</span></div><header className="topbar"><button className="brand" aria-label="قدّها الرئيسية" onClick={()=>{if(screen==='home')window.scrollTo({top:0,behavior:'smooth'});else if(isGame&&readQaddhaPreferences().confirmExit)setHomeConfirm(true);else go('home');}} style={{padding:0,background:'transparent',border:0,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:'12px',minWidth:'190px'}}>
     <span aria-hidden="true" style={{width:'56px',height:'56px',borderRadius:'17px',display:'grid',placeItems:'center',position:'relative',flex:'0 0 auto',background:'linear-gradient(145deg,#080808,#1a1a1a)',border:'1px solid #d7a93b',boxShadow:'inset 0 0 0 1px #f5d36a22,0 8px 22px #0008,0 0 24px #d7a93b18'}}>
       <Gamepad2 size={34} strokeWidth={1.9} style={{color:'#e7bc4f',filter:'drop-shadow(0 1px 3px #000)'}}/>
       <span style={{position:'absolute',top:'6px',right:'7px',width:'6px',height:'6px',borderRadius:'50%',background:'#f4d36f',boxShadow:'-9px 2px 0 #c99428'}}/>
