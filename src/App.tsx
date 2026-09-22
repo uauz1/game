@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Cast, ChevronLeft, Trophy, Users, Sparkles, Brain, Camera, Search, Shuffle, Zap, UserRound, Puzzle, Gamepad2, Heart, Link2, Monitor, Settings as SettingsIcon, WandSparkles, Wifi, Flame, ShieldQuestion, RotateCcw } from 'lucide-react';
+import { ArrowLeft, BookOpen, Cast, ChevronLeft, Trophy, Users, Sparkles, Brain, Camera, Search, Shuffle, Zap, UserRound, Puzzle, Gamepad2, Heart, Link2, Monitor, Settings as SettingsIcon, WandSparkles, Wifi, WifiOff, Flame, ShieldQuestion, RotateCcw } from 'lucide-react';
 import { readQaddhaPreferences, useQaddhaPreferences } from './utils/sitePreferences';
 import type { PlayerActivity } from './components/party/PlayerPanel';
 import { useAuth } from './contexts/AuthContext';
