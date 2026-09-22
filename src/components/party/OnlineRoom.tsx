@@ -126,9 +126,13 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const actionPersistTimerRef = useRef(0);
   const statePersistTimerRef = useRef(0);
   const authoritySeqRef = useRef(room?.gameActionSeq || 0);
+  const actionLogRef = useRef<OnlineGameAction[]>(room?.gameActions || []);
+  const gameStateRef = useRef<OnlineGameState | null>(room?.gameState || null);
   const roomRef = useRef<Room | null>(room);
   roomRef.current = room;
   if ((room?.gameActionSeq || 0) > authoritySeqRef.current) authoritySeqRef.current = room?.gameActionSeq || 0;
+  if (room?.gameActions && room.gameActions.length > actionLogRef.current.length) actionLogRef.current = room.gameActions;
+  if (room?.gameState && (!gameStateRef.current || room.gameState.updatedAt >= gameStateRef.current.updatedAt)) gameStateRef.current = room.gameState;
   const me = useMemo(getPlayerId, []);
   const roomUrl = useMemo(() => { if (!room) return ''; const url = new URL(window.location.href); url.search = ''; url.searchParams.set('online', room.code); return url.toString(); }, [room]);
 
@@ -152,37 +156,31 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     let serialized = '';
     try { serialized = JSON.stringify(state.payload); } catch { return; }
     if (serialized.length > 32000) return;
-    update(r => {
-      if (r.gameId !== state.gameId) return r;
-      if (r.gameState && r.gameState.gameId === state.gameId && r.gameState.updatedAt > state.updatedAt) return r;
-      return { ...r, gameState: state };
-    }, false);
+    const currentState = gameStateRef.current;
+    if (currentState?.gameId === state.gameId && currentState.updatedAt > state.updatedAt) return;
+    gameStateRef.current = state;
     window.clearTimeout(statePersistTimerRef.current);
     statePersistTimerRef.current = window.setTimeout(() => {
-      const snapshot = roomRef.current;
-      if (snapshot) void persistRoom(snapshot);
-    }, 300);
-  }, [persistRoom, update]);
+      update(r => r.gameId !== state.gameId ? r : ({ ...r, gameState: gameStateRef.current }), true);
+    }, 350);
+  }, [update]);
 
   const rememberGameAction = useCallback((action: OnlineGameAction) => {
-    update(r => {
-      if (r.gameId !== action.gameId) return r;
-      const compactable = action.kind === 'input' || action.kind === 'change';
-      const previous = compactable
-        ? (r.gameActions || []).filter(item => !(item.kind === action.kind && item.sourceId === action.sourceId && item.selector === action.selector))
-        : (r.gameActions || []);
-      return {
-        ...r,
-        gameActionSeq: Math.max(r.gameActionSeq || 0, action.authoritySeq || 0),
-        gameActions: [...previous, action].slice(-80),
-      };
-    }, false);
+    const compactable = action.kind === 'input' || action.kind === 'change';
+    const previous = compactable
+      ? actionLogRef.current.filter(item => !(item.kind === action.kind && item.sourceId === action.sourceId && item.selector === action.selector))
+      : actionLogRef.current;
+    actionLogRef.current = [...previous, action].slice(-80);
+    authoritySeqRef.current = Math.max(authoritySeqRef.current, action.authoritySeq || 0);
     window.clearTimeout(actionPersistTimerRef.current);
     actionPersistTimerRef.current = window.setTimeout(() => {
-      const snapshot = roomRef.current;
-      if (snapshot) void persistRoom(snapshot);
-    }, 450);
-  }, [persistRoom, update]);
+      update(r => r.gameId !== action.gameId ? r : ({
+        ...r,
+        gameActionSeq: authoritySeqRef.current,
+        gameActions: actionLogRef.current,
+      }), true);
+    }, 420);
+  }, [update]);
   const authorizeGameAction = useCallback((action: OnlineGameAction) => {
     authoritySeqRef.current += 1;
     return { ...action, authoritySeq: authoritySeqRef.current };
@@ -199,19 +197,28 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     return true;
   }, []);
   const replayStoredActions = useCallback((snapshot: Room | null) => {
-    if (!snapshot?.gameActions?.length) return;
+    const replayActions = actionLogRef.current.length ? actionLogRef.current : (snapshot?.gameActions || []);
+    if (!replayActions.length) return;
     const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
     if (!frame?.contentWindow) return;
-    const actions = [...snapshot.gameActions].sort((a,b) => (a.authoritySeq || 0) - (b.authoritySeq || 0) || a.sentAt - b.sentAt);
+    const actions = [...replayActions].sort((a,b) => (a.authoritySeq || 0) - (b.authoritySeq || 0) || a.sentAt - b.sentAt);
     for (const action of actions) {
       if (action.gameId !== snapshot.gameId) continue;
       frame.contentWindow.postMessage({ type: 'qaddha-online-replay', action, authoritative: true }, window.location.origin);
     }
   }, []);
+  const roomBroadcastKey = useMemo(() => room ? JSON.stringify({
+    phase: room.phase, gameId: room.gameId,
+    players: room.players.map(({ id, name, team, ready, host, connected, gameLoadedId }) => ({ id, name, team, ready, host, connected, gameLoadedId })),
+    teamNames: room.teamNames, scores: room.scores, round: room.round, totalRounds: room.totalRounds,
+    timerSeconds: room.timerSeconds, difficulty: room.difficulty, category: room.category, maxPlayers: room.maxPlayers,
+    startedAt: room.startedAt, roundEndsAt: room.roundEndsAt, pausedAt: room.pausedAt, answerRevealed: room.answerRevealed,
+    winner: room.winner, gameRevision: room.gameRevision,
+  }) : '', [room]);
   useEffect(() => {
     if (mode !== 'host' || !room || !connected || !channelRef.current) return;
     void channelRef.current.send({ type: 'broadcast', event: 'server-message', payload: room });
-  }, [mode, room, connected]);
+  }, [mode, connected, roomBroadcastKey]);
   useEffect(() => () => {
     window.clearTimeout(actionPersistTimerRef.current);
     window.clearTimeout(statePersistTimerRef.current);
@@ -220,8 +227,9 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   useEffect(() => {
     if (!room || (room.phase !== 'countdown' && room.phase !== 'playing')) return;
     const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
-    if (mode === 'guest' && room.gameState?.gameId === room.gameId && frame?.contentWindow) {
-      frame.contentWindow.postMessage({ type: 'qaddha-online-state-replay', gameId: room.gameState.gameId, payload: room.gameState.payload }, window.location.origin);
+    const liveState = gameStateRef.current || room.gameState;
+    if (mode === 'guest' && liveState?.gameId === room.gameId && frame?.contentWindow) {
+      frame.contentWindow.postMessage({ type: 'qaddha-online-state-replay', gameId: liveState.gameId, payload: liveState.payload }, window.location.origin);
       return;
     }
     replayStoredActions(room);
@@ -347,7 +355,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
           void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'game-action', action } });
         } else if (incoming.type === 'resync-game' && knownPlayer?.connected) {
           if (current.phase === 'countdown' || current.phase === 'playing') {
-            update(r => ({ ...r, gameRevision: r.gameRevision + 1, players: r.players.map(p => ({ ...p, gameLoadedId: undefined })) }));
+            update(r => ({ ...r, gameRevision: r.gameRevision + 1, players: r.players.map(p => ({ ...p, gameLoadedId: undefined })) })); };
             setNotice('أعدنا مزامنة اللعبة لكل الأجهزة.');
             window.setTimeout(() => setNotice(''), 1800);
           }
@@ -619,7 +627,10 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
       const message = event.data as { type?: string; action?: OnlineGameAction; gameId?: string; updatedAt?: number; payload?: unknown } | null;
       if (message?.type === 'qaddha-online-state') {
         if (mode !== 'host' || message.gameId !== room.gameId || typeof message.updatedAt !== 'number') return;
-        rememberGameState({ gameId: message.gameId, updatedAt: message.updatedAt, payload: message.payload });
+        const state = { gameId: message.gameId, updatedAt: message.updatedAt, payload: message.payload };
+        rememberGameState(state);
+        const channel = channelRef.current;
+        if (channel) void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'game-state', state } });
         return;
       }
       if (message?.type !== 'qaddha-online-action' || !message.action) return;
@@ -640,13 +651,18 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   }, [me, mode, room?.phase, room?.code, room?.gameId, rememberGameAction, rememberGameState, authorizeGameAction]);
 
   const send = (message: ClientMessage) => { const channel = channelRef.current; if (channel) void channel.send({ type: 'broadcast', event: 'client-message', payload: message }); };
-  const resetLobbyReadiness = (current: Room) => ({
+  const resetLobbyReadiness = (current: Room) => {
+    actionLogRef.current = [];
+    gameStateRef.current = null;
+    authoritySeqRef.current = 0;
+    return ({
     ...current,
     gameActions: [],
     gameActionSeq: 0,
     gameState: null,
     players: current.players.map(player => ({ ...player, ready: player.host, gameLoadedId: undefined })),
   });
+  };
   const localPlayer = room?.players.find(p => p.id === me);
   const connectedPlayers = room?.players.filter(p => p.connected) || [];
   const minimumPlayers = room?.gameId === 'secret' ? 3 : 2;
@@ -677,8 +693,8 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     onBack();
   };
   const share = async () => navigator.share ? navigator.share({ title: `غرفة قدّها ${room?.code}`, text: `ادخل غرفة قدّها بالكود ${room?.code}`, url: roomUrl }) : copy();
-  const start = () => update(r => ({ ...r, phase: 'countdown', scores: [0, 0], round: 1, startedAt: Date.now() + 3500, roundEndsAt: Date.now() + 3500 + r.timerSeconds * 1000, pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameActionSeq: 0, gameState: null, players: r.players.map(p => ({ ...p, gameLoadedId: undefined })) }));
-  const lobby = () => update(r => ({ ...r, phase: 'lobby', scores: [0, 0], round: 1, startedAt: null, roundEndsAt: null, pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameActionSeq: 0, gameState: null, players: r.players.map(p => ({ ...p, ready: p.host, gameLoadedId: undefined })) }));
+  const start = () => { actionLogRef.current = []; gameStateRef.current = null; authoritySeqRef.current = 0; update(r => ({ ...r, phase: 'countdown', scores: [0, 0], round: 1, startedAt: Date.now() + 3500, roundEndsAt: Date.now() + 3500 + r.timerSeconds * 1000, pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameActionSeq: 0, gameState: null, players: r.players.map(p => ({ ...p, gameLoadedId: undefined })) }));
+  const lobby = () => { actionLogRef.current = []; gameStateRef.current = null; authoritySeqRef.current = 0; update(r => ({ ...r, phase: 'lobby', scores: [0, 0], round: 1, startedAt: null, roundEndsAt: null, pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameActionSeq: 0, gameState: null, players: r.players.map(p => ({ ...p, ready: p.host, gameLoadedId: undefined })) })); };
   const next = () => update(r => r.round >= r.totalRounds ? { ...r, phase: 'results', winner: r.scores[0] === r.scores[1] ? null : r.scores[0] > r.scores[1] ? 0 : 1, roundEndsAt: null, pausedAt: null } : { ...r, round: r.round + 1, roundEndsAt: Date.now() + r.timerSeconds * 1000, pausedAt: null, answerRevealed: false });
   const pause = () => update(r => r.pausedAt ? { ...r, roundEndsAt: r.roundEndsAt ? r.roundEndsAt + Date.now() - r.pausedAt : null, pausedAt: null } : { ...r, pausedAt: Date.now() });
   const remove = (id: string) => { const channel = channelRef.current; if (channel) void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'room-error', reason: 'removed', text: 'أزالك المضيف من الغرفة.', targetId: id } satisfies ServerError }); update(r => ({ ...r, players: r.players.filter(p => p.id !== id) })); };
@@ -725,8 +741,9 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   window.setTimeout(() => {
     const snapshot = roomRef.current;
     const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
-    if (mode === 'guest' && snapshot && snapshot.gameState?.gameId === snapshot.gameId && frame?.contentWindow) {
-      frame.contentWindow.postMessage({ type: 'qaddha-online-state-replay', gameId: snapshot.gameState.gameId, payload: snapshot.gameState.payload }, window.location.origin);
+    const liveState = gameStateRef.current || snapshot?.gameState || null;
+    if (mode === 'guest' && snapshot && liveState?.gameId === snapshot.gameId && frame?.contentWindow) {
+      frame.contentWindow.postMessage({ type: 'qaddha-online-state-replay', gameId: liveState.gameId, payload: liveState.payload }, window.location.origin);
     } else {
       replayStoredActions(snapshot);
     }
