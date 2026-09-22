@@ -34,7 +34,11 @@ type SentryClient = {
 
 type SentryWindow = Window & { Sentry?: SentryClient };
 const sentryWindow = window as SentryWindow;
-const dsn = String(import.meta.env.VITE_SENTRY_DSN || '').trim();
+// The DSN is a public ingestion address (not a Sentry API token). It was
+// verified against the owner-authorized Sentry project's Client Keys endpoint.
+// An optional Vercel env var may override it without changing application code.
+const PUBLIC_QADDHA_DSN = 'https://999afb5edcee0a2893ced0a026571865@o4512132555866113.ingest.de.sentry.io/4512132574740560';
+const dsn = String(import.meta.env.VITE_SENTRY_DSN || PUBLIC_QADDHA_DSN).trim();
 const enabled = import.meta.env.PROD && /^https:\/\/[a-z0-9]+@[a-z0-9.-]+\/\d+$/i.test(dsn);
 const pending: Error[] = [];
 let initialized = false;
