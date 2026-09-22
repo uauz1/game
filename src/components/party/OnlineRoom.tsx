@@ -353,7 +353,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
         if (client) void client.removeChannel(channel);
       }
     };
-  }, [mode, room?.code, me, update, rememberGameAction, allowGameAction]);
+  }, [mode, room?.code, me, update, rememberGameAction, allowGameAction, authorizeGameAction]);
 
   useEffect(() => {
     if (mode !== 'guest' || !join.code || !join.name) return;
@@ -599,6 +599,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const resetLobbyReadiness = (current: Room) => ({
     ...current,
     gameActions: [],
+    gameActionSeq: 0,
     players: current.players.map(player => ({ ...player, ready: player.host, gameLoadedId: undefined })),
   });
   const localPlayer = room?.players.find(p => p.id === me);
