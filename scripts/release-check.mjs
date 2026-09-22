@@ -107,6 +107,7 @@ if (exists(durableOnlineFile)) {
     [read('src/utils/onlineEmbedBridge.ts').includes("onlineRole === 'guest'") && read('src/utils/onlineEmbedBridge.ts').includes('stopImmediatePropagation') && durableOnline.includes('authoritative: true') && durableOnline.includes('onlineRole='), 'Guest clicks/forms wait for host-authoritative replay before applying'],
     [read('src/utils/onlineEmbedBridge.ts').includes('authoritySeq?: number') && durableOnline.includes('gameActionSeq') && durableOnline.includes('authorizeGameAction') && durableOnline.includes('Math.max(r.gameActionSeq'), 'Online gameplay actions are ordered by host authority for deterministic replay'],
     [durableOnline.includes('authoritySeqRef') && durableOnline.includes('authoritySeqRef.current += 1'), 'Host authority sequencing remains monotonic across rapid concurrent inputs'],
+    [durableOnline.includes('gameState: OnlineGameState | null') && durableOnline.includes('rememberGameState') && durableOnline.includes('qaddha-online-state-replay'), 'Online rooms persist canonical game-state snapshots for supported games'],
     [read('src/utils/onlineEmbedBridge.ts').includes('action.gameId !== gameId') && durableOnline.includes('action.gameId !== room.gameId') && durableOnline.includes('action.gameId !== snapshot.gameId'), 'Stale online actions are scoped to the active game'],
     [durableOnline.includes('gameActions: OnlineGameAction[]') && durableOnline.includes('replayStoredActions') && durableOnline.includes('slice(-80)'), 'Online game actions persist for reconnect recovery'],
     [durableOnline.includes('room?.gameActions?.length') && durableOnline.includes('replayStoredActions(room)'), 'Persisted online actions replay after missed realtime events'],
@@ -241,6 +242,9 @@ if (exists(lettersGameFile)) {
   lettersGame.includes("onlineRounds") && lettersGame.includes("[1,3,5].includes(onlineRounds)")
     ? pass('Letters honors the shared online best-of setting')
     : fail('Letters online best-of setting is not shared');
+  lettersGame.includes("type: 'qaddha-online-state'") && lettersGame.includes("qaddha-online-state-replay") && lettersGame.includes("onlineRole !== 'guest'")
+    ? pass('Letters publishes host-canonical state and restores it on guest devices')
+    : fail('Letters canonical online state synchronization is missing');
 }
 
 const finalGameFile = 'src/components/party/FinalPartyGames.tsx';
