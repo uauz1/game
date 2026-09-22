@@ -123,8 +123,10 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const channelRef = useRef<RealtimeChannel | null>(null);
   const actionRateRef = useRef(new Map<string, { startedAt: number; count: number }>());
   const actionPersistTimerRef = useRef(0);
+  const authoritySeqRef = useRef(room?.gameActionSeq || 0);
   const roomRef = useRef<Room | null>(room);
   roomRef.current = room;
+  if ((room?.gameActionSeq || 0) > authoritySeqRef.current) authoritySeqRef.current = room?.gameActionSeq || 0;
   const me = useMemo(getPlayerId, []);
   const roomUrl = useMemo(() => { if (!room) return ''; const url = new URL(window.location.href); url.search = ''; url.searchParams.set('online', room.code); return url.toString(); }, [room]);
 
@@ -152,10 +154,10 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
       if (snapshot) void persistRoom(snapshot);
     }, 450);
   }, [persistRoom, update]);
-  const authorizeGameAction = useCallback((action: OnlineGameAction) => ({
-    ...action,
-    authoritySeq: (roomRef.current?.gameActionSeq || 0) + 1,
-  }), []);
+  const authorizeGameAction = useCallback((action: OnlineGameAction) => {
+    authoritySeqRef.current += 1;
+    return { ...action, authoritySeq: authoritySeqRef.current };
+  }, []);
   const allowGameAction = useCallback((playerId: string) => {
     const now = Date.now();
     const current = actionRateRef.current.get(playerId);
