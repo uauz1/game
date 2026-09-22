@@ -1,6 +1,7 @@
 /**
  * Minimal, opt-in Sentry browser error reporting for QADDHA.
- * Enabled only when VITE_SENTRY_DSN is configured in a production build.
+ * Enabled in production-mode builds with a verified public project DSN.
+ * Production rollout must wait for preview verification and approval.
  * No session replay, tracing, logging, user identity, or request data.
  *
  * Uses Sentry's pinned, integrity-checked browser bundle instead of adding an
