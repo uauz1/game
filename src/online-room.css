@@ -269,3 +269,100 @@ html[data-theme="light"] .online-how-steps span{background:#fffaf1;border-color:
     grid-column:auto;
   }
 }
+
+
+/* Full-screen online gameplay: once the match starts, the game itself owns the screen. */
+.online-room-playing{
+  max-width:none!important;
+  width:100%!important;
+  min-height:100dvh!important;
+  margin:0!important;
+  padding:0!important;
+  background:#070707!important;
+  overflow:hidden;
+}
+.online-room-playing > .online-room-head,
+.online-room-playing > .online-notice{
+  display:none!important;
+}
+.online-room-playing .online-live{
+  width:100%!important;
+  max-width:none!important;
+  min-height:100dvh!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:#070707!important;
+  text-align:initial!important;
+}
+.online-room-playing .online-live-game{
+  width:100vw!important;
+  max-width:none!important;
+  min-height:100dvh!important;
+  height:100dvh!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  background:#070707!important;
+}
+.online-room-playing .online-live-game iframe{
+  width:100vw!important;
+  max-width:none!important;
+  min-height:100dvh!important;
+  height:100dvh!important;
+  border:0!important;
+  border-radius:0!important;
+}
+.online-room-playing .online-host-live-tools,
+.online-room-playing .online-guest-live-tools{
+  position:fixed;
+  z-index:40;
+  inset:auto 12px max(12px,env(safe-area-inset-bottom)) 12px;
+  margin:0;
+  justify-content:flex-end;
+  pointer-events:none;
+}
+.online-room-playing .online-host-live-tools button,
+.online-room-playing .online-guest-live-tools button{
+  pointer-events:auto;
+  min-height:38px;
+  padding:8px 12px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:999px;
+  background:rgba(8,10,13,.78);
+  backdrop-filter:blur(12px);
+  color:#f2eee5;
+  box-shadow:0 8px 24px rgba(0,0,0,.28);
+  font-size:11px;
+}
+.online-room-playing .online-host-live-tools button:not(:first-child){
+  opacity:.82;
+}
+.online-countdown-compact{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:42px;
+  min-height:32px;
+  margin:12px auto 0;
+  padding:5px 10px;
+  border:1px solid rgba(215,169,59,.34);
+  border-radius:10px;
+  background:rgba(215,169,59,.08);
+  color:#f0cc6c;
+  font:900 15px/1 system-ui;
+}
+@media(max-width:700px){
+  .online-room-playing .online-host-live-tools,
+  .online-room-playing .online-guest-live-tools{
+    inset:auto 8px max(8px,env(safe-area-inset-bottom)) 8px;
+  }
+  .online-room-playing .online-host-live-tools button,
+  .online-room-playing .online-guest-live-tools button{
+    min-height:36px;
+    padding:7px 10px;
+    font-size:10px;
+  }
+}
