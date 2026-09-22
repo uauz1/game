@@ -173,11 +173,6 @@
   color:#ffd0ad;
   border-color:#ff9f6140;
 }
-.site-status-banner.update{
-  background:#15120be8;
-  color:#f2d37a;
-  border-color:#d7a93b45;
-}
 .site-status-banner button{
   min-height:29px;
   padding:5px 10px;
@@ -186,11 +181,6 @@
   background:#ffffff0c;
   color:inherit;
   font:inherit;
-}
-.site-status-banner .dismiss{
-  width:29px;
-  padding:0;
-  font-size:17px;
 }
 @media(max-width:620px){
   .site-status-banner{
