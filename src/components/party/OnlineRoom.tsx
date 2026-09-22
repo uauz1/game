@@ -9,11 +9,12 @@ type GameOption = { id: string; title: string; tag: string };
 type Player = { id: string; name: string; team: 0 | 1; ready: boolean; host: boolean; connected: boolean; seenAt: number; gameLoadedId?: string };
 type Phase = 'lobby' | 'countdown' | 'playing' | 'results';
 type Difficulty = 'mixed' | 'easy' | 'medium' | 'hard';
+type OnlineGameState = { gameId: string; updatedAt: number; payload: unknown };
 type Room = {
   type: 'room-snapshot'; version: number; code: string; phase: Phase; gameId: string; players: Player[];
   teamNames: [string, string]; scores: [number, number]; round: number; totalRounds: number; timerSeconds: number;
   difficulty: Difficulty; category: string; maxPlayers: number; startedAt: number | null; roundEndsAt: number | null;
-  pausedAt: number | null; answerRevealed: boolean; winner: 0 | 1 | null; gameActions: OnlineGameAction[]; gameRevision: number; gameActionSeq: number;
+  pausedAt: number | null; answerRevealed: boolean; winner: 0 | 1 | null; gameActions: OnlineGameAction[]; gameRevision: number; gameActionSeq: number; gameState: OnlineGameState | null;
 };
 type ClientMessage =
   | { type: 'join'; playerId: string; name: string }
@@ -60,9 +61,9 @@ const newRoom = (code: string, name: string, gameId: string): Room => ({
   players: [{ id: getPlayerId(), name: cleanName(name) || 'المضيف', team: 0, ready: true, host: true, connected: true, seenAt: Date.now() }],
   teamNames: ['الفريق الأول', 'الفريق الثاني'], scores: [0, 0], round: 1, totalRounds: 8, timerSeconds: 60,
   difficulty: 'mixed', category: 'الكل', maxPlayers: MAX_PLAYERS, startedAt: null, roundEndsAt: null,
-  pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameRevision: 0, gameActionSeq: 0,
+  pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameRevision: 0, gameActionSeq: 0, gameState: null,
 });
-const normalize = (room: Room): Room => ({ ...room, teamNames: room.teamNames || ['الفريق الأول', 'الفريق الثاني'], timerSeconds: room.timerSeconds || 60, difficulty: room.difficulty || 'mixed', category: room.category || 'الكل', maxPlayers: room.maxPlayers || MAX_PLAYERS, pausedAt: room.pausedAt || null, answerRevealed: room.answerRevealed || false, gameActions: Array.isArray(room.gameActions) ? room.gameActions.slice(-80) : [], gameRevision: Number.isFinite(room.gameRevision) ? room.gameRevision : 0, gameActionSeq: Number.isFinite(room.gameActionSeq) ? room.gameActionSeq : 0 });
+const normalize = (room: Room): Room => ({ ...room, teamNames: room.teamNames || ['الفريق الأول', 'الفريق الثاني'], timerSeconds: room.timerSeconds || 60, difficulty: room.difficulty || 'mixed', category: room.category || 'الكل', maxPlayers: room.maxPlayers || MAX_PLAYERS, pausedAt: room.pausedAt || null, answerRevealed: room.answerRevealed || false, gameActions: Array.isArray(room.gameActions) ? room.gameActions.slice(-80) : [], gameRevision: Number.isFinite(room.gameRevision) ? room.gameRevision : 0, gameActionSeq: Number.isFinite(room.gameActionSeq) ? room.gameActionSeq : 0, gameState: room.gameState && typeof room.gameState === 'object' ? room.gameState : null });
 const normalizeGameAction = (action: OnlineGameAction, playerId: string, gameId: string): OnlineGameAction | null => {
   if (!action || action.gameId !== gameId || typeof action.id !== 'string' || typeof action.selector !== 'string') return null;
   if (!['click','input','change','submit'].includes(action.kind) || action.id.length > 160 || action.selector.length > 320) return null;
@@ -123,6 +124,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const channelRef = useRef<RealtimeChannel | null>(null);
   const actionRateRef = useRef(new Map<string, { startedAt: number; count: number }>());
   const actionPersistTimerRef = useRef(0);
+  const statePersistTimerRef = useRef(0);
   const authoritySeqRef = useRef(room?.gameActionSeq || 0);
   const roomRef = useRef<Room | null>(room);
   roomRef.current = room;
@@ -146,6 +148,22 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     if (shouldPersist) void persistRoom(next);
     return next;
   }), [persistRoom]);
+  const rememberGameState = useCallback((state: OnlineGameState) => {
+    let serialized = '';
+    try { serialized = JSON.stringify(state.payload); } catch { return; }
+    if (serialized.length > 32000) return;
+    update(r => {
+      if (r.gameId !== state.gameId) return r;
+      if (r.gameState && r.gameState.gameId === state.gameId && r.gameState.updatedAt > state.updatedAt) return r;
+      return { ...r, gameState: state };
+    }, false);
+    window.clearTimeout(statePersistTimerRef.current);
+    statePersistTimerRef.current = window.setTimeout(() => {
+      const snapshot = roomRef.current;
+      if (snapshot) void persistRoom(snapshot);
+    }, 300);
+  }, [persistRoom, update]);
+
   const rememberGameAction = useCallback((action: OnlineGameAction) => {
     update(r => {
       if (r.gameId !== action.gameId) return r;
@@ -194,12 +212,20 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     if (mode !== 'host' || !room || !connected || !channelRef.current) return;
     void channelRef.current.send({ type: 'broadcast', event: 'server-message', payload: room });
   }, [mode, room, connected]);
-  useEffect(() => () => window.clearTimeout(actionPersistTimerRef.current), []);
+  useEffect(() => () => {
+    window.clearTimeout(actionPersistTimerRef.current);
+    window.clearTimeout(statePersistTimerRef.current);
+  }, []);
 
   useEffect(() => {
     if (!room || (room.phase !== 'countdown' && room.phase !== 'playing')) return;
+    const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
+    if (mode === 'guest' && room.gameState?.gameId === room.gameId && frame?.contentWindow) {
+      frame.contentWindow.postMessage({ type: 'qaddha-online-state-replay', gameId: room.gameState.gameId, payload: room.gameState.payload }, window.location.origin);
+      return;
+    }
     replayStoredActions(room);
-  }, [room?.gameActions?.length, room?.gameRevision, room?.gameId, room?.phase, replayStoredActions]);
+  }, [mode, room?.gameActions?.length, room?.gameRevision, room?.gameId, room?.gameState?.updatedAt, room?.phase, replayStoredActions]);
   useEffect(() => { if (room?.phase !== 'countdown') return; const timer = window.setInterval(() => setNow(Date.now()), 250); return () => window.clearInterval(timer); }, [room?.phase]);
   useEffect(() => { if (roomUrl) QRCode.toDataURL(roomUrl, { width: 300, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#090909', light: '#fff8df' } }).then(setQr).catch(() => setQr('')); }, [roomUrl]);
 
@@ -590,7 +616,12 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     if (!room || (room.phase !== 'countdown' && room.phase !== 'playing')) return;
     const receiveEmbeddedAction = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
-      const message = event.data as { type?: string; action?: OnlineGameAction } | null;
+      const message = event.data as { type?: string; action?: OnlineGameAction; gameId?: string; updatedAt?: number; payload?: unknown } | null;
+      if (message?.type === 'qaddha-online-state') {
+        if (mode !== 'host' || message.gameId !== room.gameId || typeof message.updatedAt !== 'number') return;
+        rememberGameState({ gameId: message.gameId, updatedAt: message.updatedAt, payload: message.payload });
+        return;
+      }
       if (message?.type !== 'qaddha-online-action' || !message.action) return;
       const action = message.action;
       if (action.sourceId !== me || action.gameId !== room.gameId) return;
@@ -606,13 +637,14 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     };
     window.addEventListener('message', receiveEmbeddedAction);
     return () => window.removeEventListener('message', receiveEmbeddedAction);
-  }, [me, mode, room?.phase, room?.code, room?.gameId, rememberGameAction, authorizeGameAction]);
+  }, [me, mode, room?.phase, room?.code, room?.gameId, rememberGameAction, rememberGameState, authorizeGameAction]);
 
   const send = (message: ClientMessage) => { const channel = channelRef.current; if (channel) void channel.send({ type: 'broadcast', event: 'client-message', payload: message }); };
   const resetLobbyReadiness = (current: Room) => ({
     ...current,
     gameActions: [],
     gameActionSeq: 0,
+    gameState: null,
     players: current.players.map(player => ({ ...player, ready: player.host, gameLoadedId: undefined })),
   });
   const localPlayer = room?.players.find(p => p.id === me);
@@ -645,8 +677,8 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     onBack();
   };
   const share = async () => navigator.share ? navigator.share({ title: `غرفة قدّها ${room?.code}`, text: `ادخل غرفة قدّها بالكود ${room?.code}`, url: roomUrl }) : copy();
-  const start = () => update(r => ({ ...r, phase: 'countdown', scores: [0, 0], round: 1, startedAt: Date.now() + 3500, roundEndsAt: Date.now() + 3500 + r.timerSeconds * 1000, pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameActionSeq: 0, players: r.players.map(p => ({ ...p, gameLoadedId: undefined })) }));
-  const lobby = () => update(r => ({ ...r, phase: 'lobby', scores: [0, 0], round: 1, startedAt: null, roundEndsAt: null, pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameActionSeq: 0, players: r.players.map(p => ({ ...p, ready: p.host, gameLoadedId: undefined })) }));
+  const start = () => update(r => ({ ...r, phase: 'countdown', scores: [0, 0], round: 1, startedAt: Date.now() + 3500, roundEndsAt: Date.now() + 3500 + r.timerSeconds * 1000, pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameActionSeq: 0, gameState: null, players: r.players.map(p => ({ ...p, gameLoadedId: undefined })) }));
+  const lobby = () => update(r => ({ ...r, phase: 'lobby', scores: [0, 0], round: 1, startedAt: null, roundEndsAt: null, pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameActionSeq: 0, gameState: null, players: r.players.map(p => ({ ...p, ready: p.host, gameLoadedId: undefined })) }));
   const next = () => update(r => r.round >= r.totalRounds ? { ...r, phase: 'results', winner: r.scores[0] === r.scores[1] ? null : r.scores[0] > r.scores[1] ? 0 : 1, roundEndsAt: null, pausedAt: null } : { ...r, round: r.round + 1, roundEndsAt: Date.now() + r.timerSeconds * 1000, pausedAt: null, answerRevealed: false });
   const pause = () => update(r => r.pausedAt ? { ...r, roundEndsAt: r.roundEndsAt ? r.roundEndsAt + Date.now() - r.pausedAt : null, pausedAt: null } : { ...r, pausedAt: Date.now() });
   const remove = (id: string) => { const channel = channelRef.current; if (channel) void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'room-error', reason: 'removed', text: 'أزالك المضيف من الغرفة.', targetId: id } satisfies ServerError }); update(r => ({ ...r, players: r.players.filter(p => p.id !== id) })); };
@@ -680,7 +712,15 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   const gameId = e.target.value;
   return resetLobbyReadiness({ ...r, gameId, maxPlayers: gameId === 'secret' && r.maxPlayers < 4 ? 4 : r.maxPlayers, totalRounds: closestAllowed(r.totalRounds, roundOptionsForGame(gameId)), timerSeconds: closestAllowed(r.timerSeconds, timerOptionsForGame(gameId)) });
 })}>{games.map(g => <option value={g.id} key={g.id}>{g.title}</option>)}</select></label><label><span>عدد اللاعبين</span><select value={room.maxPlayers} onChange={e => update(r => resetLobbyReadiness({ ...r, maxPlayers: Math.max(minimumPlayers, Number(e.target.value)) }))}>{[2,4,6,8,10,12].map(n => <option key={n} value={n} disabled={n < room.players.length || n < minimumPlayers}>{n} لاعبين</option>)}</select></label><label><span>{room.gameId === 'letters' ? 'نظام المباراة' : room.gameId === 'teams' ? 'عدد الأسئلة' : 'عدد الجولات'}</span><select value={room.totalRounds} onChange={e => update(r => resetLobbyReadiness({ ...r, totalRounds: Number(e.target.value) }))}>{roundOptionsForGame(room.gameId).map(n => <option key={n} value={n}>{room.gameId === 'letters' ? (n===1?'جولة واحدة':`الأفضل من ${n}`) : n}</option>)}</select></label>{!['auction','order','memory','missing','intruder'].includes(room.gameId) && <label><span>{room.gameId === 'secret' ? 'وقت النقاش' : room.gameId === 'pressure' ? 'وقت التحدي' : 'المؤقت'}</span><select value={room.timerSeconds} onChange={e => update(r => resetLobbyReadiness({ ...r, timerSeconds: Number(e.target.value) }))}>{timerOptionsForGame(room.gameId).map(n => <option key={n} value={n}>{n >= 90 ? `${n/60} دقيقة` : `${n} ثانية`}</option>)}</select></label>}{['letters','who','pressure','intruder'].includes(room.gameId) && <label><span>الصعوبة</span><select value={room.difficulty} onChange={e => update(r => resetLobbyReadiness({ ...r, difficulty: e.target.value as Difficulty }))}><option value="mixed">متنوعة</option><option value="easy">سهلة</option><option value="medium">متوسطة</option><option value="hard">صعبة</option></select></label>}{room.gameId === 'teams' && <label><span>التصنيف</span><select value={room.category} onChange={e => update(r => resetLobbyReadiness({ ...r, category: e.target.value }))}>{categories.map(value => <option key={value}>{value}</option>)}</select></label>}{teamsRequired && <><label><span>اسم الفريق الأول</span><input maxLength={16} value={room.teamNames[0]} onChange={e => update(r => resetLobbyReadiness({ ...r, teamNames: [cleanName(e.target.value), r.teamNames[1]] }))}/></label><label><span>اسم الفريق الثاني</span><input maxLength={16} value={room.teamNames[1]} onChange={e => update(r => resetLobbyReadiness({ ...r, teamNames: [r.teamNames[0], cleanName(e.target.value)] }))}/></label></>}{teamsRequired && <button className="quiet auto-balance" onClick={() => update(r => resetLobbyReadiness({ ...r, players: r.players.map((p, i) => ({ ...p, team: i % 2 as 0 | 1 })) }))}><Shuffle/> موازنة الفرق</button>}<button className="primary start-online" disabled={!connected || !allReady || (teamsRequired && !room.teamNames.every(Boolean))} onClick={start}><Gamepad2/> {!connected ? 'نعيد الاتصال بالغرفة…' : connectedPlayers.length < minimumPlayers ? `بانتظار ${minimumPlayers - connectedPlayers.length} لاعب${minimumPlayers - connectedPlayers.length > 1 ? 'ين' : ''}` : !teamsReady ? 'وزّع اللاعبين على الفريقين' : !connectedPlayers.every(p => p.host || p.ready) ? 'بانتظار الجاهزية' : `ابدأ ${selected?.title}`}</button></div>}</main><aside className="online-qr"><div>{qr ? <img src={qr} alt={`رمز دخول غرفة ${room.code}`}/> : <QrCode/>}</div><h3>دخول بالكاميرا</h3><p>امسح الرمز أو افتح الرابط، ثم اكتب اسمك واختر فريقك.</p><dl><div><dt>اللعبة</dt><dd>{selected?.title}</dd></div><div><dt>الجولات</dt><dd>{room.totalRounds}</dd></div><div><dt>الوقت</dt><dd>{room.timerSeconds}ث</dd></div><div><dt>التصنيف</dt><dd>{room.category}</dd></div></dl></aside></div> : <main className="online-live"><div className="online-game-banner"><small>{room.phase === 'countdown' ? 'اللعبة تبدأ الآن' : room.phase === 'results' ? 'انتهت المباراة' : `الجولة ${room.round} من ${room.totalRounds}`}</small><h2>{selected?.title}</h2><p>{room.phase === 'countdown' ? `نجهز اللعبة على كل الأجهزة… ${room.players.filter(p => p.connected && p.gameLoadedId === room.gameId).length}/${room.players.filter(p => p.connected).length}` : room.phase === 'results' ? 'النتيجة النهائية محفوظة داخل الغرفة.' : `${selected?.tag} · ${room.category}`}</p>{room.phase === 'countdown' && <strong className={`online-synced-timer ${seconds <= 5 ? 'urgent' : ''}`}>{seconds || 'الآن'}</strong>}{room.answerRevealed && <span className="answer-revealed"><Eye/> الإجابة مكشوفة</span>}</div>{(room.phase === 'countdown' || room.phase === 'playing') && <section className={`online-live-game ${room.phase === 'countdown' ? 'preloading' : ''}`} aria-hidden={room.phase === 'countdown'} aria-label={`اللعبة الحالية: ${selected?.title || room.gameId}`}><iframe id="qaddha-online-game-frame" key={`${room.code}:${room.gameId}:${room.startedAt || 0}:${room.gameRevision}`} src={`${window.location.pathname}?play=${encodeURIComponent(room.gameId)}&onlineEmbed=1&onlinePlayer=${encodeURIComponent(me)}&onlineRole=${encodeURIComponent(mode)}&onlineSeed=${encodeURIComponent(`${room.code}:${room.gameId}:${room.startedAt || 0}`)}&onlineTeam0=${encodeURIComponent(room.teamNames[0])}&onlineTeam1=${encodeURIComponent(room.teamNames[1])}&onlineName=${encodeURIComponent(localPlayer?.name || '')}&onlineRoster=${encodeURIComponent(JSON.stringify(room.players.filter(p => p.connected).map(p => p.name)))}&onlineTimer=${encodeURIComponent(String(room.timerSeconds))}&onlineRounds=${encodeURIComponent(String(room.totalRounds))}&onlineCategory=${encodeURIComponent(room.category)}&onlineDifficulty=${encodeURIComponent(room.difficulty === 'mixed' ? 'medium' : room.difficulty)}`} title={selected?.title || 'لعبة قدّها'} allow="fullscreen" onLoad={() => {
-  window.setTimeout(() => replayStoredActions(roomRef.current), 80);
+  window.setTimeout(() => {
+    const snapshot = roomRef.current;
+    const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
+    if (mode === 'guest' && snapshot?.gameState?.gameId === snapshot.gameId && frame?.contentWindow) {
+      frame.contentWindow.postMessage({ type: 'qaddha-online-state-replay', gameId: snapshot.gameState.gameId, payload: snapshot.gameState.payload }, window.location.origin);
+    } else {
+      replayStoredActions(snapshot);
+    }
+  }, 80);
   if (mode === 'host') update(r => ({ ...r, players: r.players.map(p => p.id === me ? { ...p, gameLoadedId: r.gameId } : p) }), false);
   else send({ type: 'game-loaded', playerId: me, gameId: room.gameId });
 }} /></section>}<TeamBoard room={room} canRemove={mode === 'host'} onRemove={remove}/>{mode === 'guest' && room.phase === 'playing' && <div className="online-guest-live-tools"><button onClick={() => send({ type: 'resync-game', playerId: me })}><RefreshCw/> إعادة مزامنة اللعبة</button></div>}{mode === 'host' && room.phase === 'playing' && <div className="online-host-live-tools"><button onClick={resyncGame}><RefreshCw/> مزامنة اللعبة</button><button onClick={lobby}><RotateCcw/> العودة للوبي</button></div>}{mode === 'host' && room.phase === 'playing' && <div className="online-host-score">{([0, 1] as const).map(team => <section key={team}><span>{room.teamNames[team]}</span><button onClick={() => update(r => ({ ...r, scores: team === 0 ? [Math.max(0, r.scores[0] - 1), r.scores[1]] : [r.scores[0], Math.max(0, r.scores[1] - 1)] }))}><Minus/></button><strong>{room.scores[team]}</strong><button onClick={() => update(r => ({ ...r, scores: team === 0 ? [r.scores[0] + 1, r.scores[1]] : [r.scores[0], r.scores[1] + 1] }))}><Plus/></button></section>)}<div className="online-round-actions"><button onClick={pause}>{room.pausedAt ? <Play/> : <Pause/>}{room.pausedAt ? 'استئناف' : 'إيقاف مؤقت'}</button><button className={room.answerRevealed ? 'active' : ''} onClick={() => update(r => ({ ...r, answerRevealed: !r.answerRevealed }))}><Eye/>{room.answerRevealed ? 'إخفاء الإجابة' : 'كشف الإجابة'}</button><button onClick={resyncGame}><RefreshCw/> مزامنة اللعبة</button><button className="secondary" onClick={next}>{room.round >= room.totalRounds ? 'إنهاء المباراة' : 'الجولة التالية'}</button><button onClick={lobby}>العودة للوبي</button></div></div>}{room.phase === 'results' && <div className="online-results"><Trophy/><h2>{room.winner === null ? 'تعادل قوي!' : `${room.teamNames[room.winner]} فاز`}</h2>{mode === 'host' ? <div><button className="primary" onClick={start}><RotateCcw/> إعادة المباراة</button><button className="secondary" onClick={lobby}>لعبة أو إعدادات جديدة</button></div> : <p>المضيف يختار إعادة المباراة أو تغيير اللعبة.</p>}</div>}</main>}
