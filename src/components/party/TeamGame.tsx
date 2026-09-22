@@ -12,7 +12,7 @@ import Countdown from './Countdown';
 type Team = { name: string; color: string; score: number };
 type Award = { question: Question; team: number | null };
 type State = { stage: 'teams' | 'categories' | 'board' | 'question' | 'results'; teams: Team[]; cats: string[]; limit: number; seconds: number; turn: number; current: Question | null; revealed: boolean; awards: Award[]; boardQuestions: Question[] };
-type Action = { type: 'team'; index: number; patch: Partial<Team> } | { type: 'category'; name: string } | { type: 'categories'; names: string[] } | { type: 'settings'; limit?: number; seconds?: number } | { type: 'stage'; stage: State['stage'] } | { type: 'start'; boardQuestions: Question[] } | { type: 'pick'; question: Question } | { type: 'reveal' } | { type: 'award'; team: number | null } | { type: 'undo' };
+type Action = { type: 'team'; index: number; patch: Partial<Team> } | { type: 'category'; name: string } | { type: 'categories'; names: string[] } | { type: 'settings'; limit?: number; seconds?: number } | { type: 'stage'; stage: State['stage'] } | { type: 'start'; boardQuestions: Question[] } | { type: 'pick'; question: Question } | { type: 'reveal' } | { type: 'award'; team: number | null } | { type: 'undo' } | { type: 'hydrate'; state: State };
 function createInitial(): State {
   const preferences=loadTeamGamePreferences(categories.map(category=>category.name));
   if (ONLINE_EMBED) {
@@ -36,9 +36,11 @@ function createInitial(): State {
 const colors = [{name:'أزرق',value:'#45b6ff'},{name:'وردي',value:'#ff70b5'},{name:'ذهبي',value:'#ffd45a'},{name:'بنفسجي',value:'#b997ff'}];
 const ONLINE_PARAMS = new URLSearchParams(window.location.search);
 const ONLINE_EMBED = ONLINE_PARAMS.get('onlineEmbed') === '1';
+const ONLINE_ROLE = ONLINE_PARAMS.get('onlineRole') === 'guest' ? 'guest' : 'host';
 
 export function teamReducer(s: State, a: Action): State {
   switch(a.type) {
+    case 'hydrate': return a.state;
     case 'team': return {...s, teams:s.teams.map((t,i)=>i===a.index?{...t,...a.patch}:t)};
     case 'category': return {...s,cats:s.cats.includes(a.name)?s.cats.filter(c=>c!==a.name):s.cats.length<6?[...s.cats,a.name]:s.cats};
     case 'categories': return {...s,cats:a.names.slice(0,6)};
