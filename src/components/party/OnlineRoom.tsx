@@ -147,7 +147,18 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     return next;
   }), [persistRoom]);
   const rememberGameAction = useCallback((action: OnlineGameAction) => {
-    update(r => r.gameId !== action.gameId ? r : ({ ...r, gameActionSeq: Math.max(r.gameActionSeq || 0, action.authoritySeq || 0), gameActions: [...(r.gameActions || []), action].slice(-80) }), false);
+    update(r => {
+      if (r.gameId !== action.gameId) return r;
+      const compactable = action.kind === 'input' || action.kind === 'change';
+      const previous = compactable
+        ? (r.gameActions || []).filter(item => !(item.kind === action.kind && item.sourceId === action.sourceId && item.selector === action.selector))
+        : (r.gameActions || []);
+      return {
+        ...r,
+        gameActionSeq: Math.max(r.gameActionSeq || 0, action.authoritySeq || 0),
+        gameActions: [...previous, action].slice(-80),
+      };
+    }, false);
     window.clearTimeout(actionPersistTimerRef.current);
     actionPersistTimerRef.current = window.setTimeout(() => {
       const snapshot = roomRef.current;
