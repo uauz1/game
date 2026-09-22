@@ -715,7 +715,7 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
   window.setTimeout(() => {
     const snapshot = roomRef.current;
     const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
-    if (mode === 'guest' && snapshot?.gameState?.gameId === snapshot.gameId && frame?.contentWindow) {
+    if (mode === 'guest' && snapshot && snapshot.gameState?.gameId === snapshot.gameId && frame?.contentWindow) {
       frame.contentWindow.postMessage({ type: 'qaddha-online-state-replay', gameId: snapshot.gameState.gameId, payload: snapshot.gameState.payload }, window.location.origin);
     } else {
       replayStoredActions(snapshot);
