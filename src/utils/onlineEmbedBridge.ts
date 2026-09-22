@@ -8,6 +8,7 @@ export type OnlineGameAction = {
   sourceId: string;
   gameId: string;
   sentAt: number;
+  authoritySeq?: number;
 };
 
 const cssEscape = (value: string) => {
@@ -170,7 +171,8 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
 
   const observer = new MutationObserver(() => {
     const now = Date.now();
-    for (const [id, action] of pendingActions) {
+    const queued = [...pendingActions.entries()].sort(([,a],[,b]) => (a.authoritySeq ?? Number.MAX_SAFE_INTEGER) - (b.authoritySeq ?? Number.MAX_SAFE_INTEGER) || a.sentAt - b.sentAt);
+    for (const [id, action] of queued) {
       if (now - action.sentAt > 60000) {
         pendingActions.delete(id);
         continue;
