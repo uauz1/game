@@ -13,7 +13,7 @@ type Room = {
   type: 'room-snapshot'; version: number; code: string; phase: Phase; gameId: string; players: Player[];
   teamNames: [string, string]; scores: [number, number]; round: number; totalRounds: number; timerSeconds: number;
   difficulty: Difficulty; category: string; maxPlayers: number; startedAt: number | null; roundEndsAt: number | null;
-  pausedAt: number | null; answerRevealed: boolean; winner: 0 | 1 | null; gameActions: OnlineGameAction[]; gameRevision: number;
+  pausedAt: number | null; answerRevealed: boolean; winner: 0 | 1 | null; gameActions: OnlineGameAction[]; gameRevision: number; gameActionSeq: number;
 };
 type ClientMessage =
   | { type: 'join'; playerId: string; name: string }
@@ -60,9 +60,9 @@ const newRoom = (code: string, name: string, gameId: string): Room => ({
   players: [{ id: getPlayerId(), name: cleanName(name) || 'المضيف', team: 0, ready: true, host: true, connected: true, seenAt: Date.now() }],
   teamNames: ['الفريق الأول', 'الفريق الثاني'], scores: [0, 0], round: 1, totalRounds: 8, timerSeconds: 60,
   difficulty: 'mixed', category: 'الكل', maxPlayers: MAX_PLAYERS, startedAt: null, roundEndsAt: null,
-  pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameRevision: 0,
+  pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameRevision: 0, gameActionSeq: 0,
 });
-const normalize = (room: Room): Room => ({ ...room, teamNames: room.teamNames || ['الفريق الأول', 'الفريق الثاني'], timerSeconds: room.timerSeconds || 60, difficulty: room.difficulty || 'mixed', category: room.category || 'الكل', maxPlayers: room.maxPlayers || MAX_PLAYERS, pausedAt: room.pausedAt || null, answerRevealed: room.answerRevealed || false, gameActions: Array.isArray(room.gameActions) ? room.gameActions.slice(-80) : [], gameRevision: Number.isFinite(room.gameRevision) ? room.gameRevision : 0 });
+const normalize = (room: Room): Room => ({ ...room, teamNames: room.teamNames || ['الفريق الأول', 'الفريق الثاني'], timerSeconds: room.timerSeconds || 60, difficulty: room.difficulty || 'mixed', category: room.category || 'الكل', maxPlayers: room.maxPlayers || MAX_PLAYERS, pausedAt: room.pausedAt || null, answerRevealed: room.answerRevealed || false, gameActions: Array.isArray(room.gameActions) ? room.gameActions.slice(-80) : [], gameRevision: Number.isFinite(room.gameRevision) ? room.gameRevision : 0, gameActionSeq: Number.isFinite(room.gameActionSeq) ? room.gameActionSeq : 0 });
 const normalizeGameAction = (action: OnlineGameAction, playerId: string, gameId: string): OnlineGameAction | null => {
   if (!action || action.gameId !== gameId || typeof action.id !== 'string' || typeof action.selector !== 'string') return null;
   if (!['click','input','change','submit'].includes(action.kind) || action.id.length > 160 || action.selector.length > 320) return null;
@@ -145,13 +145,17 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     return next;
   }), [persistRoom]);
   const rememberGameAction = useCallback((action: OnlineGameAction) => {
-    update(r => r.gameId !== action.gameId ? r : ({ ...r, gameActions: [...(r.gameActions || []), action].slice(-80) }), false);
+    update(r => r.gameId !== action.gameId ? r : ({ ...r, gameActionSeq: Math.max(r.gameActionSeq || 0, action.authoritySeq || 0), gameActions: [...(r.gameActions || []), action].slice(-80) }), false);
     window.clearTimeout(actionPersistTimerRef.current);
     actionPersistTimerRef.current = window.setTimeout(() => {
       const snapshot = roomRef.current;
       if (snapshot) void persistRoom(snapshot);
     }, 450);
   }, [persistRoom, update]);
+  const authorizeGameAction = useCallback((action: OnlineGameAction) => ({
+    ...action,
+    authoritySeq: (roomRef.current?.gameActionSeq || 0) + 1,
+  }), []);
   const allowGameAction = useCallback((playerId: string) => {
     const now = Date.now();
     const current = actionRateRef.current.get(playerId);
@@ -167,7 +171,8 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     if (!snapshot?.gameActions?.length) return;
     const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
     if (!frame?.contentWindow) return;
-    for (const action of snapshot.gameActions) {
+    const actions = [...snapshot.gameActions].sort((a,b) => (a.authoritySeq || 0) - (b.authoritySeq || 0) || a.sentAt - b.sentAt);
+    for (const action of actions) {
       if (action.gameId !== snapshot.gameId) continue;
       frame.contentWindow.postMessage({ type: 'qaddha-online-replay', action, authoritative: true }, window.location.origin);
     }
@@ -294,8 +299,9 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
           update(r => ({ ...r, players: r.players.map(p => p.id === incoming.playerId ? { ...p, gameLoadedId: incoming.gameId, connected: true, seenAt: Date.now() } : p) }), false);
         } else if (incoming.type === 'game-action') {
           if (!knownPlayer?.connected || !allowGameAction(incoming.playerId)) return;
-          const action = normalizeGameAction(incoming.action, incoming.playerId, current.gameId);
-          if (!action) return;
+          const normalizedAction = normalizeGameAction(incoming.action, incoming.playerId, current.gameId);
+          if (!normalizedAction) return;
+          const action = authorizeGameAction(normalizedAction);
           const frame = document.getElementById('qaddha-online-game-frame') as HTMLIFrameElement | null;
           frame?.contentWindow?.postMessage({ type: 'qaddha-online-replay', action, authoritative: true }, window.location.origin);
           rememberGameAction(action);
@@ -578,15 +584,16 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
       const channel = channelRef.current;
       if (!channel) return;
       if (mode === 'host') {
-        rememberGameAction(action);
-        void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'game-action', action } });
+        const authoritativeAction = authorizeGameAction(action);
+        rememberGameAction(authoritativeAction);
+        void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'game-action', action: authoritativeAction } });
       } else if (mode === 'guest') {
         void channel.send({ type: 'broadcast', event: 'client-message', payload: { type: 'game-action', playerId: me, action } satisfies ClientMessage });
       }
     };
     window.addEventListener('message', receiveEmbeddedAction);
     return () => window.removeEventListener('message', receiveEmbeddedAction);
-  }, [me, mode, room?.phase, room?.code, room?.gameId, rememberGameAction]);
+  }, [me, mode, room?.phase, room?.code, room?.gameId, rememberGameAction, authorizeGameAction]);
 
   const send = (message: ClientMessage) => { const channel = channelRef.current; if (channel) void channel.send({ type: 'broadcast', event: 'client-message', payload: message }); };
   const resetLobbyReadiness = (current: Room) => ({
@@ -624,8 +631,8 @@ export default function OnlineRoom({ games, onBack }: { games: GameOption[]; onB
     onBack();
   };
   const share = async () => navigator.share ? navigator.share({ title: `غرفة قدّها ${room?.code}`, text: `ادخل غرفة قدّها بالكود ${room?.code}`, url: roomUrl }) : copy();
-  const start = () => update(r => ({ ...r, phase: 'countdown', scores: [0, 0], round: 1, startedAt: Date.now() + 3500, roundEndsAt: Date.now() + 3500 + r.timerSeconds * 1000, pausedAt: null, answerRevealed: false, winner: null, gameActions: [], players: r.players.map(p => ({ ...p, gameLoadedId: undefined })) }));
-  const lobby = () => update(r => ({ ...r, phase: 'lobby', scores: [0, 0], round: 1, startedAt: null, roundEndsAt: null, pausedAt: null, answerRevealed: false, winner: null, gameActions: [], players: r.players.map(p => ({ ...p, ready: p.host, gameLoadedId: undefined })) }));
+  const start = () => update(r => ({ ...r, phase: 'countdown', scores: [0, 0], round: 1, startedAt: Date.now() + 3500, roundEndsAt: Date.now() + 3500 + r.timerSeconds * 1000, pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameActionSeq: 0, players: r.players.map(p => ({ ...p, gameLoadedId: undefined })) }));
+  const lobby = () => update(r => ({ ...r, phase: 'lobby', scores: [0, 0], round: 1, startedAt: null, roundEndsAt: null, pausedAt: null, answerRevealed: false, winner: null, gameActions: [], gameActionSeq: 0, players: r.players.map(p => ({ ...p, ready: p.host, gameLoadedId: undefined })) }));
   const next = () => update(r => r.round >= r.totalRounds ? { ...r, phase: 'results', winner: r.scores[0] === r.scores[1] ? null : r.scores[0] > r.scores[1] ? 0 : 1, roundEndsAt: null, pausedAt: null } : { ...r, round: r.round + 1, roundEndsAt: Date.now() + r.timerSeconds * 1000, pausedAt: null, answerRevealed: false });
   const pause = () => update(r => r.pausedAt ? { ...r, roundEndsAt: r.roundEndsAt ? r.roundEndsAt + Date.now() - r.pausedAt : null, pausedAt: null } : { ...r, pausedAt: Date.now() });
   const remove = (id: string) => { const channel = channelRef.current; if (channel) void channel.send({ type: 'broadcast', event: 'server-message', payload: { type: 'room-error', reason: 'removed', text: 'أزالك المضيف من الغرفة.', targetId: id } satisfies ServerError }); update(r => ({ ...r, players: r.players.filter(p => p.id !== id) })); };
