@@ -366,3 +366,39 @@ html[data-theme="light"] .online-how-steps span{background:#fffaf1;border-color:
     font-size:10px;
   }
 }
+
+
+html.qaddha-online-playing,
+body.qaddha-online-playing{
+  width:100%;
+  height:100%;
+  overflow:hidden!important;
+  overscroll-behavior:none;
+  background:#070707!important;
+}
+.online-live-connection{
+  position:fixed;
+  top:max(10px,env(safe-area-inset-top));
+  left:50%;
+  z-index:60;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  max-width:min(92vw,520px);
+  padding:9px 14px;
+  border:1px solid rgba(255,160,95,.34);
+  border-radius:999px;
+  background:rgba(20,13,9,.84);
+  backdrop-filter:blur(12px);
+  color:#ffd2ae;
+  box-shadow:0 10px 30px rgba(0,0,0,.28);
+  font-size:11px;
+  font-weight:800;
+  pointer-events:none;
+}
+.online-live-connection svg{
+  width:16px;
+  height:16px;
+  flex:0 0 auto;
+}
