@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, BookOpen, Cast, ChevronLeft, Trophy, Users, Sparkles, Brain, Camera, Search, Shuffle, Zap, UserRound, Puzzle, Gamepad2, Heart, Link2, Monitor, Settings as SettingsIcon, WandSparkles, Wifi, Flame, ShieldQuestion, RotateCcw } from 'lucide-react';
 import { readQaddhaPreferences, useQaddhaPreferences } from './utils/sitePreferences';
 import type { PlayerActivity } from './components/party/PlayerPanel';
@@ -91,6 +91,7 @@ export default function App() {
   const [homeConfirm,setHomeConfirm]=useState(false);
   const [gameSearch,setGameSearch]=useState('');
   const [gameFilter,setGameFilter]=useState('الكل');
+  const gameSearchRef=useRef<HTMLInputElement|null>(null);
   const [lastGame,setLastGame]=useState(()=>{try{return localStorage.getItem('qaddha.last-game')||''}catch{return ''}});
   const [playerData,setPlayerData]=useState(readPlayerData);
   const auth=useAuth();
@@ -134,10 +135,37 @@ export default function App() {
     window.addEventListener('keydown',close);
     return()=>{document.body.style.overflow=previousOverflow;window.removeEventListener('keydown',close);};
   },[homeConfirm]);
-  const filteredGames=useMemo(()=>{const query=gameSearch.trim();return games.filter(game=>(gameFilter==='الكل'||gameGroups[game.id]===gameFilter)&&(!query||`${game.title} ${game.desc} ${game.tag}`.includes(query)));},[gameFilter,gameSearch]);
+  const filteredGames=useMemo(()=>{
+    const query=gameSearch.trim();
+    const recentIds=new Set(playerData.recent.map(item=>item.gameId));
+    return games.filter(game=>{
+      const filterMatch=gameFilter==='الكل'
+        || gameGroups[game.id]===gameFilter
+        || (gameFilter==='المفضلة'&&playerData.favorites.includes(game.id))
+        || (gameFilter==='حديثًا'&&recentIds.has(game.id));
+      return filterMatch&&(!query||`${game.title} ${game.desc} ${game.tag}`.includes(query));
+    });
+  },[gameFilter,gameSearch,playerData.favorites,playerData.recent]);
   const favoriteGames=useMemo(()=>playerData.favorites.map(id=>games.find(game=>game.id===id)).filter((game): game is (typeof games)[number]=>Boolean(game)).slice(0,6),[playerData.favorites]);
   const recentGames=useMemo(()=>playerData.recent.map(item=>games.find(game=>game.id===item.gameId)).filter((game): game is (typeof games)[number]=>Boolean(game)).slice(0,5),[playerData.recent]);
   const randomGame=(pool=games)=>{const choices=pool.length?pool:games;go(choices[Math.floor(Math.random()*choices.length)].id);};
+  useEffect(()=>{
+    if(screen!=='home')return;
+    const keyboard=(event:KeyboardEvent)=>{
+      const target=event.target as HTMLElement|null;
+      const typing=target instanceof HTMLInputElement||target instanceof HTMLTextAreaElement||target?.isContentEditable;
+      if(event.key==='/'&&!typing){
+        event.preventDefault();
+        gameSearchRef.current?.focus();
+        document.getElementById('games')?.scrollIntoView({behavior:'smooth',block:'start'});
+      }else if(event.key==='Escape'&&document.activeElement===gameSearchRef.current){
+        setGameSearch('');
+        gameSearchRef.current?.blur();
+      }
+    };
+    window.addEventListener('keydown',keyboard);
+    return()=>window.removeEventListener('keydown',keyboard);
+  },[screen]);
   const hostParams=useMemo(()=>new URLSearchParams(window.location.search),[]);
   const onlineEmbed=hostParams.get('onlineEmbed')==='1';
   const gameHome=()=>{ if(!onlineEmbed)setHomeConfirm(true); };
@@ -165,7 +193,7 @@ export default function App() {
           {favoriteGames.length>0&&<div><div className="shelf-title"><span><Heart size={16} fill="currentColor"/> مفضلتك</span><small>ألعابك المحفوظة</small></div><div className="game-chip-row">{favoriteGames.map(game=><button key={game.id} onClick={()=>go(game.id)}><img src={game.cover} alt="" loading="lazy"/><span>{game.title}</span></button>)}</div></div>}
         </div>}
       </section>
-      <section id="games" className="lobby-games"><div className="section-head"><div><small>كل جمعة لها جوّها</small><h2>اختاروا التحدّي</h2></div><span>{filteredGames.length===games.length?`${games.length} ألعاب جاهزة الآن`:`${filteredGames.length} من ${games.length} ألعاب`}</span></div><div className="game-library-tools"><label><Search/><input aria-label="البحث في الألعاب" placeholder="ابحث بالاسم أو نوع التحدّي…" value={gameSearch} onChange={event=>setGameSearch(event.target.value)}/></label><div>{['الكل','جماعية','سريعة','تحديات','كلمات','تخمين'].map(group=><button key={group} aria-pressed={gameFilter===group} className={gameFilter===group?'active':''} onClick={()=>setGameFilter(group)}>{group}</button>)}</div><button className="random-game" disabled={!filteredGames.length} onClick={()=>randomGame(filteredGames)}><Shuffle/> اختيار عشوائي من النتائج</button></div>{filteredGames.length?<div className="lobby-grid">{filteredGames.map((g)=>{const i=games.findIndex(game=>game.id===g.id);const favorite=playerData.favorites.includes(g.id);return <div className="game-card-shell" key={g.id}><button className={`lobby-game game-${g.id} ${g.ready?'available':'upcoming'}`} disabled={!g.ready} onClick={()=>go(g.id)}><div className="game-art"><span className="game-number">{String(i+1).padStart(2,'0')}</span><img className="game-cover-image" src={g.cover} alt="" loading={i < 4 ? 'eager' : 'lazy'} fetchPriority={i < 2 ? 'high' : 'auto'} decoding="async" width="960" height="540"/><span className="cover-spark">✦</span><span className="game-status">العب الآن</span></div><div className="game-copy"><small>{g.tag}</small><h3>{g.title}</h3><p>{g.desc}</p><span className="game-arrow"><ArrowLeft size={20}/></span></div></button><button className={`game-favorite ${favorite?'active':''}`} aria-pressed={favorite} aria-label={`${favorite?'إزالة':'إضافة'} ${g.title} ${favorite?'من':'إلى'} المفضلة`} onClick={()=>toggleFavorite(g.id)}><Heart fill={favorite?'currentColor':'none'}/></button></div>})}</div>:<div className="category-empty"><Search/><h3>ما لقينا لعبة بهذا الاسم</h3><p>امسح البحث أو اختر تصنيفًا ثانيًا.</p><button className="quiet" onClick={()=>{setGameSearch('');setGameFilter('الكل');}}>عرض كل الألعاب</button></div>}</section><section className="lobby-how"><Gamepad2/><div><h2>ثلاث خطوات… وتبدأ السالفة.</h2><p>كوّنوا فريقين، اختاروا تحدّيكم، وخلو واحد يمسك التقديم والتحكيم.</p></div><button className="secondary" onClick={()=>go('session')}>خلّ قدّها يرتب الجلسة</button></section>
+      <section id="games" className="lobby-games"><div className="section-head"><div><small>كل جمعة لها جوّها</small><h2>اختاروا التحدّي</h2></div><span>{filteredGames.length===games.length?`${games.length} ألعاب جاهزة الآن`:`${filteredGames.length} من ${games.length} ألعاب`}</span></div><div className="game-library-tools"><label><Search/><input ref={gameSearchRef} aria-label="البحث في الألعاب" placeholder="ابحث بالاسم أو نوع التحدّي…  /" value={gameSearch} onChange={event=>setGameSearch(event.target.value)}/></label><div>{['الكل','المفضلة','حديثًا','جماعية','سريعة','تحديات','كلمات','تخمين'].map(group=><button key={group} aria-pressed={gameFilter===group} className={gameFilter===group?'active':''} onClick={()=>setGameFilter(group)}>{group}</button>)}</div><button className="random-game" disabled={!filteredGames.length} onClick={()=>randomGame(filteredGames)}><Shuffle/> اختيار عشوائي من النتائج</button></div>{filteredGames.length?<div className="lobby-grid">{filteredGames.map((g)=>{const i=games.findIndex(game=>game.id===g.id);const favorite=playerData.favorites.includes(g.id);return <div className="game-card-shell" key={g.id}><button className={`lobby-game game-${g.id} ${g.ready?'available':'upcoming'}`} disabled={!g.ready} onClick={()=>go(g.id)}><div className="game-art"><span className="game-number">{String(i+1).padStart(2,'0')}</span><img className="game-cover-image" src={g.cover} alt="" loading={i < 4 ? 'eager' : 'lazy'} fetchPriority={i < 2 ? 'high' : 'auto'} decoding="async" width="960" height="540"/><span className="cover-spark">✦</span><span className="game-status">العب الآن</span></div><div className="game-copy"><small>{g.tag}</small><h3>{g.title}</h3><p>{g.desc}</p><span className="game-arrow"><ArrowLeft size={20}/></span></div></button><button className={`game-favorite ${favorite?'active':''}`} aria-pressed={favorite} aria-label={`${favorite?'إزالة':'إضافة'} ${g.title} ${favorite?'من':'إلى'} المفضلة`} onClick={()=>toggleFavorite(g.id)}><Heart fill={favorite?'currentColor':'none'}/></button></div>})}</div>:<div className="category-empty"><Search/><h3>ما لقينا لعبة بهذا الاسم</h3><p>امسح البحث أو اختر تصنيفًا ثانيًا.</p><button className="quiet" onClick={()=>{setGameSearch('');setGameFilter('الكل');}}>عرض كل الألعاب</button></div>}</section><section className="lobby-how"><Gamepad2/><div><h2>ثلاث خطوات… وتبدأ السالفة.</h2><p>كوّنوا فريقين، اختاروا تحدّيكم، وخلو واحد يمسك التقديم والتحكيم.</p></div><button className="secondary" onClick={()=>go('session')}>خلّ قدّها يرتب الجلسة</button></section>
     </>}
   </Suspense></main><footer><span>قدّها <b>✦</b></span><p>جمعتكم أحلى بالتحدّي</p><button onClick={()=>setHelpOpen(true)}>طريقة اللعب · الخصوصية · المساعدة</button></footer><Suspense fallback={null}><SiteSettings open={settingsOpen} onClose={()=>setSettingsOpen(false)}/></Suspense><Suspense fallback={null}><PlayerPanel open={playerOpen} onClose={()=>setPlayerOpen(false)} games={games} favorites={playerData.favorites} recent={playerData.recent} onPlay={go} onToggleFavorite={toggleFavorite} accountConfigured={auth.configured} accountName={auth.session?.user.user_metadata.display_name || auth.session?.user.email || ''} onAuth={()=>{setPlayerOpen(false);setAuthOpen(true);}} onSignOut={()=>{void auth.signOut();}}/></Suspense>{auth.configured&&<Suspense fallback={null}><AuthModal open={authOpen||auth.recoveryMode} onClose={()=>{setAuthOpen(false);auth.dismissRecovery();auth.clearOauthMessage();}}/></Suspense>}<Suspense fallback={null}><HelpCenter open={helpOpen} onClose={()=>setHelpOpen(false)} onPlay={()=>{go('home');requestAnimationFrame(()=>document.getElementById('games')?.scrollIntoView({behavior:'smooth'}));}}/></Suspense>{homeConfirm&&<div className="exit-overlay"><div role="dialog" aria-modal="true" aria-labelledby="site-home-confirm"><h2 id="site-home-confirm">نرجع للرئيسية؟</h2><p>العودة قد تنهي الجولة الحالية. بعض الألعاب تحفظ تقدمك تلقائيًا، لكن الأفضل ترجع بعد نهاية الجولة.</p><button autoFocus className="primary" onClick={()=>setHomeConfirm(false)}>نكمل هنا</button><button className="quiet" onClick={()=>go('home')}>إنهاء والعودة للرئيسية</button></div></div>}</div>;
 }
