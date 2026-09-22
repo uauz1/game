@@ -126,6 +126,7 @@ if (exists(durableOnlineFile)) {
     [durableOnline.includes('allowGameAction') && durableOnline.includes('current.count >= 80'), 'Guest gameplay events are rate-limited by the host'],
     [durableOnline.includes("incoming.type !== 'join' && !knownPlayer") && durableOnline.includes('!knownPlayer?.connected || !allowGameAction'), 'Online room ignores control/gameplay messages from unknown or inactive players'],
     [durableOnline.includes('actionPersistTimerRef') && durableOnline.includes('450') && durableOnline.includes('persistRoom(snapshot)'), 'Online action persistence is batched to reduce realtime lag'],
+    [durableOnline.includes("compactable = action.kind === 'input' || action.kind === 'change'") && durableOnline.includes('item.selector === action.selector'), 'Repeated online input/change events are compacted to preserve useful replay history'],
     [durableOnline.includes('online-host-live-tools') && read('src/online-room.css').includes('.online-live > .online-host-score'), 'Embedded games own scoring/rounds while the room wrapper stays focused on sync'],
     [durableOnline.includes('winner: null, gameActions: []') && durableOnline.includes('gameLoadedId: undefined'), 'Returning to lobby clears stale match state'],
     [durableOnline.includes('pullPersistedRoom') && durableOnline.includes('lastRealtimeSnapshotAt') && durableOnline.includes('8000'), 'Guest room uses conditional persisted-state resync fallback'],
