@@ -1,3 +1,6 @@
+const originalRandom = Math.random;
+let currentSeed: string | null = null;
+
 function hashSeed(value: string) {
   let hash = 2166136261 >>> 0;
   for (let i = 0; i < value.length; i += 1) {
@@ -8,7 +11,15 @@ function hashSeed(value: string) {
 }
 
 export function installOnlineDeterminism(seedValue: string | null) {
-  if (!seedValue) return;
+  if (seedValue === currentSeed) return;
+
+  if (seedValue === null) {
+    Math.random = originalRandom;
+    currentSeed = null;
+    return;
+  }
+
+  currentSeed = seedValue;
   let state = hashSeed(seedValue);
   Math.random = () => {
     state += 0x6d2b79f5;
