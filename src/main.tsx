@@ -5,6 +5,7 @@ import MultiplayerPlayer from './components/party/MultiplayerPlayer.tsx';
 import { AuthProvider } from './contexts/AuthContext.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import QaddhaRemoteControl from './components/admin/QaddhaRemoteControl.tsx';
+import './utils/sentry.ts';
 import './utils/sessionResultObserver.ts';
 import './utils/autoTvMode.ts';
 import { installOnlineDeterminism } from './utils/onlineDeterminism.ts';
