@@ -169,7 +169,14 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
     queueReplay(message.action, Boolean(message.authoritative));
   });
 
-  const observer = new MutationObserver(() => {
+  // React games can mutate the DOM dozens of times during a single render.
+  // Do not sort and replay the queue for every mutation (including replay's own mutations).
+  // Batch pending work to at most one pass per animation frame, and do nothing
+  // when there are no actions waiting for a missing element.
+  let replayFrame = 0;
+  const flushPending = () => {
+    replayFrame = 0;
+    if (!pendingActions.size) return;
     const now = Date.now();
     const queued = [...pendingActions.entries()].sort(([,a],[,b]) => (a.authoritySeq ?? Number.MAX_SAFE_INTEGER) - (b.authoritySeq ?? Number.MAX_SAFE_INTEGER) || a.sentAt - b.sentAt);
     for (const [id, action] of queued) {
@@ -179,6 +186,10 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
       }
       applyReplay(action, true);
     }
+  };
+  const observer = new MutationObserver(() => {
+    if (!pendingActions.size || replayFrame) return;
+    replayFrame = window.requestAnimationFrame(flushPending);
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
 }
