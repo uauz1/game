@@ -63,7 +63,8 @@ const multiplayerLayer = <Suspense fallback={null}><MultiplayerHostLayer/></Susp
 export default function PlatformShell() {
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
   const onlineEmbed = params.get('onlineEmbed') === '1';
-  const [hubOpen, setHubOpen] = useState(!onlineEmbed && params.get('hub') === '1');
+  const onlineRoute = params.has('online') || params.has('onlineHost');
+  const [hubOpen, setHubOpen] = useState(!onlineEmbed && !onlineRoute && params.get('hub') === '1');
   const [updateReady, setUpdateReady] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [level, setLevel] = useState(() => Math.max(1, Math.floor(Math.sqrt(readProgression().xp / 75)) + 1));
@@ -116,6 +117,7 @@ export default function PlatformShell() {
   }, []);
 
   const openHub = () => {
+    if (new URLSearchParams(window.location.search).has('online') || new URLSearchParams(window.location.search).has('onlineHost')) return;
     const url = new URL(window.location.href);
     url.searchParams.set('hub', '1');
     window.history.replaceState({}, '', url);

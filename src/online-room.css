@@ -402,3 +402,6 @@ body.qaddha-online-playing{
   height:16px;
   flex:0 0 auto;
 }
+
+/* Keep the platform shortcut from covering live room controls. */
+body:has(.online-room) .global-hub-launch{display:none}
