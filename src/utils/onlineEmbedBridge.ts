@@ -94,7 +94,7 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
   document.addEventListener('click', event => {
     const element = event.target instanceof Element ? event.target.closest('button,a,[role="button"],input[type="button"],input[type="submit"]') : null;
     if (!element || element.closest('[data-online-local="true"]')) return;
-    if (onlineRole === 'guest') {
+    if (onlineRole === 'guest' && !replaying) {
       event.preventDefault();
       event.stopImmediatePropagation();
     }
@@ -111,7 +111,7 @@ export function installOnlineEmbedBridge(params: URLSearchParams) {
   document.addEventListener('submit', event => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement) || form.closest('[data-online-local="true"]')) return;
-    if (onlineRole === 'guest') {
+    if (onlineRole === 'guest' && !replaying) {
       event.preventDefault();
       event.stopImmediatePropagation();
     }
