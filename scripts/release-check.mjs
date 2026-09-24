@@ -309,9 +309,9 @@ if (exists(premiumCssFile)) {
     : fail('Premium games still contain stale TV mode selectors');
 }
 
-if (!app.includes("cover:asset('pressure-cover-v3.webp')")) fail('Pressure must use its approved cinematic WebP cover');
+if (!app.includes("cover:asset('pressure-cover-v4.webp')")) fail('Pressure must use its approved cinematic WebP cover');
 else pass('Pressure uses production WebP cover');
-if (!app.includes("cover:asset('intruder-cover-v3.webp')")) fail('Intruder must use its approved cinematic WebP cover');
+if (!app.includes("cover:asset('intruder-cover-v4.webp')")) fail('Intruder must use its approved cinematic WebP cover');
 else pass('Intruder uses production WebP cover');
 
 const forbidden = /coming soon|قريبًا فقط|لعبة غير متاحة|TODO\b|FIXME\b/i;

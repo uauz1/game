@@ -83,8 +83,8 @@ const games = [
   {id:'missing',title:'وش الناقص؟',desc:'ركزوا في العناصر… نخفي واحد ومهمتكم تعرفونه بسرعة.',icon:Search,tag:'ملاحظة + ذاكرة',cover:asset('missing-cover-v2.webp'),ready:true},
   {id:'acting',title:'مثّلها',desc:'تمثيل صامت، وقت يركض، وفريق يحاول يلقطها.',icon:Gamepad2,tag:'تمثيل + فرق',cover:asset('acting-cover-v2.webp'),ready:true},
   {id:'secret',title:'الكلمة السرّية',desc:'الكل يعرف المكان إلا المتخفي… اكشفوه قبل ما يندمج.',icon:Users,tag:'خداع + نقاش',cover:asset('secret-cover-v2.webp'),ready:true},
-  {id:'pressure',title:'تحت الضغط',desc:'عدد محدد من الإجابات ووقت يركض. هل تقدرون تكملون قبل الصافرة؟',icon:Flame,tag:'سرعة + معرفة',cover:asset('pressure-cover-v3.webp'),ready:true},
-  {id:'intruder',title:'الدخيل',desc:'أربع اختيارات بينها عنصر واحد ما ينتمي للباقي. اكتشفوه وفسّروا السبب.',icon:ShieldQuestion,tag:'ذكاء + استنتاج',cover:asset('intruder-cover-v3.webp'),ready:true},
+  {id:'pressure',title:'تحت الضغط',desc:'عدد محدد من الإجابات ووقت يركض. هل تقدرون تكملون قبل الصافرة؟',icon:Flame,tag:'سرعة + معرفة',cover:asset('pressure-cover-v4.webp'),ready:true},
+  {id:'intruder',title:'الدخيل',desc:'أربع اختيارات بينها عنصر واحد ما ينتمي للباقي. اكتشفوه وفسّروا السبب.',icon:ShieldQuestion,tag:'ذكاء + استنتاج',cover:asset('intruder-cover-v4.webp'),ready:true},
 ];
 const gameGroups: Record<string,string> = {teams:'جماعية',letters:'كلمات',who:'تخمين',photo:'تحديات',words:'كلمات',fast:'سريعة',character:'تخمين',riddles:'تحديات',family:'جماعية',connection:'تخمين',auction:'جماعية',order:'تحديات',memory:'سريعة',missing:'سريعة',acting:'جماعية',secret:'جماعية',pressure:'سريعة',intruder:'تحديات'};
 const quickModes = [
